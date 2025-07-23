@@ -30,3 +30,34 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# AI Assistants
+# Claude Code session files
+.claude/
+.claude_cache/
+claude-*
+*.claude
+CLAUDE.md
+
+# Gemini CLI files
+.gemini/
+.geminicli/
+gemini-*
+*.gemini
+GEMINI.md
+
+# Copilot files
+.copilot/
+copilot-*
+*.copilot
+
+
