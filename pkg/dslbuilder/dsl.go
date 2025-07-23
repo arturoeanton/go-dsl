@@ -9,6 +9,97 @@ import (
 	"strings"
 )
 
+// ParseError provides detailed error information with line and column
+type ParseError struct {
+	Message  string // Original error message (for backward compatibility)
+	Line     int    // Line number (1-based)
+	Column   int    // Column number (1-based)
+	Position int    // Character position (0-based)
+	Token    string // Token value at error position
+	Input    string // Original input for context
+}
+
+// Error implements error interface, maintaining backward compatibility
+func (pe *ParseError) Error() string {
+	return pe.Message
+}
+
+// DetailedError returns error with line/column information
+func (pe *ParseError) DetailedError() string {
+	if pe.Line == 0 && pe.Column == 0 {
+		return pe.Message // Fallback to simple message
+	}
+	
+	context := pe.getContextLine()
+	pointer := strings.Repeat(" ", pe.Column-1) + "^"
+	
+	return fmt.Sprintf("%s at line %d, column %d:\n%s\n%s", 
+		pe.Message, pe.Line, pe.Column, context, pointer)
+}
+
+// getContextLine extracts the line containing the error
+func (pe *ParseError) getContextLine() string {
+	if pe.Input == "" {
+		return ""
+	}
+	
+	lines := strings.Split(pe.Input, "\n")
+	if pe.Line > 0 && pe.Line <= len(lines) {
+		return lines[pe.Line-1]
+	}
+	
+	return ""
+}
+
+// IsParseError checks if an error is a ParseError with detailed information
+func IsParseError(err error) bool {
+	_, ok := err.(*ParseError)
+	return ok
+}
+
+// GetDetailedError returns detailed error information if available
+func GetDetailedError(err error) string {
+	if parseErr, ok := err.(*ParseError); ok {
+		return parseErr.DetailedError()
+	}
+	return err.Error()
+}
+
+// calculateLineColumn calculates line and column from character position
+func calculateLineColumn(input string, position int) (line int, column int) {
+	if position < 0 || position > len(input) {
+		return 0, 0
+	}
+	
+	line = 1
+	column = 1
+	
+	for i := 0; i < position && i < len(input); i++ {
+		if input[i] == '\n' {
+			line++
+			column = 1
+		} else {
+			column++
+		}
+	}
+	
+	return line, column
+}
+
+// createParseError creates a ParseError with line/column information
+func createParseError(message string, position int, token string, input string) *ParseError {
+	line, column := calculateLineColumn(input, position)
+	
+	return &ParseError{
+		Message:  message,
+		Line:     line,
+		Column:   column,
+		Position: position,
+		Token:    token,
+		Input:    input,
+	}
+}
+
 // DSL represents a Domain Specific Language instance
 type DSL struct {
 	name      string
@@ -130,6 +221,11 @@ func (d *DSL) Parse(code string) (*Result, error) {
 	parser.dsl = d // Give parser access to DSL functions
 	ast, err := parser.Parse(code)
 	if err != nil {
+		// Preserve ParseError type for enhanced error information
+		if IsParseError(err) {
+			return nil, err
+		}
+		// Only wrap non-ParseError errors
 		return nil, fmt.Errorf("parsing error: %w", err)
 	}
 
@@ -237,6 +333,7 @@ type Parser struct {
 	tokens  []TokenMatch
 	pos     int
 	dsl     *DSL // Reference to parent DSL for function access
+	input   string // Original input for error reporting
 }
 
 // TokenMatch represents a matched token
@@ -253,6 +350,7 @@ func NewParser(grammar *Grammar) *Parser {
 		grammar: grammar,
 		tokens:  []TokenMatch{},
 		pos:     0,
+		input:   "", // Will be set during parsing
 	}
 }
 
@@ -261,6 +359,7 @@ func (p *Parser) Parse(code string) (interface{}, error) {
 	// Reset parser state
 	p.tokens = []TokenMatch{}
 	p.pos = 0
+	p.input = code // Store input for error reporting
 
 	// Tokenize
 	err := p.tokenize(code)
@@ -321,7 +420,8 @@ func (p *Parser) tokenize(code string) error {
 			p.tokens = append(p.tokens, bestMatch)
 			pos += bestLength
 		} else {
-			return fmt.Errorf("unexpected character at position %d: %c", pos, code[pos])
+			message := fmt.Sprintf("unexpected character: %c", code[pos])
+			return createParseError(message, pos, string(code[pos]), p.input)
 		}
 	}
 
@@ -346,7 +446,19 @@ func (p *Parser) parseRule(ruleName string) (interface{}, error) {
 		p.pos = savedPos
 	}
 
-	return nil, fmt.Errorf("no alternative matched for rule %s", ruleName)
+	// Create detailed error with current token position
+	var token string
+	var position int
+	if p.pos < len(p.tokens) {
+		token = p.tokens[p.pos].Value
+		position = p.tokens[p.pos].Start
+	} else {
+		token = "<end of input>"
+		position = len(p.input)
+	}
+	
+	message := fmt.Sprintf("no alternative matched for rule %s", ruleName)
+	return nil, createParseError(message, position, token, p.input)
 }
 
 // parseAlternative parses a specific alternative
@@ -355,7 +467,9 @@ func (p *Parser) parseAlternative(alt *Alternative) (interface{}, error) {
 
 	for _, symbol := range alt.sequence {
 		if p.pos >= len(p.tokens) {
-			return nil, fmt.Errorf("unexpected end of input")
+			message := "unexpected end of input"
+			position := len(p.input)
+			return nil, createParseError(message, position, "<end of input>", p.input)
 		}
 
 		// Check if symbol is a token
@@ -364,7 +478,8 @@ func (p *Parser) parseAlternative(alt *Alternative) (interface{}, error) {
 				results = append(results, p.tokens[p.pos].Value)
 				p.pos++
 			} else {
-				return nil, fmt.Errorf("expected token %s, got %s", symbol, p.tokens[p.pos].TokenType)
+				message := fmt.Sprintf("expected token %s, got %s", symbol, p.tokens[p.pos].TokenType)
+				return nil, createParseError(message, p.tokens[p.pos].Start, p.tokens[p.pos].Value, p.input)
 			}
 		} else {
 			// Symbol is a rule

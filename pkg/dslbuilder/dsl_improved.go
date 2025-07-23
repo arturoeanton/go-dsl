@@ -14,6 +14,7 @@ type ImprovedParser struct {
 	pos     int
 	dsl     *DSL
 	memo    map[string]map[int]memoEntry // Memoization for packrat parsing
+	input   string // Original input for error reporting
 }
 
 type memoEntry struct {
@@ -29,6 +30,7 @@ func NewImprovedParser(grammar *Grammar) *ImprovedParser {
 		tokens:  []TokenMatch{},
 		pos:     0,
 		memo:    make(map[string]map[int]memoEntry),
+		input:   "", // Will be set during parsing
 	}
 }
 
@@ -38,6 +40,7 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 	p.tokens = []TokenMatch{}
 	p.pos = 0
 	p.memo = make(map[string]map[int]memoEntry)
+	p.input = code // Store input for error reporting
 
 	// Tokenize
 	err := p.tokenize(code)
@@ -45,14 +48,14 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 		return nil, err
 	}
 	
-
 	// Parse from start rule
 	p.pos = 0
 	result, err := p.parseRuleWithMemo(p.grammar.startRule)
 	
 	// Check if we consumed all tokens
 	if err == nil && p.pos < len(p.tokens) {
-		return nil, fmt.Errorf("unexpected token at position %d: %s", p.pos, p.tokens[p.pos].Value)
+		message := fmt.Sprintf("unexpected token: %s", p.tokens[p.pos].Value)
+		return nil, createParseError(message, p.tokens[p.pos].Start, p.tokens[p.pos].Value, p.input)
 	}
 	
 	return result, err
@@ -106,7 +109,8 @@ func (p *ImprovedParser) tokenize(code string) error {
 			p.tokens = append(p.tokens, bestMatch)
 			pos += bestLength
 		} else {
-			return fmt.Errorf("unexpected character at position %d: %c", pos, code[pos])
+			message := fmt.Sprintf("unexpected character: %c", code[pos])
+			return createParseError(message, pos, string(code[pos]), p.input)
 		}
 	}
 
@@ -279,7 +283,19 @@ func (p *ImprovedParser) parseRuleRegular(ruleName string) (interface{}, error) 
 		p.pos = savedPos
 	}
 
-	return nil, fmt.Errorf("no alternative matched for rule %s at position %d", ruleName, p.pos)
+	// Create detailed error with current token position
+	var token string
+	var position int
+	if p.pos < len(p.tokens) {
+		token = p.tokens[p.pos].Value
+		position = p.tokens[p.pos].Start
+	} else {
+		token = "<end of input>"
+		position = len(p.input)
+	}
+	
+	message := fmt.Sprintf("no alternative matched for rule %s", ruleName)
+	return nil, createParseError(message, position, token, p.input)
 }
 
 // parseAlternative parses a specific alternative
@@ -288,7 +304,9 @@ func (p *ImprovedParser) parseAlternative(alt *Alternative) (interface{}, error)
 
 	for _, symbol := range alt.sequence {
 		if p.pos >= len(p.tokens) {
-			return nil, fmt.Errorf("unexpected end of input")
+			message := "unexpected end of input"
+			position := len(p.input)
+			return nil, createParseError(message, position, "<end of input>", p.input)
 		}
 
 		// Check if symbol is a token
@@ -297,7 +315,8 @@ func (p *ImprovedParser) parseAlternative(alt *Alternative) (interface{}, error)
 				results = append(results, p.tokens[p.pos].Value)
 				p.pos++
 			} else {
-				return nil, fmt.Errorf("expected token %s, got %s", symbol, p.tokens[p.pos].TokenType)
+				message := fmt.Sprintf("expected token %s, got %s", symbol, p.tokens[p.pos].TokenType)
+				return nil, createParseError(message, p.tokens[p.pos].Start, p.tokens[p.pos].Value, p.input)
 			}
 		} else {
 			// Symbol is a rule

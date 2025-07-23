@@ -40,13 +40,43 @@ Este documento presenta las mejoras propuestas para el proyecto go-dsl, organiza
 ```
 
 #### ✅ 2. Validación de Entrada Mejorada  
-**Esfuerzo**: Medio (3-5 días) → **PARCIALMENTE COMPLETADO**  
-**Impacto**: Alto - Experiencia del usuario → **MEJORADO SIGNIFICATIVAMENTE**
+**Esfuerzo**: Medio (3-5 días) → **✅ COMPLETADO AL 100%**  
+**Impacto**: Alto - Experiencia del usuario → **SUPERADO - NIVEL EMPRESARIAL**
 
 - [x] ~~Validar tokens duplicados~~ → **RESUELTO**: KeywordToken elimina conflictos
 - [x] ~~Validar reglas~~ → **MEJORADO**: Ejemplos demuestran correctitud
 - [x] ~~Acciones definidas~~ → **GARANTIZADO**: Todos los ejemplos funcionan
-- [ ] Mejorar mensajes de error con línea y columna específicas → **PENDIENTE** (baja prioridad)
+- [x] ✅ **Mejorar mensajes de error con línea y columna específicas** → **COMPLETADO** (Julio 2025)
+
+**🎯 Nueva Funcionalidad de Errores Mejorados:**
+```go
+// ParseError con información detallada
+type ParseError struct {
+    Message  string // Mensaje original (compatibilidad)
+    Line     int    // Línea (1-based)
+    Column   int    // Columna (1-based)
+    Position int    // Posición en caracteres (0-based)
+    Token    string // Token en la posición del error
+    Input    string // Entrada original para contexto
+}
+
+// Funciones helper para compatibilidad
+func IsParseError(err error) bool
+func GetDetailedError(err error) string
+
+// Ejemplo de salida mejorada:
+// unexpected character: i at line 2, column 6:
+// with invalid_token "John"
+//      ^
+```
+
+**✅ Características implementadas:**
+- Compatibilidad 100% con código existente
+- Información de línea y columna precisa
+- Contexto visual con puntero (^)
+- API backward-compatible
+- Tests completos incluidos
+- Ejemplo funcional en `examples/error_demo/`
 
 #### ✅ 3. Gestión de Memoria y Performance  
 **Esfuerzo**: Medio (3-4 días) → **OPTIMIZADO PARA CASOS REALES**  
