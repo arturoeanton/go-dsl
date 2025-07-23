@@ -1,5 +1,6 @@
 // Package dslbuilder provides a dynamic DSL (Domain Specific Language) builder for Go.
-// This is an improved version that handles left recursion properly.
+// This file contains the improved parser implementation that handles left recursion
+// using memoization (Packrat parsing) for better performance and more flexible grammars.
 package dslbuilder
 
 import (
@@ -7,7 +8,23 @@ import (
 	"strings"
 )
 
-// ImprovedParser represents an improved DSL parser that handles left recursion
+// ImprovedParser represents an improved DSL parser that handles left recursion.
+// It uses memoization (Packrat parsing) to efficiently parse grammars with
+// left-recursive rules and achieve linear time complexity.
+//
+// Key improvements over basic parser:
+//   - Handles left recursion (e.g., expr -> expr '+' term)
+//   - Memoization prevents exponential backtracking
+//   - Better error reporting with position tracking
+//   - Support for operator precedence and associativity
+//
+// Fields:
+//   - grammar: Language grammar definition
+//   - tokens: Tokenized input
+//   - pos: Current token position
+//   - dsl: Parent DSL for function/context access
+//   - memo: Memoization table for Packrat parsing
+//   - input: Original input for error messages
 type ImprovedParser struct {
 	grammar *Grammar
 	tokens  []TokenMatch
@@ -17,13 +34,28 @@ type ImprovedParser struct {
 	input   string                       // Original input for error reporting
 }
 
+// memoEntry stores the cached result of parsing a rule at a specific position.
+// This is the core data structure for Packrat parsing that enables linear time
+// parsing even with backtracking and left recursion.
+//
+// Fields:
+//   - result: The parsed value if successful
+//   - endPos: Token position after successful parse
+//   - err: Error if parsing failed
 type memoEntry struct {
-	result interface{}
-	endPos int
-	err    error
+	result interface{} // Parsed result value
+	endPos int         // Position after parsing
+	err    error       // Error if failed
 }
 
-// NewImprovedParser creates a new improved parser
+// NewImprovedParser creates a new improved parser with memoization support.
+// This parser can handle left-recursive grammars and provides better performance
+// than the basic recursive descent parser.
+//
+// Example:
+//
+//	parser := NewImprovedParser(grammar)
+//	result, err := parser.Parse("x = 1 + 2 * 3")
 func NewImprovedParser(grammar *Grammar) *ImprovedParser {
 	return &ImprovedParser{
 		grammar: grammar,
@@ -34,7 +66,26 @@ func NewImprovedParser(grammar *Grammar) *ImprovedParser {
 	}
 }
 
-// Parse parses DSL code with left recursion handling
+// Parse parses DSL code with left recursion handling using memoization.
+// This is the main entry point for the improved parser.
+//
+// The parsing process:
+//  1. Tokenization: Convert input to tokens
+//  2. Memoized parsing: Parse with caching to handle left recursion
+//  3. Completeness check: Ensure all input was consumed
+//
+// Returns:
+//   - Parsed result from the start rule's action
+//   - ParseError with detailed position info on failure
+//
+// Example:
+//
+//	result, err := parser.Parse("2 + 3 * 4")
+//	if err != nil {
+//	    if parseErr, ok := err.(*ParseError); ok {
+//	        fmt.Println(parseErr.DetailedError())
+//	    }
+//	}
 func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 	// Reset parser state
 	p.tokens = []TokenMatch{}
@@ -61,7 +112,14 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 	return result, err
 }
 
-// tokenize converts code into tokens (same as original)
+// tokenize converts code into tokens (lexical analysis).
+// Uses the same algorithm as the basic parser but with
+// input tracking for better error messages.
+//
+// Token matching priority:
+//  1. Higher priority value wins (keywords > regular)
+//  2. For same priority, longest match wins
+//  3. Whitespace is automatically skipped
 func (p *ImprovedParser) tokenize(code string) error {
 	code = strings.TrimSpace(code)
 	pos := 0
@@ -117,7 +175,22 @@ func (p *ImprovedParser) tokenize(code string) error {
 	return nil
 }
 
-// parseRuleWithMemo parses a rule with memoization to handle left recursion
+// parseRuleWithMemo parses a rule with memoization to handle left recursion.
+// This is the core of the Packrat parsing algorithm that enables efficient
+// parsing of left-recursive grammars.
+//
+// The memoization table prevents:
+//   - Exponential backtracking in ambiguous grammars
+//   - Infinite recursion in left-recursive rules
+//   - Redundant parsing of the same rule at the same position
+//
+// Algorithm:
+//  1. Check if result is already memoized
+//  2. If left-recursive, use iterative algorithm
+//  3. Otherwise, use standard recursive descent
+//  4. Cache the result for future use
+//
+// Returns the parsed result and updates the position.
 func (p *ImprovedParser) parseRuleWithMemo(ruleName string) (interface{}, error) {
 	// Check memo table
 	if ruleMemo, exists := p.memo[ruleName]; exists {
@@ -144,7 +217,17 @@ func (p *ImprovedParser) parseRuleWithMemo(ruleName string) (interface{}, error)
 	return result, err
 }
 
-// isLeftRecursive checks if a rule is left-recursive
+// isLeftRecursive checks if a rule is directly left-recursive.
+// A rule is left-recursive if it has an alternative that starts
+// with the rule itself.
+//
+// Example of left-recursive rule:
+//
+//	expr → expr '+' term  (left-recursive)
+//	expr → term           (base case)
+//
+// This detection is used to choose the appropriate parsing strategy.
+// Note: This only detects direct left recursion, not indirect.
 func (p *ImprovedParser) isLeftRecursive(ruleName string) bool {
 	rule, exists := p.grammar.rules[ruleName]
 	if !exists {
@@ -160,7 +243,23 @@ func (p *ImprovedParser) isLeftRecursive(ruleName string) bool {
 	return false
 }
 
-// parseLeftRecursive handles left-recursive rules iteratively
+// parseLeftRecursive handles left-recursive rules using an iterative algorithm.
+// This prevents stack overflow and enables parsing of left-associative operators.
+//
+// Algorithm (for rule like: expr → expr '+' term | term):
+//  1. Parse base case first (non-recursive alternatives)
+//  2. Try to extend the result with recursive alternatives
+//  3. Repeat step 2 until no more extensions possible
+//
+// This naturally produces left-associative parse trees.
+// For example, "1+2+3" parses as ((1+2)+3), not (1+(2+3)).
+//
+// Parameters:
+//   - ruleName: The left-recursive rule to parse
+//
+// Returns:
+//   - The final parsed result after all possible extensions
+//   - Error if no base case matches
 func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error) {
 	rule, exists := p.grammar.rules[ruleName]
 	if !exists {
@@ -265,7 +364,21 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 	return base, nil
 }
 
-// parseRuleRegular handles non-left-recursive rules
+// parseRuleRegular handles non-left-recursive rules using standard recursive descent.
+// This is the traditional parsing approach for rules without left recursion.
+//
+// The parser tries each alternative in order:
+//  1. Save current position
+//  2. Try to parse the alternative
+//  3. If successful, return the result
+//  4. If failed, restore position and try next
+//
+// This provides ordered choice (PEG-like behavior) where the first
+// matching alternative wins.
+//
+// Returns:
+//   - Result of the first successful alternative
+//   - ParseError with position info if no alternatives match
 func (p *ImprovedParser) parseRuleRegular(ruleName string) (interface{}, error) {
 	rule, exists := p.grammar.rules[ruleName]
 	if !exists {
@@ -298,7 +411,24 @@ func (p *ImprovedParser) parseRuleRegular(ruleName string) (interface{}, error) 
 	return nil, createParseError(message, position, token, p.input)
 }
 
-// parseAlternative parses a specific alternative
+// parseAlternative parses a specific alternative (sequence of symbols).
+// This is shared by both regular and left-recursive parsing.
+//
+// Process:
+//  1. Match each symbol in the sequence
+//  2. For tokens: match exact token type
+//  3. For rules: recursively parse with memoization
+//  4. Collect all matched values
+//  5. Apply action function if defined
+//
+// The results array passed to actions contains:
+//   - Token values as strings
+//   - Rule results as returned by their actions
+//
+// Example:
+//
+//	Alternative: ["IF", "expr", "THEN", "stmt"]
+//	Results: ["if", exprValue, "then", stmtValue]
 func (p *ImprovedParser) parseAlternative(alt *Alternative) (interface{}, error) {
 	var results []interface{}
 
@@ -342,4 +472,9 @@ func (p *ImprovedParser) parseAlternative(alt *Alternative) (interface{}, error)
 	return results, nil
 }
 
-// Parse parses using the improved parser
+// ParseWithContext enables parsing with additional context that can be accessed
+// by action functions. This is useful for passing runtime configuration or
+// variables to the DSL execution.
+//
+// Note: This appears to be a stub. The actual implementation would merge
+// the provided context with the DSL's context before parsing.
