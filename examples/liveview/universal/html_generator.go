@@ -38,10 +38,10 @@ func NewHTMLGenerator() *UniversalHTMLGenerator {
 		components: make(map[string]*ComponentTemplate),
 		templates:  make(map[string]string),
 	}
-	
+
 	hg.setupDefaultComponents()
 	hg.setupDefaultTemplates()
-	
+
 	return hg
 }
 
@@ -58,7 +58,7 @@ func (hg *UniversalHTMLGenerator) setupDefaultComponents() {
 		},
 		Events: []string{"submit", "change"},
 	}
-	
+
 	// Input component
 	hg.components["input"] = &ComponentTemplate{
 		Name:     "input",
@@ -71,7 +71,7 @@ func (hg *UniversalHTMLGenerator) setupDefaultComponents() {
 		},
 		Events: []string{"blur", "focus", "change", "keyup"},
 	}
-	
+
 	// Button component
 	hg.components["button"] = &ComponentTemplate{
 		Name:     "button",
@@ -82,7 +82,7 @@ func (hg *UniversalHTMLGenerator) setupDefaultComponents() {
 		},
 		Events: []string{"click"},
 	}
-	
+
 	// Table component
 	hg.components["table"] = &ComponentTemplate{
 		Name:     "table",
@@ -93,7 +93,7 @@ func (hg *UniversalHTMLGenerator) setupDefaultComponents() {
 		},
 		Events: []string{},
 	}
-	
+
 	// Card component
 	hg.components["card"] = &ComponentTemplate{
 		Name:     "card",
@@ -104,7 +104,7 @@ func (hg *UniversalHTMLGenerator) setupDefaultComponents() {
 		},
 		Events: []string{"click", "hover"},
 	}
-	
+
 	// List component
 	hg.components["list"] = &ComponentTemplate{
 		Name:     "list",
@@ -115,7 +115,7 @@ func (hg *UniversalHTMLGenerator) setupDefaultComponents() {
 		},
 		Events: []string{},
 	}
-	
+
 	// Modal component
 	hg.components["modal"] = &ComponentTemplate{
 		Name:     "modal",
@@ -192,7 +192,7 @@ func (hg *UniversalHTMLGenerator) GenerateComponent(componentType string, data i
 	if !exists {
 		return "", fmt.Errorf("component type '%s' not found", componentType)
 	}
-	
+
 	return hg.processTemplate(template.Template, data)
 }
 
@@ -200,39 +200,39 @@ func (hg *UniversalHTMLGenerator) GenerateComponent(componentType string, data i
 func (hg *UniversalHTMLGenerator) GenerateForm(entity interface{}, action string) (string, error) {
 	v := reflect.ValueOf(entity)
 	t := reflect.TypeOf(entity)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	var formFields []string
-	
+
 	// Generate form fields based on struct fields
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i).Interface()
-		
+
 		// Skip unexported fields
 		if !field.IsExported() {
 			continue
 		}
-		
+
 		fieldName := hg.getFieldName(field)
 		fieldType := hg.getInputType(field.Type.Kind())
-		
+
 		// Generate input field
 		input := fmt.Sprintf(`
 			<div class="form-group">
 				<label for="%s" class="form-label">%s</label>
 				<input type="%s" name="%s" value="%v" class="form-input" 
 				       phx-blur="validate_field" phx-value-field="%s" />
-			</div>`, 
+			</div>`,
 			fieldName, strings.Title(fieldName), fieldType, fieldName, value, fieldName)
-		
+
 		formFields = append(formFields, input)
 	}
-	
+
 	formHTML := fmt.Sprintf(`
 		<form phx-submit="%s" phx-change="form_change" class="space-y-4">
 			%s
@@ -241,7 +241,7 @@ func (hg *UniversalHTMLGenerator) GenerateForm(entity interface{}, action string
 				<button type="button" phx-click="cancel" class="btn btn-secondary">Cancel</button>
 			</div>
 		</form>`, action, strings.Join(formFields, "\n"))
-	
+
 	return formHTML, nil
 }
 
@@ -251,23 +251,23 @@ func (hg *UniversalHTMLGenerator) GenerateTable(data interface{}, options map[st
 	if v.Kind() != reflect.Slice {
 		return "", fmt.Errorf("data must be a slice")
 	}
-	
+
 	if v.Len() == 0 {
 		return "<p class='empty-state'>No data available</p>", nil
 	}
-	
+
 	// Get the first element to determine structure
 	firstElement := v.Index(0).Interface()
 	headers := hg.getTableHeaders(firstElement)
-	
+
 	// Generate table header
 	headerHTML := "<thead><tr>"
 	for _, header := range headers {
-		headerHTML += fmt.Sprintf("<th class='table-header sortable' phx-click='sort' phx-value-field='%s'>%s</th>", 
+		headerHTML += fmt.Sprintf("<th class='table-header sortable' phx-click='sort' phx-value-field='%s'>%s</th>",
 			strings.ToLower(header), strings.Title(header))
 	}
 	headerHTML += "<th class='table-header'>Actions</th></tr></thead>"
-	
+
 	// Generate table rows
 	var rows []string
 	for i := 0; i < v.Len(); i++ {
@@ -275,7 +275,7 @@ func (hg *UniversalHTMLGenerator) GenerateTable(data interface{}, options map[st
 		rowHTML := hg.generateTableRow(item, headers, i)
 		rows = append(rows, rowHTML)
 	}
-	
+
 	tableHTML := fmt.Sprintf(`
 		<table class="data-table" phx-update="stream" id="data-table">
 			%s
@@ -283,7 +283,7 @@ func (hg *UniversalHTMLGenerator) GenerateTable(data interface{}, options map[st
 				%s
 			</tbody>
 		</table>`, headerHTML, strings.Join(rows, "\n"))
-	
+
 	return tableHTML, nil
 }
 
@@ -291,12 +291,12 @@ func (hg *UniversalHTMLGenerator) GenerateTable(data interface{}, options map[st
 func (hg *UniversalHTMLGenerator) GenerateCard(data interface{}, template string) (string, error) {
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	// Extract card data
 	cardData := make(map[string]interface{})
 	for i := 0; i < v.NumField(); i++ {
@@ -306,7 +306,7 @@ func (hg *UniversalHTMLGenerator) GenerateCard(data interface{}, template string
 			cardData[fieldName] = v.Field(i).Interface()
 		}
 	}
-	
+
 	// Use default card template if none provided
 	if template == "" {
 		template = `
@@ -323,7 +323,7 @@ func (hg *UniversalHTMLGenerator) GenerateCard(data interface{}, template string
 			</div>
 		</div>`
 	}
-	
+
 	return hg.processTemplate(template, cardData)
 }
 
@@ -333,7 +333,7 @@ func (hg *UniversalHTMLGenerator) GenerateList(data interface{}, itemTemplate st
 	if v.Kind() != reflect.Slice {
 		return "", fmt.Errorf("data must be a slice")
 	}
-	
+
 	var items []string
 	for i := 0; i < v.Len(); i++ {
 		item := v.Index(i).Interface()
@@ -341,16 +341,16 @@ func (hg *UniversalHTMLGenerator) GenerateList(data interface{}, itemTemplate st
 		if err != nil {
 			return "", err
 		}
-		
+
 		listItem := fmt.Sprintf(`<li class="list-item" id="item-%d">%s</li>`, i, itemHTML)
 		items = append(items, listItem)
 	}
-	
+
 	listHTML := fmt.Sprintf(`
 		<ul class="data-list" phx-update="stream" id="data-list">
 			%s
 		</ul>`, strings.Join(items, "\n"))
-	
+
 	return listHTML, nil
 }
 
@@ -360,7 +360,7 @@ func (hg *UniversalHTMLGenerator) GeneratePage(template string, data interface{}
 	if !exists {
 		return "", fmt.Errorf("template '%s' not found", template)
 	}
-	
+
 	return hg.processTemplate(templateStr, data)
 }
 
@@ -401,12 +401,12 @@ func (hg *UniversalHTMLGenerator) getInputType(kind reflect.Kind) string {
 func (hg *UniversalHTMLGenerator) getTableHeaders(item interface{}) []string {
 	v := reflect.ValueOf(item)
 	t := reflect.TypeOf(item)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	var headers []string
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
@@ -414,21 +414,21 @@ func (hg *UniversalHTMLGenerator) getTableHeaders(item interface{}) []string {
 			headers = append(headers, hg.getFieldName(field))
 		}
 	}
-	
+
 	return headers
 }
 
 func (hg *UniversalHTMLGenerator) generateTableRow(item interface{}, headers []string, index int) string {
 	v := reflect.ValueOf(item)
 	t := reflect.TypeOf(item)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	var cells []string
-	
+
 	// Generate data cells
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
@@ -437,26 +437,26 @@ func (hg *UniversalHTMLGenerator) generateTableRow(item interface{}, headers []s
 			cells = append(cells, fmt.Sprintf("<td class='table-cell'>%v</td>", value))
 		}
 	}
-	
+
 	// Add actions cell
 	actionsCell := fmt.Sprintf(`
 		<td class='table-cell actions'>
 			<button phx-click='edit_item' phx-value-id='%d' class='btn btn-sm'>Edit</button>
 			<button phx-click='delete_item' phx-value-id='%d' class='btn btn-sm btn-danger'>Delete</button>
 		</td>`, index, index)
-	
+
 	cells = append(cells, actionsCell)
-	
+
 	return fmt.Sprintf("<tr class='table-row' id='row-%d'>%s</tr>", index, strings.Join(cells, ""))
 }
 
 func (hg *UniversalHTMLGenerator) processTemplate(template string, data interface{}) (string, error) {
 	// Simple template processing - replace {{.field}} with values
 	result := template
-	
+
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
-	
+
 	// Handle map[string]interface{}
 	if v.Kind() == reflect.Map {
 		for _, key := range v.MapKeys() {
@@ -466,13 +466,13 @@ func (hg *UniversalHTMLGenerator) processTemplate(template string, data interfac
 		}
 		return result, nil
 	}
-	
+
 	// Handle structs
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	if v.Kind() == reflect.Struct {
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
@@ -484,7 +484,7 @@ func (hg *UniversalHTMLGenerator) processTemplate(template string, data interfac
 			}
 		}
 	}
-	
+
 	return result, nil
 }
 

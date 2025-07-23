@@ -118,13 +118,13 @@ func (lr *LinqResult) SelectFields(fieldNames ...string) *LinqResult {
 func (lr *LinqResult) OrderBy(keySelector func(interface{}) interface{}) *LinqResult {
 	result := make([]interface{}, len(lr.data))
 	copy(result, lr.data)
-	
+
 	sort.Slice(result, func(i, j int) bool {
 		key1 := keySelector(result[i])
 		key2 := keySelector(result[j])
 		return compareForSort(key1, key2) < 0
 	})
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -132,13 +132,13 @@ func (lr *LinqResult) OrderBy(keySelector func(interface{}) interface{}) *LinqRe
 func (lr *LinqResult) OrderByField(fieldName string) *LinqResult {
 	result := make([]interface{}, len(lr.data))
 	copy(result, lr.data)
-	
+
 	sort.Slice(result, func(i, j int) bool {
 		val1 := getFieldValue(result[i], fieldName)
 		val2 := getFieldValue(result[j], fieldName)
 		return compareForSort(val1, val2) < 0
 	})
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -146,13 +146,13 @@ func (lr *LinqResult) OrderByField(fieldName string) *LinqResult {
 func (lr *LinqResult) OrderByDescending(keySelector func(interface{}) interface{}) *LinqResult {
 	result := make([]interface{}, len(lr.data))
 	copy(result, lr.data)
-	
+
 	sort.Slice(result, func(i, j int) bool {
 		key1 := keySelector(result[i])
 		key2 := keySelector(result[j])
 		return compareForSort(key1, key2) > 0
 	})
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -160,25 +160,25 @@ func (lr *LinqResult) OrderByDescending(keySelector func(interface{}) interface{
 func (lr *LinqResult) OrderByFieldDescending(fieldName string) *LinqResult {
 	result := make([]interface{}, len(lr.data))
 	copy(result, lr.data)
-	
+
 	sort.Slice(result, func(i, j int) bool {
 		val1 := getFieldValue(result[i], fieldName)
 		val2 := getFieldValue(result[j], fieldName)
 		return compareForSort(val1, val2) > 0
 	})
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
 // GroupBy groups elements by a key selector
 func (lr *LinqResult) GroupBy(keySelector func(interface{}) interface{}) []*GroupResult {
 	groups := make(map[interface{}][]interface{})
-	
+
 	for _, item := range lr.data {
 		key := keySelector(item)
 		groups[key] = append(groups[key], item)
 	}
-	
+
 	var result []*GroupResult
 	for key, items := range groups {
 		result = append(result, &GroupResult{
@@ -187,21 +187,21 @@ func (lr *LinqResult) GroupBy(keySelector func(interface{}) interface{}) []*Grou
 			Count: len(items),
 		})
 	}
-	
+
 	return result
 }
 
 // GroupByField groups elements by field name
 func (lr *LinqResult) GroupByField(fieldName string) []*GroupResult {
 	groups := make(map[interface{}][]interface{})
-	
+
 	for _, item := range lr.data {
 		key := getFieldValue(item, fieldName)
 		if key != nil {
 			groups[key] = append(groups[key], item)
 		}
 	}
-	
+
 	var result []*GroupResult
 	for key, items := range groups {
 		result = append(result, &GroupResult{
@@ -210,7 +210,7 @@ func (lr *LinqResult) GroupByField(fieldName string) []*GroupResult {
 			Count: len(items),
 		})
 	}
-	
+
 	return result
 }
 
@@ -265,7 +265,7 @@ func (lr *LinqResult) SkipWhile(predicate func(interface{}) bool) *LinqResult {
 func (lr *LinqResult) Distinct() *LinqResult {
 	seen := make(map[interface{}]bool)
 	var result []interface{}
-	
+
 	for _, item := range lr.data {
 		key := fmt.Sprintf("%v", item)
 		if !seen[key] {
@@ -273,7 +273,7 @@ func (lr *LinqResult) Distinct() *LinqResult {
 			result = append(result, item)
 		}
 	}
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -281,7 +281,7 @@ func (lr *LinqResult) Distinct() *LinqResult {
 func (lr *LinqResult) DistinctBy(keySelector func(interface{}) interface{}) *LinqResult {
 	seen := make(map[interface{}]bool)
 	var result []interface{}
-	
+
 	for _, item := range lr.data {
 		key := keySelector(item)
 		if !seen[key] {
@@ -289,7 +289,7 @@ func (lr *LinqResult) DistinctBy(keySelector func(interface{}) interface{}) *Lin
 			result = append(result, item)
 		}
 	}
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -297,7 +297,7 @@ func (lr *LinqResult) DistinctBy(keySelector func(interface{}) interface{}) *Lin
 func (lr *LinqResult) DistinctByField(fieldName string) *LinqResult {
 	seen := make(map[interface{}]bool)
 	var result []interface{}
-	
+
 	for _, item := range lr.data {
 		key := getFieldValue(item, fieldName)
 		if key != nil && !seen[key] {
@@ -305,7 +305,7 @@ func (lr *LinqResult) DistinctByField(fieldName string) *LinqResult {
 			result = append(result, item)
 		}
 	}
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -323,10 +323,10 @@ func (lr *LinqResult) Intersect(other *LinqResult) *LinqResult {
 		key := fmt.Sprintf("%v", item)
 		otherSet[key] = true
 	}
-	
+
 	var result []interface{}
 	seen := make(map[string]bool)
-	
+
 	for _, item := range lr.data {
 		key := fmt.Sprintf("%v", item)
 		if otherSet[key] && !seen[key] {
@@ -334,7 +334,7 @@ func (lr *LinqResult) Intersect(other *LinqResult) *LinqResult {
 			result = append(result, item)
 		}
 	}
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -345,16 +345,16 @@ func (lr *LinqResult) Except(other *LinqResult) *LinqResult {
 		key := fmt.Sprintf("%v", item)
 		otherSet[key] = true
 	}
-	
+
 	var result []interface{}
-	
+
 	for _, item := range lr.data {
 		key := fmt.Sprintf("%v", item)
 		if !otherSet[key] {
 			result = append(result, item)
 		}
 	}
-	
+
 	return &LinqResult{data: result, engine: lr.engine}
 }
 
@@ -521,7 +521,7 @@ func (lr *LinqResult) Min(selector func(interface{}) interface{}) interface{} {
 	if len(lr.data) == 0 {
 		return nil
 	}
-	
+
 	min := selector(lr.data[0])
 	for i := 1; i < len(lr.data); i++ {
 		val := selector(lr.data[i])
@@ -537,7 +537,7 @@ func (lr *LinqResult) MinField(fieldName string) interface{} {
 	if len(lr.data) == 0 {
 		return nil
 	}
-	
+
 	min := getFieldValue(lr.data[0], fieldName)
 	for i := 1; i < len(lr.data); i++ {
 		val := getFieldValue(lr.data[i], fieldName)
@@ -553,7 +553,7 @@ func (lr *LinqResult) Max(selector func(interface{}) interface{}) interface{} {
 	if len(lr.data) == 0 {
 		return nil
 	}
-	
+
 	max := selector(lr.data[0])
 	for i := 1; i < len(lr.data); i++ {
 		val := selector(lr.data[i])
@@ -569,7 +569,7 @@ func (lr *LinqResult) MaxField(fieldName string) interface{} {
 	if len(lr.data) == 0 {
 		return nil
 	}
-	
+
 	max := getFieldValue(lr.data[0], fieldName)
 	for i := 1; i < len(lr.data); i++ {
 		val := getFieldValue(lr.data[i], fieldName)
@@ -614,19 +614,19 @@ func convertToInterfaceSlice(data interface{}) []interface{} {
 	if v.Kind() != reflect.Slice {
 		return []interface{}{data}
 	}
-	
+
 	result := make([]interface{}, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		result[i] = v.Index(i).Interface()
 	}
-	
+
 	return result
 }
 
 func getFieldValue(item interface{}, fieldName string) interface{} {
 	v := reflect.ValueOf(item)
 	t := reflect.TypeOf(item)
-	
+
 	// Handle map[string]interface{}
 	if v.Kind() == reflect.Map {
 		mapValue := v.MapIndex(reflect.ValueOf(fieldName))
@@ -635,30 +635,30 @@ func getFieldValue(item interface{}, fieldName string) interface{} {
 		}
 		return nil
 	}
-	
+
 	// Handle pointer types
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	// Handle structs
 	if v.Kind() == reflect.Struct {
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
-			
+
 			// Check tag first
 			if tag := field.Tag.Get("linq"); tag == fieldName {
 				return v.Field(i).Interface()
 			}
-			
+
 			// Check field name (case insensitive)
 			if strings.EqualFold(field.Name, fieldName) {
 				return v.Field(i).Interface()
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -689,7 +689,7 @@ func compareValues(fieldValue interface{}, operator string, compareValue interfa
 func compareForSort(a, b interface{}) int {
 	aFloat := toFloat64(a)
 	bFloat := toFloat64(b)
-	
+
 	if aFloat != 0 || bFloat != 0 {
 		if aFloat > bFloat {
 			return 1
@@ -698,7 +698,7 @@ func compareForSort(a, b interface{}) int {
 		}
 		return 0
 	}
-	
+
 	// String comparison
 	aStr := fmt.Sprintf("%v", a)
 	bStr := fmt.Sprintf("%v", b)

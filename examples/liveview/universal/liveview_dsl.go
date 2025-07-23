@@ -65,13 +65,13 @@ func (ul *UniversalLiveViewDSL) setupTokens() {
 	ul.dsl.KeywordToken("RADIO", "radio")
 
 	// Actions and events (Spanish)
-	ul.dsl.KeywordToken("CON", "con")           // with
-	ul.dsl.KeywordToken("PARA", "para")         // for
-	ul.dsl.KeywordToken("USANDO", "usando")     // using
-	ul.dsl.KeywordToken("ACCION", "accion")     // action
-	ul.dsl.KeywordToken("EVENTO", "evento")     // event
-	ul.dsl.KeywordToken("CLASE", "clase")       // class
-	ul.dsl.KeywordToken("ESTILO", "estilo")     // style
+	ul.dsl.KeywordToken("CON", "con")             // with
+	ul.dsl.KeywordToken("PARA", "para")           // for
+	ul.dsl.KeywordToken("USANDO", "usando")       // using
+	ul.dsl.KeywordToken("ACCION", "accion")       // action
+	ul.dsl.KeywordToken("EVENTO", "evento")       // event
+	ul.dsl.KeywordToken("CLASE", "clase")         // class
+	ul.dsl.KeywordToken("ESTILO", "estilo")       // style
 	ul.dsl.KeywordToken("PLANTILLA", "plantilla") // template
 
 	// Actions and events (English)

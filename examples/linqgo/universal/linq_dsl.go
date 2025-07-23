@@ -37,7 +37,7 @@ func (ul *UniversalLinqDSL) setupTokens() {
 	ul.dsl.Token("NUMBER", `[0-9]+\.?[0-9]*`)
 	ul.dsl.Token("WORD", `[a-zA-Z][a-zA-Z0-9_]*`)
 	ul.dsl.Token("ASTERISK", `\*`)
-	
+
 	// LINQ keywords - ORDER must be after WORD is defined
 	ul.dsl.KeywordToken("FROM", "from")
 	ul.dsl.KeywordToken("WHERE", "where")
