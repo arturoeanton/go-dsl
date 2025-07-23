@@ -636,6 +636,7 @@ dsl.Rule("expr", []string{"NUM"}, "procesar")
 - **🔥 Estabilidad de Producción**: Sin errores intermitentes, listo para sistemas críticos
 - **🔥 Builder Pattern API**: Construcción fluida y elegante de DSLs
 - **🔥 Configuración Externa**: DSLs definidos en YAML/JSON para mayor flexibilidad
+- **🔥 Herramientas de Desarrollo**: Visualizador de AST, validador de gramática y REPL interactivo
 
 ## 📚 Recursos Adicionales
 
@@ -644,6 +645,26 @@ dsl.Rule("expr", []string{"NUM"}, "procesar")
 - **Tests Unitarios**: `/pkg/dslbuilder/dsl_test.go` 
 - **Documentación de Mejoras**: `docs/es/propuesta_de_mejoras.md`
 - **README en Inglés**: Documentación completa con ejemplos multi-país
+
+## 🛠️ Herramientas de Línea de Comandos
+
+### Visualizador de AST
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/ast_viewer@latest
+ast_viewer -dsl calculadora.yaml -input "10 + 20 * 30" -format tree
+```
+
+### Validador de Gramática
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/validator@latest
+validator -dsl midsl.yaml -verbose -info
+```
+
+### REPL Interactivo
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/repl@latest
+repl -dsl calculadora.yaml -context datos.json
+```
 
 ## ⚡ Empezar Ahora
 

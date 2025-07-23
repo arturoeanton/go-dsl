@@ -1,12 +1,12 @@
 name: "Calculator"
 tokens:
   NUMBER: "[0-9]+"
-  PLUS: "+"
-  MINUS: "-"
-  MULTIPLY: "*"
-  DIVIDE: "/"
-  LPAREN: "("
-  RPAREN: ")"
+  PLUS: "\\+"
+  MINUS: "\\-"
+  MULTIPLY: "\\*"
+  DIVIDE: "\\/"
+  LPAREN: "\\("
+  RPAREN: "\\)"
 rules:
   - name: "expr"
     pattern: ["NUMBER", "PLUS", "NUMBER"]

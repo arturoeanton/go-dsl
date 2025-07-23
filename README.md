@@ -22,6 +22,7 @@ go-dsl allows you to quickly build domain-specific languages with custom syntax,
 - 🎨 **KeywordToken Priority**: Solve token conflicts with priority-based matching
 - 🔨 **Builder Pattern API**: Fluent interface for DSL construction
 - 📄 **Declarative Syntax**: Define DSLs using YAML/JSON configuration files
+- 🛠️ **Developer Tools**: AST viewer, grammar validator, and interactive REPL
 
 ## 🚀 Quick Start
 
@@ -245,11 +246,51 @@ go-dsl consists of several key components:
 5. **Builder Pattern**: Chain methods for fluent DSL construction
 6. **Declarative Syntax**: Define DSLs externally in YAML/JSON
 
+## 🛠️ Command-Line Tools
+
+go-dsl includes powerful command-line tools to help you develop and debug your DSLs:
+
+### AST Viewer
+Visualize the Abstract Syntax Tree of your DSL parsing results:
+
+```bash
+# Install
+go install github.com/arturoeanton/go-dsl/cmd/ast_viewer@latest
+
+# Usage
+ast_viewer -dsl calculator.yaml -input "10 + 20 * 30" -format tree
+```
+
+### Grammar Validator
+Validate your DSL grammar and detect potential issues:
+
+```bash
+# Install
+go install github.com/arturoeanton/go-dsl/cmd/validator@latest
+
+# Usage
+validator -dsl mydsl.yaml -verbose -info
+```
+
+### Interactive REPL
+Test and explore your DSL interactively:
+
+```bash
+# Install
+go install github.com/arturoeanton/go-dsl/cmd/repl@latest
+
+# Usage
+repl -dsl calculator.yaml -context data.json
+```
+
+See the [cmd/](cmd/) directory for detailed documentation of each tool.
+
 ## 📖 Documentation
 
 - [Quick Start Guide](docs/es/guia_rapida.md) (Spanish)
 - [API Reference](pkg/dslbuilder/)
 - [Examples](examples/)
+- [Command-Line Tools](cmd/)
 
 ## 🤝 Contributing
 

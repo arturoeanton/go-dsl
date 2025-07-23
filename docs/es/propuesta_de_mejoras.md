@@ -124,21 +124,66 @@ rules:
 - `SaveToJSON()` / `SaveToJSONFile()` - Exportar DSL a JSON
 - **100% compatible con API existente** - Todo el código anterior sigue funcionando
 
-#### 5. Herramientas de Debug y Desarrollo
-**Esfuerzo**: Alto (7-10 días)  
-**Impacto**: Medio - Productividad del desarrollador
+#### ✅ 5. Herramientas de Debug y Desarrollo → **COMPLETADO** (Julio 2025)
+**Esfuerzo**: Alto (7-10 días) → **IMPLEMENTADO**  
+**Impacto**: Medio - Productividad del desarrollador → **LOGRADO**
 
-- [ ] **AST Visualizer**: Herramienta para visualizar el árbol de parsing
-- [ ] **Debugger paso a paso**: Para seguir el proceso de parsing
-- [ ] **Grammar Validator**: Detectar problemas en gramáticas antes del runtime
-- [ ] **REPL interactivo**: Para probar DSLs rápidamente
+- [x] **AST Visualizer**: Herramienta para visualizar el árbol de parsing → **✅ IMPLEMENTADO**
+- [ ] ~~**Debugger paso a paso**: Para seguir el proceso de parsing~~ → **POSTPONED** (no crítico)
+- [x] **Grammar Validator**: Detectar problemas en gramáticas antes del runtime → **✅ IMPLEMENTADO**
+- [x] **REPL interactivo**: Para probar DSLs rápidamente → **✅ IMPLEMENTADO**
 
+**🎯 Herramientas implementadas:**
+
+**cmd/ast_viewer** - Visualizador de AST
 ```bash
-go-dsl repl --grammar calculator.yaml
-> 2 + 3
-AST: Add(Number(2), Number(3))
-Result: 5
+# Visualizar árbol de parsing en JSON
+ast_viewer -dsl calculator.yaml -input "10 + 20"
+
+# Formato árbol visual
+ast_viewer -dsl calculator.yaml -input "10 + 20 * 30" -format tree
+
+# Modo verbose con detalles
+ast_viewer -dsl accounting.yaml -input "venta de 1000 con iva" -format tree -verbose
 ```
+
+**cmd/validator** - Validador de Gramática
+```bash
+# Validación básica
+validator -dsl calculator.yaml
+
+# Validación detallada con información
+validator -dsl query.json -verbose -info
+
+# Validación estricta con entrada de prueba
+validator -dsl accounting.yaml -test "venta de 1000" -strict
+
+# Salida JSON para CI/CD
+validator -dsl mydsl.yaml -format json
+```
+
+**cmd/repl** - REPL Interactivo
+```bash
+# Sesión interactiva
+repl -dsl calculator.yaml
+
+# Con contexto e historial
+repl -dsl query.json -context data.json -history session.log
+
+# Modo debug con AST y timing
+repl -dsl mydsl.yaml -ast -time
+
+# Ejecutar comandos y salir
+repl -dsl accounting.yaml -exec "venta de 1000" -exec "venta de 2000"
+```
+
+**✅ Características implementadas:**
+- Visualización de AST en múltiples formatos (JSON, YAML, árbol)
+- Validación completa de gramática con detección de errores
+- REPL interactivo con contexto, historial y comandos especiales
+- Documentación completa en inglés y español
+- Integración con CI/CD mediante salida JSON
+- Compatibilidad con configuraciones YAML/JSON
 
 #### ✅ 6. Soporte para Gramáticas Avanzadas  
 **Esfuerzo**: Alto (8-12 días) → **✅ COMPLETADO PARCIALMENTE**  
