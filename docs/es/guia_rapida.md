@@ -12,6 +12,8 @@ go-dsl es un constructor de lenguajes específicos de dominio (DSL) dinámico pa
 - 🧠 **Parser Listo para Producción**: Maneja escenarios empresariales complejos con estabilidad
 - 🎨 **Prioridad de KeywordToken**: Resuelve conflictos de tokens con coincidencia basada en prioridad
 - ⚡ **Alto Rendimiento**: Parsing eficiente con tokenización inteligente
+- 🔨 **API Builder Pattern**: Interfaz fluida para construcción de DSL
+- 📄 **Sintaxis Declarativa**: Define DSLs usando archivos de configuración YAML/JSON
 
 ## Instalación
 
@@ -31,17 +33,25 @@ import (
 )
 
 func main() {
-    // 1. Crear una instancia DSL
+    // Opción 1: API Tradicional
     dsl := dslbuilder.New("MiDSL")
-    
-    // 2. Definir tokens - ¡USA KeywordToken para palabras clave!
     dsl.KeywordToken("HELLO", "hola")  // Prioridad alta (90)
     dsl.KeywordToken("WORLD", "mundo") // Prioridad alta (90)
-    
-    // 3. Definir reglas de gramática
     dsl.Rule("saludo", []string{"HELLO", "WORLD"}, "procesarSaludo")
     
-    // 4. Definir acciones para las reglas
+    // Opción 2: API Builder Pattern (Fluida)
+    dsl = dslbuilder.New("MiDSL").
+        WithKeywordToken("HELLO", "hola").
+        WithKeywordToken("WORLD", "mundo").
+        WithRule("saludo", []string{"HELLO", "WORLD"}, "procesarSaludo").
+        WithAction("procesarSaludo", func(args []interface{}) (interface{}, error) {
+            return "¡Hola, mundo!", nil
+        })
+    
+    // Opción 3: Cargar desde YAML
+    dsl, _ = dslbuilder.LoadFromYAMLFile("mi_dsl.yaml")
+    
+    // Definir acciones (necesario para todas las opciones)
     dsl.Action("procesarSaludo", func(args []interface{}) (interface{}, error) {
         return "¡Hola, mundo!", nil
     })
@@ -539,6 +549,73 @@ func TestMiDSL(t *testing.T) {
 }
 ```
 
+## 🆕 Nuevas Características (Julio 2025)
+
+### API Builder Pattern
+
+Construye DSLs con una interfaz fluida:
+
+```go
+dsl := dslbuilder.New("Calculadora").
+    WithToken("NUMERO", "[0-9]+").
+    WithToken("MAS", "\\+").
+    WithRule("expr", []string{"NUMERO", "MAS", "NUMERO"}, "sumar").
+    WithAction("sumar", func(args []interface{}) (interface{}, error) {
+        a, _ := strconv.Atoi(args[0].(string))
+        b, _ := strconv.Atoi(args[2].(string))
+        return a + b, nil
+    }).
+    WithContext("precision", 2)
+```
+
+### Sintaxis Declarativa YAML/JSON
+
+Define tu DSL en archivos externos:
+
+```yaml
+# calculadora.yaml
+name: "Calculadora"
+tokens:
+  NUMERO: "[0-9]+"
+  MAS: "+"
+  MENOS: "-"
+  POR: "*"
+  ENTRE: "/"
+rules:
+  - name: "expr"
+    pattern: ["NUMERO", "MAS", "NUMERO"]
+    action: "sumar"
+  - name: "expr"
+    pattern: ["NUMERO", "MENOS", "NUMERO"]
+    action: "restar"
+context:
+  precision: 2
+  moneda: "EUR"
+```
+
+```go
+// Cargar desde YAML
+dsl, err := dslbuilder.LoadFromYAMLFile("calculadora.yaml")
+
+// Cargar desde JSON
+dsl, err := dslbuilder.LoadFromJSONFile("calculadora.json")
+
+// Exportar configuración actual
+err = dsl.SaveToYAMLFile("mi_dsl.yaml")
+err = dsl.SaveToJSONFile("mi_dsl.json")
+```
+
+### Compatibilidad Total
+
+Todo el código existente sigue funcionando sin cambios:
+
+```go
+// API tradicional sigue funcionando al 100%
+dsl := dslbuilder.New("MiDSL")
+dsl.Token("NUM", "[0-9]+")
+dsl.Rule("expr", []string{"NUM"}, "procesar")
+```
+
 ## 🎯 Casos de Uso Empresariales
 
 ### Casos de Éxito Comprobados
@@ -557,10 +634,13 @@ func TestMiDSL(t *testing.T) {
 - **🔥 Contexto Dinámico**: Como r2lang, para datos que cambian en tiempo real
 - **🔥 Multi-País/Multi-Moneda**: Misma gramática, diferentes contextos fiscales
 - **🔥 Estabilidad de Producción**: Sin errores intermitentes, listo para sistemas críticos
+- **🔥 Builder Pattern API**: Construcción fluida y elegante de DSLs
+- **🔥 Configuración Externa**: DSLs definidos en YAML/JSON para mayor flexibilidad
 
 ## 📚 Recursos Adicionales
 
 - **Ejemplos Empresariales Completos**: `/examples/contabilidad/`, `/examples/accounting/`
+- **Ejemplo Declarativo**: `/examples/declarative/` - YAML/JSON y Builder Pattern
 - **Tests Unitarios**: `/pkg/dslbuilder/dsl_test.go` 
 - **Documentación de Mejoras**: `docs/es/propuesta_de_mejoras.md`
 - **README en Inglés**: Documentación completa con ejemplos multi-país

@@ -144,6 +144,44 @@ func (d *DSL) Action(name string, fn ActionFunc) {
 	d.grammar.actions[name] = fn
 }
 
+// Builder Pattern Methods for fluent API
+
+// WithToken adds a token and returns the DSL for chaining
+func (d *DSL) WithToken(name, pattern string) *DSL {
+	d.Token(name, pattern)
+	return d
+}
+
+// WithKeywordToken adds a keyword token and returns the DSL for chaining
+func (d *DSL) WithKeywordToken(name, keyword string) *DSL {
+	d.KeywordToken(name, keyword)
+	return d
+}
+
+// WithRule adds a rule and returns the DSL for chaining
+func (d *DSL) WithRule(name string, pattern []string, actionName string) *DSL {
+	d.Rule(name, pattern, actionName)
+	return d
+}
+
+// WithAction adds an action and returns the DSL for chaining
+func (d *DSL) WithAction(name string, fn ActionFunc) *DSL {
+	d.Action(name, fn)
+	return d
+}
+
+// WithContext sets a context value and returns the DSL for chaining
+func (d *DSL) WithContext(key string, value interface{}) *DSL {
+	d.SetContext(key, value)
+	return d
+}
+
+// WithFunction registers a Go function and returns the DSL for chaining
+func (d *DSL) WithFunction(name string, fn interface{}) *DSL {
+	d.Set(name, fn)
+	return d
+}
+
 // SetContext sets a context variable
 func (d *DSL) SetContext(key string, value interface{}) {
 	d.context[key] = value

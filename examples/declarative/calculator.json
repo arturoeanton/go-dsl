@@ -1,0 +1,48 @@
+{
+  "name": "CalculatorBuilder",
+  "tokens": {
+    "DIVIDE": "/",
+    "MINUS": "-",
+    "MULTIPLY": "\\*",
+    "NUMBER": "[0-9]+",
+    "PLUS": "\\+"
+  },
+  "rules": [
+    {
+      "name": "expr",
+      "pattern": [
+        "NUMBER",
+        "PLUS",
+        "NUMBER"
+      ],
+      "action": "add"
+    },
+    {
+      "name": "expr",
+      "pattern": [
+        "NUMBER",
+        "MINUS",
+        "NUMBER"
+      ],
+      "action": "subtract"
+    },
+    {
+      "name": "expr",
+      "pattern": [
+        "NUMBER",
+        "MULTIPLY",
+        "NUMBER"
+      ],
+      "action": "multiply"
+    },
+    {
+      "name": "expr",
+      "pattern": [
+        "NUMBER",
+        "DIVIDE",
+        "NUMBER"
+      ],
+      "action": "divide"
+    }
+  ]
+}

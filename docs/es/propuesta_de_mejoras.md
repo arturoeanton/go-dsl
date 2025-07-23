@@ -88,31 +88,41 @@ func GetDetailedError(err error) string
 
 ### ⚡ PRIORIDAD MEDIA (Siguiente Iteración)
 
-#### 4. Mejoras en la API
-**Esfuerzo**: Medio (4-6 días)  
-**Impacto**: Medio - Usabilidad
+#### ✅ 4. Mejoras en la API → **COMPLETADO** (Julio 2025)
+**Esfuerzo**: Medio (4-6 días) → **IMPLEMENTADO**  
+**Impacto**: Medio - Usabilidad → **LOGRADO**
 
-- [ ] **Builder Pattern Completo**: Permitir definición fluida de DSL
+- [x] **Builder Pattern Completo**: Permitir definición fluida de DSL → **✅ IMPLEMENTADO**
 ```go
+// Ahora disponible - API fluida completa
 dsl := dslbuilder.New("MyDSL").
-    Token("NUM", "[0-9]+").
-    Token("PLUS", "\\+").
-    Rule("expr", []string{"NUM", "PLUS", "NUM"}, "add").
-    Action("add", addFunction)
+    WithToken("NUM", "[0-9]+").
+    WithToken("PLUS", "\\+").
+    WithRule("expr", []string{"NUM", "PLUS", "NUM"}, "add").
+    WithAction("add", addFunction).
+    WithContext("precision", 2)
 ```
 
-- [ ] **Sintaxis Declarativa**: Permitir definición en YAML/JSON
+- [x] **Sintaxis Declarativa**: Permitir definición en YAML/JSON → **✅ IMPLEMENTADO**
 ```yaml
-dsl:
-  name: "Calculator"
-  tokens:
-    NUMBER: "[0-9]+"
-    PLUS: "\\+"
-  rules:
-    - name: "expr"
-      pattern: ["NUMBER", "PLUS", "NUMBER"]  
-      action: "add"
+# calculator.yaml - Ahora soportado
+name: "Calculator"
+tokens:
+  NUMBER: "[0-9]+"
+  PLUS: "+"
+  MINUS: "-"
+rules:
+  - name: "expr"
+    pattern: ["NUMBER", "PLUS", "NUMBER"]  
+    action: "add"
 ```
+
+**🎯 Funciones implementadas:**
+- `LoadFromYAML()` / `LoadFromYAMLFile()` - Cargar DSL desde YAML
+- `LoadFromJSON()` / `LoadFromJSONFile()` - Cargar DSL desde JSON
+- `SaveToYAML()` / `SaveToYAMLFile()` - Exportar DSL a YAML
+- `SaveToJSON()` / `SaveToJSONFile()` - Exportar DSL a JSON
+- **100% compatible con API existente** - Todo el código anterior sigue funcionando
 
 #### 5. Herramientas de Debug y Desarrollo
 **Esfuerzo**: Alto (7-10 días)  

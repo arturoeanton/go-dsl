@@ -20,6 +20,8 @@ go-dsl allows you to quickly build domain-specific languages with custom syntax,
 - 🌍 **Enterprise Features**: Multi-language support, complex business rules, tax calculations
 - 🏗️ **Left-Recursive Rules**: Handle complex patterns like `movements -> movements movement`
 - 🎨 **KeywordToken Priority**: Solve token conflicts with priority-based matching
+- 🔨 **Builder Pattern API**: Fluent interface for DSL construction
+- 📄 **Declarative Syntax**: Define DSLs using YAML/JSON configuration files
 
 ## 🚀 Quick Start
 
@@ -41,12 +43,22 @@ import (
 )
 
 func main() {
-    // Create a new DSL
+    // Option 1: Traditional API
     dsl := dslbuilder.New("HelloDSL")
-    
-    // Define tokens
     dsl.KeywordToken("HELLO", "hello")
     dsl.KeywordToken("WORLD", "world")
+    
+    // Option 2: Fluent Builder API
+    dsl = dslbuilder.New("HelloDSL").
+        WithKeywordToken("HELLO", "hello").
+        WithKeywordToken("WORLD", "world").
+        WithRule("greeting", []string{"HELLO", "WORLD"}, "greet").
+        WithAction("greet", func(args []interface{}) (interface{}, error) {
+            return "Hello, World!", nil
+        })
+        
+    // Option 3: Load from YAML
+    dsl, _ = dslbuilder.LoadFromYAMLFile("hello.yaml")
     
     // Define grammar rule
     dsl.Rule("greeting", []string{"HELLO", "WORLD"}, "greet")
@@ -169,6 +181,41 @@ result2, _ := linq.Use(`select city from users where city == Madrid`, context2)
 // → Dynamic queries on different data sources
 ```
 
+### 4. Declarative DSL Definition
+
+Define your DSL using YAML or JSON:
+
+```yaml
+# calculator.yaml
+name: "Calculator"
+tokens:
+  NUMBER: "[0-9]+"
+  PLUS: "+"
+  MINUS: "-"
+  MULTIPLY: "*"
+  DIVIDE: "/"
+rules:
+  - name: "expr"
+    pattern: ["NUMBER", "PLUS", "NUMBER"]
+    action: "add"
+  - name: "expr"
+    pattern: ["NUMBER", "MINUS", "NUMBER"]
+    action: "subtract"
+```
+
+```go
+// Load DSL from YAML
+calcDSL, _ := dslbuilder.LoadFromYAMLFile("calculator.yaml")
+
+// Register actions
+calcDSL.Action("add", func(args []interface{}) (interface{}, error) {
+    // Implementation
+})
+
+// Export DSL to JSON
+calcDSL.SaveToJSONFile("calculator.json")
+```
+
 ## 🎯 Use Cases
 
 - **Configuration Languages**: Create domain-specific config file formats
@@ -186,6 +233,8 @@ go-dsl consists of several key components:
 - **Parser**: Processes tokens according to grammar rules with left-recursion support
 - **Actions**: Execute semantic actions when grammar rules match
 - **Context System**: Provides dynamic data access during parsing
+- **Builder API**: Fluent interface for DSL construction
+- **Declarative Loader**: YAML/JSON configuration support
 
 ### Key Concepts
 
@@ -193,6 +242,8 @@ go-dsl consists of several key components:
 2. **Rules**: Specify how tokens combine to form valid expressions
 3. **Actions**: Define what happens when rules are matched
 4. **Context**: Pass dynamic data to your DSL operations
+5. **Builder Pattern**: Chain methods for fluent DSL construction
+6. **Declarative Syntax**: Define DSLs externally in YAML/JSON
 
 ## 📖 Documentation
 
@@ -216,7 +267,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🔗 Related Projects
 
-- [r2lang](https://github.com/arturoeanton/r2lang) - The inspiration for context functionality
+- [r2lang](https://github.com/arturoeanton/go-r2lang) - The inspiration for context functionality
 
 ## 👨‍💻 Author
 
