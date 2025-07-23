@@ -16,11 +16,11 @@ type UniversalRuleEngine struct {
 
 // Rule represents a business rule with conditions and actions
 type Rule struct {
-	Name        string
-	Priority    int
-	Conditions  []Condition
-	Actions     []Action
-	Salience    int // Higher salience = higher priority
+	Name       string
+	Priority   int
+	Conditions []Condition
+	Actions    []Action
+	Salience   int // Higher salience = higher priority
 }
 
 // Condition represents a rule condition
@@ -63,7 +63,7 @@ func (re *UniversalRuleEngine) AddRule(rule *Rule) {
 func (re *UniversalRuleEngine) FireAllRules() error {
 	// Sort rules by salience (priority)
 	re.sortRulesBySalience()
-	
+
 	changed := true
 	for changed {
 		changed = false
@@ -72,7 +72,7 @@ func (re *UniversalRuleEngine) FireAllRules() error {
 			if re.executed[ruleKey] {
 				continue
 			}
-			
+
 			if re.evaluateRule(rule) {
 				err := re.executeRule(rule)
 				if err != nil {
@@ -83,7 +83,7 @@ func (re *UniversalRuleEngine) FireAllRules() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -91,23 +91,23 @@ func (re *UniversalRuleEngine) FireAllRules() error {
 func (re *UniversalRuleEngine) GetFieldNames(item interface{}) []string {
 	v := reflect.ValueOf(item)
 	t := reflect.TypeOf(item)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	var fields []string
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
-		
+
 		if tag := field.Tag.Get("drools"); tag != "" {
 			fields = append(fields, tag)
 		} else {
 			fields = append(fields, strings.ToLower(field.Name))
 		}
 	}
-	
+
 	return fields
 }
 
@@ -115,24 +115,24 @@ func (re *UniversalRuleEngine) GetFieldNames(item interface{}) []string {
 func (re *UniversalRuleEngine) GetFieldValue(item interface{}, fieldName string) interface{} {
 	v := reflect.ValueOf(item)
 	t := reflect.TypeOf(item)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
-		
+
 		if tag := field.Tag.Get("drools"); tag == fieldName {
 			return v.Field(i).Interface()
 		}
-		
+
 		if strings.ToLower(field.Name) == fieldName {
 			return v.Field(i).Interface()
 		}
 	}
-	
+
 	return nil
 }
 
@@ -142,55 +142,55 @@ func (re *UniversalRuleEngine) SetFieldValue(item interface{}, fieldName string,
 	if v.Kind() != reflect.Ptr {
 		return fmt.Errorf("item must be a pointer to modify fields")
 	}
-	
+
 	v = v.Elem()
 	t := v.Type()
-	
+
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
-		
+
 		match := false
 		if tag := field.Tag.Get("drools"); tag == fieldName {
 			match = true
 		} else if strings.ToLower(field.Name) == fieldName {
 			match = true
 		}
-		
+
 		if match {
 			fieldValue := v.Field(i)
 			if !fieldValue.CanSet() {
 				return fmt.Errorf("field %s cannot be set", fieldName)
 			}
-			
+
 			// Convert value to field type
 			convertedValue, err := re.convertValue(value, fieldValue.Type())
 			if err != nil {
 				return err
 			}
-			
+
 			fieldValue.Set(convertedValue)
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("field %s not found", fieldName)
 }
 
 // FindFactsByType finds all facts of a specific type
 func (re *UniversalRuleEngine) FindFactsByType(typeName string) []interface{} {
 	var result []interface{}
-	
+
 	for _, fact := range re.facts {
 		t := reflect.TypeOf(fact)
 		if t.Kind() == reflect.Ptr {
 			t = t.Elem()
 		}
-		
+
 		if strings.ToLower(t.Name()) == strings.ToLower(typeName) {
 			result = append(result, fact)
 		}
 	}
-	
+
 	return result
 }
 
@@ -207,18 +207,18 @@ func (re *UniversalRuleEngine) evaluateRule(rule *Rule) bool {
 // evaluateCondition checks if a single condition is met
 func (re *UniversalRuleEngine) evaluateCondition(condition Condition) bool {
 	facts := re.FindFactsByType(condition.Entity)
-	
+
 	for _, fact := range facts {
 		fieldValue := re.GetFieldValue(fact, condition.Field)
 		if fieldValue == nil {
 			continue
 		}
-		
+
 		if re.compareValues(fieldValue, condition.Operator, condition.Value) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -255,14 +255,14 @@ func (re *UniversalRuleEngine) executeAction(action Action) error {
 // executeSetAction sets a field value in matching facts
 func (re *UniversalRuleEngine) executeSetAction(action Action) error {
 	facts := re.FindFactsByType(action.Target)
-	
+
 	for _, fact := range facts {
 		err := re.SetFieldValue(fact, action.Field, action.Value)
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -280,18 +280,18 @@ func (re *UniversalRuleEngine) executeInsertAction(action Action) error {
 // executeRetractAction removes matching facts
 func (re *UniversalRuleEngine) executeRetractAction(action Action) error {
 	newFacts := make([]interface{}, 0)
-	
+
 	for _, fact := range re.facts {
 		t := reflect.TypeOf(fact)
 		if t.Kind() == reflect.Ptr {
 			t = t.Elem()
 		}
-		
+
 		if strings.ToLower(t.Name()) != strings.ToLower(action.Target) {
 			newFacts = append(newFacts, fact)
 		}
 	}
-	
+
 	re.facts = newFacts
 	return nil
 }
@@ -328,7 +328,7 @@ func (re *UniversalRuleEngine) equalCompare(a, b interface{}) bool {
 func (re *UniversalRuleEngine) numericCompare(a, b interface{}) int {
 	aFloat := re.toFloat64(a)
 	bFloat := re.toFloat64(b)
-	
+
 	if aFloat > bFloat {
 		return 1
 	} else if aFloat < bFloat {
@@ -418,24 +418,24 @@ func (re *UniversalRuleEngine) ClearFacts() {
 func (re *UniversalRuleEngine) FormatFact(fact interface{}) string {
 	v := reflect.ValueOf(fact)
 	t := reflect.TypeOf(fact)
-	
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	
+
 	var parts []string
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i).Interface()
-		
+
 		name := field.Name
 		if tag := field.Tag.Get("drools"); tag != "" {
 			name = tag
 		}
-		
+
 		parts = append(parts, fmt.Sprintf("%s: %v", name, value))
 	}
-	
+
 	return fmt.Sprintf("%s{%s}", t.Name(), strings.Join(parts, ", "))
 }
