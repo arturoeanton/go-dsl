@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // DSLConfig represents the declarative configuration for a DSL
@@ -71,7 +71,14 @@ func createDSLFromConfig(config DSLConfig) (*DSL, error) {
 
 	// Add tokens
 	for name, pattern := range config.Tokens {
-		if isKeywordToken(pattern) {
+		// Check if this is a keyword token saved with word boundaries
+		if isKeywordTokenPattern(pattern) {
+			// Extract the actual keyword from the pattern
+			keyword := extractKeywordFromPattern(pattern)
+			if err := dsl.KeywordToken(name, keyword); err != nil {
+				return nil, fmt.Errorf("failed to add keyword token %s: %w", name, err)
+			}
+		} else if isKeywordToken(pattern) {
 			// If pattern is a simple word without regex, treat as keyword
 			if err := dsl.KeywordToken(name, pattern); err != nil {
 				return nil, fmt.Errorf("failed to add keyword token %s: %w", name, err)
@@ -98,15 +105,40 @@ func createDSLFromConfig(config DSLConfig) (*DSL, error) {
 
 // isKeywordToken checks if a pattern is likely a keyword (simple word without regex)
 func isKeywordToken(pattern string) bool {
-	// If pattern contains regex special characters, it's not a keyword
-	regexChars := []string{"[", "]", "(", ")", "{", "}", "*", "+", "?", ".", "^", "$", "|", "\\"}
-	for _, char := range regexChars {
-		if strings.Contains(pattern, char) {
+	// Keywords should be simple alphanumeric words
+	// Check if the pattern matches a simple word pattern
+	for _, r := range pattern {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '_' || r == '-') {
 			return false
 		}
 	}
-	// If it's just letters, numbers, underscores, or hyphens, it's likely a keyword
-	return true
+	// Must have at least one letter to be a keyword
+	hasLetter := false
+	for _, r := range pattern {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			hasLetter = true
+			break
+		}
+	}
+	return hasLetter && len(pattern) > 0
+}
+
+// isKeywordTokenPattern checks if the pattern is a keyword token with word boundaries
+func isKeywordTokenPattern(pattern string) bool {
+	// Check for the pattern that KeywordToken generates: (?i)\b<word>\b
+	return strings.HasPrefix(pattern, "(?i)\\b") && strings.HasSuffix(pattern, "\\b")
+}
+
+// extractKeywordFromPattern extracts the keyword from a pattern like (?i)\bword\b
+func extractKeywordFromPattern(pattern string) string {
+	// Remove (?i)\b from start and \b from end
+	if isKeywordTokenPattern(pattern) {
+		pattern = strings.TrimPrefix(pattern, "(?i)\\b")
+		pattern = strings.TrimSuffix(pattern, "\\b")
+		return pattern
+	}
+	return pattern
 }
 
 // SaveToYAML exports the DSL configuration to YAML format
