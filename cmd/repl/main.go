@@ -395,7 +395,7 @@ func (r *REPL) execute(input string) {
 
 	if err != nil {
 		fmt.Printf("\033[31mError: %v\033[0m\n", err) // Red color for errors
-		
+
 		// Try to provide helpful suggestions
 		if strings.Contains(err.Error(), "unexpected token") {
 			r.suggestTokens(input)
@@ -430,7 +430,6 @@ func (r *REPL) displayAST(result interface{}) {
 	fmt.Println(string(data))
 	fmt.Println("--- End AST ---\n")
 }
-
 
 func (r *REPL) showHistory() {
 	if len(r.history) == 0 {

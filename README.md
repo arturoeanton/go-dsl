@@ -23,6 +23,9 @@ go-dsl allows you to quickly build domain-specific languages with custom syntax,
 - 🔨 **Builder Pattern API**: Fluent interface for DSL construction
 - 📄 **Declarative Syntax**: Define DSLs using YAML/JSON configuration files
 - 🛠️ **Developer Tools**: AST viewer, grammar validator, and interactive REPL
+- 🎚️ **Operator Precedence**: Configurable precedence and associativity for operators
+- 🔁 **Repetition Rules**: Kleene star (*) and plus (+) for zero/one or more patterns
+- 🎯 **Advanced Grammar**: Support for complex language constructs and patterns
 
 ## 🚀 Quick Start
 
@@ -215,6 +218,57 @@ calcDSL.Action("add", func(args []interface{}) (interface{}, error) {
 
 // Export DSL to JSON
 calcDSL.SaveToJSONFile("calculator.json")
+```
+
+### 5. Advanced Grammar Features
+
+go-dsl now supports advanced grammar features for building sophisticated DSLs:
+
+#### Operator Precedence and Associativity
+
+```go
+// Define rules with precedence (higher number = higher priority)
+calc := dslbuilder.New("Calculator")
+
+// Level 1: Addition/Subtraction (lowest precedence, left associative)
+calc.RuleWithPrecedence("expr", []string{"expr", "PLUS", "term"}, "add", 1, "left")
+calc.RuleWithPrecedence("expr", []string{"expr", "MINUS", "term"}, "subtract", 1, "left")
+
+// Level 2: Multiplication/Division (medium precedence, left associative)
+calc.RuleWithPrecedence("term", []string{"term", "MULTIPLY", "factor"}, "multiply", 2, "left")
+calc.RuleWithPrecedence("term", []string{"term", "DIVIDE", "factor"}, "divide", 2, "left")
+
+// Level 3: Exponentiation (highest precedence, right associative)
+calc.RuleWithPrecedence("factor", []string{"base", "POWER", "factor"}, "power", 3, "right")
+
+// Result: "2 + 3 * 4" = 14 (not 20)
+// Result: "2 ^ 3 ^ 2" = 512 (right associative: 2^(3^2))
+```
+
+#### Repetition Rules (Kleene Star/Plus)
+
+```go
+// Kleene Star (*) - Zero or more repetitions
+list := dslbuilder.New("ListDSL")
+list.RuleWithRepetition("items", "item", "items")  // items -> ε | items item
+
+// Kleene Plus (+) - One or more repetitions  
+list.RuleWithPlusRepetition("identifiers", "ID", "ids")  // ids -> ID | ids ID
+
+// Example: Parse "a b c d" as a list of identifiers
+```
+
+#### Priority-Based Token Matching
+
+```go
+// Keywords have higher priority than generic identifiers
+lang := dslbuilder.New("Language")
+lang.KeywordToken("IF", "if")        // Priority: 90
+lang.KeywordToken("WHILE", "while")  // Priority: 90
+lang.Token("ID", "[a-zA-Z]+")        // Priority: 0
+
+// "if" matches as IF token, not ID
+// "ifx" matches as ID token
 ```
 
 ## 🎯 Use Cases

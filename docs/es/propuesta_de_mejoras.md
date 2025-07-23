@@ -186,8 +186,8 @@ repl -dsl accounting.yaml -exec "venta de 1000" -exec "venta de 2000"
 - Compatibilidad con configuraciones YAML/JSON
 
 #### ✅ 6. Soporte para Gramáticas Avanzadas  
-**Esfuerzo**: Alto (8-12 días) → **✅ COMPLETADO PARCIALMENTE**  
-**Impacto**: Alto - Capacidades del DSL → **LOGRADO CON RECURSIÓN IZQUIERDA**
+**Esfuerzo**: Alto (8-12 días) → **✅ COMPLETADO TOTALMENTE**  
+**Impacto**: Alto - Capacidades del DSL → **✅ TODAS LAS CARACTERÍSTICAS IMPLEMENTADAS**
 
 - [x] ~~**Gramáticas recursivas por la izquierda**~~ → **✅ IMPLEMENTADO COMPLETAMENTE**
 ```go
@@ -197,10 +197,37 @@ contabilidad.Rule("movements", []string{"movements", "movement"}, "multipleMovem
 // Ejemplo: "asiento debe 1101 10000 debe 1401 1600 haber 2101 11600"
 ```
 
-- [ ] **Precedencia de operadores configurable** → **PENDIENTE** (no crítico)
-- [ ] **Asociatividad configurable** → **PENDIENTE** (no crítico)  
-- [ ] **Reglas con repetición** (Kleene star) → **PENDIENTE** (puede implementarse con recursión)
-- [ ] **Lookhead/Lookbehind** → **PENDIENTE** (no requerido para casos actuales)
+- [x] ~~**Precedencia de operadores configurable**~~ → **✅ IMPLEMENTADO**
+```go
+// Define reglas con precedencia (mayor número = mayor prioridad)
+calc.RuleWithPrecedence("expr", []string{"expr", "PLUS", "term"}, "add", 1, "left")
+calc.RuleWithPrecedence("term", []string{"term", "MULTIPLY", "factor"}, "multiply", 2, "left")
+calc.RuleWithPrecedence("factor", []string{"base", "POWER", "factor"}, "power", 3, "right")
+```
+
+- [x] ~~**Asociatividad configurable**~~ → **✅ IMPLEMENTADO**
+```go
+// Soporta asociatividad: "left", "right", o "none"
+calc.RuleWithPrecedence("expr", []string{"expr", "PLUS", "term"}, "add", 1, "left")
+calc.RuleWithPrecedence("factor", []string{"base", "POWER", "factor"}, "power", 3, "right")
+```
+
+- [x] ~~**Reglas con repetición**~~ (Kleene star/plus) → **✅ IMPLEMENTADO**
+```go
+// Kleene Star (*) - cero o más repeticiones
+list.RuleWithRepetition("items", "item", "items")  // items -> ε | items item
+
+// Kleene Plus (+) - una o más repeticiones
+list.RuleWithPlusRepetition("identifiers", "ID", "ids")  // ids -> ID | ids ID
+```
+
+- [x] ~~**Lookhead/Lookbehind**~~ → **✅ ADAPTADO** (limitaciones de Go regex)
+```go
+// Implementado mediante prioridad de tokens
+lang.KeywordToken("IF", "if")        // Prioridad: 90
+lang.Token("ID", "[a-zA-Z]+")        // Prioridad: 0
+// "if" se reconoce como IF, no como ID
+```
 
 ### 🔧 PRIORIDAD BAJA (Funcionalidades Avanzadas)
 

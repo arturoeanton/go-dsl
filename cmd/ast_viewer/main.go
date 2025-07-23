@@ -177,7 +177,7 @@ func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth 
 
 	// Handle different types of data
 	switch v := data.(type) {
-		
+
 	case []interface{}:
 		// Array of values (common in parsing results)
 		node.Type = nodeType
@@ -196,7 +196,7 @@ func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth 
 			child := av.buildASTRecursive(item, childType, depth+1)
 			node.Children = append(node.Children, child)
 		}
-		
+
 	case map[string]interface{}:
 		// Object/map structure
 		node.Type = "object"
@@ -204,7 +204,7 @@ func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth 
 			child := av.buildASTRecursive(value, key, depth+1)
 			node.Children = append(node.Children, child)
 		}
-		
+
 	case string:
 		node.Value = v
 		// Detect token types
@@ -215,15 +215,15 @@ func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth 
 		} else if nodeType == "value" {
 			node.Type = "identifier"
 		}
-		
+
 	case int, int64, float64:
 		node.Type = "number"
 		node.Value = fmt.Sprintf("%v", v)
-		
+
 	case bool:
 		node.Type = "boolean"
 		node.Value = fmt.Sprintf("%v", v)
-		
+
 	default:
 		// Generic handling
 		node.Value = fmt.Sprintf("%v", v)
@@ -309,7 +309,7 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 	} else {
 		fmt.Printf("%s%s %s", prefix, symbol, node.Type)
 	}
-	
+
 	if node.Value != "" {
 		// Color-code values based on type
 		switch node.Type {
@@ -323,7 +323,7 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 			fmt.Printf(": %s", node.Value)
 		}
 	}
-	
+
 	if node.Action != "" {
 		fmt.Printf(" \033[35m→ %s\033[0m", node.Action) // Magenta for actions
 	}
@@ -344,7 +344,7 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 	// Print children
 	for i, child := range node.Children {
 		isLast := i == len(node.Children)-1
-		
+
 		var childPrefix string
 		if isRoot {
 			if isLast {
@@ -363,7 +363,7 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 				childPrefix = prefix + "│  "
 			}
 		}
-		
+
 		av.outputTreeNode(child, childPrefix, false)
 	}
 }

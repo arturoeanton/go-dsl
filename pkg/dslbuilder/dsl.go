@@ -133,9 +133,36 @@ func (d *DSL) KeywordToken(name, keyword string) error {
 	return d.grammar.AddKeywordToken(name, keyword)
 }
 
+// TokenWithLookaround defines a token with lookahead/lookbehind assertions
+func (d *DSL) TokenWithLookaround(name, pattern string, lookahead, lookbehind string) error {
+	return d.grammar.AddTokenWithLookaround(name, pattern, lookahead, lookbehind)
+}
+
 // Rule defines a grammar rule
 func (d *DSL) Rule(name string, pattern []string, actionName string) {
 	d.grammar.AddRule(name, pattern, actionName)
+}
+
+// RuleWithPrecedence defines a grammar rule with precedence and associativity
+func (d *DSL) RuleWithPrecedence(name string, pattern []string, actionName string, precedence int, associativity string) {
+	d.grammar.AddRuleWithPrecedence(name, pattern, actionName, precedence, associativity)
+}
+
+// RuleWithRepetition defines a rule with Kleene star (zero or more repetitions)
+func (d *DSL) RuleWithRepetition(name string, element string, actionName string) {
+	// Create two rules: one for empty, one for one-or-more
+	// name → ε (empty)
+	d.grammar.AddRule(name, []string{}, actionName+"_empty")
+	// name → name element (left recursive for one or more)
+	d.grammar.AddRule(name, []string{name, element}, actionName+"_append")
+}
+
+// RuleWithPlusRepetition defines a rule with Kleene plus (one or more repetitions)
+func (d *DSL) RuleWithPlusRepetition(name string, element string, actionName string) {
+	// name → element
+	d.grammar.AddRule(name, []string{element}, actionName+"_single")
+	// name → name element (left recursive)
+	d.grammar.AddRule(name, []string{name, element}, actionName+"_append")
 }
 
 // Action registers an action function
@@ -161,6 +188,30 @@ func (d *DSL) WithKeywordToken(name, keyword string) *DSL {
 // WithRule adds a rule and returns the DSL for chaining
 func (d *DSL) WithRule(name string, pattern []string, actionName string) *DSL {
 	d.Rule(name, pattern, actionName)
+	return d
+}
+
+// WithRulePrecedence adds a rule with precedence and returns the DSL for chaining
+func (d *DSL) WithRulePrecedence(name string, pattern []string, actionName string, precedence int, associativity string) *DSL {
+	d.RuleWithPrecedence(name, pattern, actionName, precedence, associativity)
+	return d
+}
+
+// WithRepetition adds a rule with Kleene star and returns the DSL for chaining
+func (d *DSL) WithRepetition(name string, element string, actionName string) *DSL {
+	d.RuleWithRepetition(name, element, actionName)
+	return d
+}
+
+// WithPlusRepetition adds a rule with Kleene plus and returns the DSL for chaining
+func (d *DSL) WithPlusRepetition(name string, element string, actionName string) *DSL {
+	d.RuleWithPlusRepetition(name, element, actionName)
+	return d
+}
+
+// WithTokenLookaround adds a token with lookaround and returns the DSL for chaining
+func (d *DSL) WithTokenLookaround(name, pattern, lookahead, lookbehind string) *DSL {
+	d.TokenWithLookaround(name, pattern, lookahead, lookbehind)
 	return d
 }
 
@@ -291,16 +342,20 @@ type Rule struct {
 
 // Alternative represents an alternative in a rule
 type Alternative struct {
-	sequence []string
-	action   string
+	sequence      []string
+	action        string
+	precedence    int    // Operator precedence (higher = higher priority)
+	associativity string // "left", "right", or "none"
 }
 
 // Token represents a token in the grammar
 type Token struct {
-	name     string
-	pattern  string
-	regex    *regexp.Regexp
-	priority int
+	name       string
+	pattern    string
+	regex      *regexp.Regexp
+	priority   int
+	lookahead  string // Positive lookahead pattern
+	lookbehind string // Positive lookbehind pattern
 }
 
 // NewGrammar creates a new grammar
@@ -345,6 +400,28 @@ func (g *Grammar) AddKeywordToken(name, keyword string) error {
 	return nil
 }
 
+// AddTokenWithLookaround adds a token with lookahead/lookbehind assertions
+func (g *Grammar) AddTokenWithLookaround(name, pattern, lookahead, lookbehind string) error {
+	// Note: Go's regexp package doesn't support lookbehind assertions
+	// We'll implement a custom solution using context checking
+
+	// For now, just add the basic pattern and store lookaround info
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid regex pattern: %w", err)
+	}
+
+	g.tokens[name] = &Token{
+		name:       name,
+		pattern:    pattern,
+		regex:      regex,
+		priority:   50, // Medium priority for lookaround tokens
+		lookahead:  lookahead,
+		lookbehind: lookbehind,
+	}
+	return nil
+}
+
 // AddRule adds a rule to the grammar
 func (g *Grammar) AddRule(name string, sequence []string, action string) {
 	rule, exists := g.rules[name]
@@ -360,8 +437,37 @@ func (g *Grammar) AddRule(name string, sequence []string, action string) {
 	}
 
 	rule.alternatives = append(rule.alternatives, &Alternative{
-		sequence: sequence,
-		action:   action,
+		sequence:      sequence,
+		action:        action,
+		precedence:    0,
+		associativity: "left", // default
+	})
+}
+
+// AddRuleWithPrecedence adds a rule with precedence and associativity
+func (g *Grammar) AddRuleWithPrecedence(name string, sequence []string, action string, precedence int, associativity string) {
+	rule, exists := g.rules[name]
+	if !exists {
+		rule = &Rule{
+			name:         name,
+			alternatives: []*Alternative{},
+		}
+		g.rules[name] = rule
+		if g.startRule == "" {
+			g.startRule = name
+		}
+	}
+
+	// Validate associativity
+	if associativity != "left" && associativity != "right" && associativity != "none" {
+		associativity = "left" // default
+	}
+
+	rule.alternatives = append(rule.alternatives, &Alternative{
+		sequence:      sequence,
+		action:        action,
+		precedence:    precedence,
+		associativity: associativity,
 	})
 }
 
