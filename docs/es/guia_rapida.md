@@ -14,6 +14,9 @@ go-dsl es un constructor de lenguajes específicos de dominio (DSL) dinámico pa
 - ⚡ **Alto Rendimiento**: Parsing eficiente con tokenización inteligente
 - 🔨 **API Builder Pattern**: Interfaz fluida para construcción de DSL
 - 📄 **Sintaxis Declarativa**: Define DSLs usando archivos de configuración YAML/JSON
+- 🎚️ **Precedencia de Operadores**: Configurable con asociatividad (izquierda/derecha)
+- 🔁 **Reglas de Repetición**: Kleene star (*) y plus (+) para patrones repetitivos
+- 🛠️ **Herramientas CLI**: AST viewer, validador de gramática, REPL interactivo
 
 ## Instalación
 
@@ -168,6 +171,124 @@ if err != nil {
 }
 
 fmt.Printf("Resultado: %v\n", result.GetOutput()) // Resultado: 8
+```
+
+## 🎯 Características Avanzadas de Gramáticas
+
+### Precedencia y Asociatividad de Operadores
+
+Define la prioridad y dirección de evaluación de operadores:
+
+```go
+calc := dslbuilder.New("Calculadora")
+
+// Nivel 1: Suma/Resta (menor precedencia, asociativa izquierda)
+calc.RuleWithPrecedence("expr", []string{"expr", "PLUS", "term"}, "add", 1, "left")
+calc.RuleWithPrecedence("expr", []string{"expr", "MINUS", "term"}, "subtract", 1, "left")
+calc.Rule("expr", []string{"term"}, "passthrough")
+
+// Nivel 2: Multiplicación/División (precedencia media, asociativa izquierda)
+calc.RuleWithPrecedence("term", []string{"term", "MULTIPLY", "factor"}, "multiply", 2, "left")
+calc.RuleWithPrecedence("term", []string{"term", "DIVIDE", "factor"}, "divide", 2, "left")
+calc.Rule("term", []string{"factor"}, "passthrough")
+
+// Nivel 3: Potenciación (mayor precedencia, asociativa derecha)
+calc.RuleWithPrecedence("factor", []string{"base", "POWER", "factor"}, "power", 3, "right")
+calc.Rule("factor", []string{"primary"}, "passthrough")
+
+// Resultado: "2 + 3 * 4" = 14 (no 20)
+// Resultado: "2 ^ 3 ^ 2" = 512 (asociativa derecha: 2^(3^2))
+```
+
+### Reglas de Repetición (Kleene Star y Plus)
+
+#### Kleene Star (*) - Cero o más repeticiones
+
+```go
+list := dslbuilder.New("ListaDSL")
+
+// Define tokens
+list.Token("WORD", "[a-zA-Z]+")
+
+// Kleene Star: palabras* (cero o más palabras)
+list.RuleWithRepetition("palabras", "WORD", "palabras")
+
+// Genera automáticamente:
+// palabras → ε (vacío)
+// palabras → palabras WORD
+
+// Acciones necesarias
+list.Action("palabras_empty", func(args []interface{}) (interface{}, error) {
+    return []string{}, nil  // Lista vacía
+})
+
+list.Action("palabras_append", func(args []interface{}) (interface{}, error) {
+    lista := args[0].([]string)
+    palabra := args[1].(string)
+    return append(lista, palabra), nil
+})
+
+// Parsea: "", "hola", "hola mundo", etc.
+```
+
+#### Kleene Plus (+) - Una o más repeticiones
+
+```go
+// Kleene Plus: identificadores+ (uno o más)
+dsl.RuleWithPlusRepetition("identificadores", "ID", "ids")
+
+// Genera automáticamente:
+// identificadores → ID
+// identificadores → identificadores ID
+
+// Acciones necesarias
+dsl.Action("ids_single", func(args []interface{}) (interface{}, error) {
+    return []string{args[0].(string)}, nil
+})
+
+dsl.Action("ids_append", func(args []interface{}) (interface{}, error) {
+    lista := args[0].([]string)
+    id := args[1].(string)
+    return append(lista, id), nil
+})
+```
+
+### Prioridad de Tokens Mejorada
+
+Resuelve ambigüedades con sistema de prioridades:
+
+```go
+lang := dslbuilder.New("MiLenguaje")
+
+// Keywords con alta prioridad (90)
+lang.KeywordToken("IF", "if")
+lang.KeywordToken("WHILE", "while")
+lang.KeywordToken("FOR", "for")
+
+// Identificador genérico con baja prioridad (0)
+lang.Token("ID", "[a-zA-Z][a-zA-Z0-9]*")
+
+// "if" se reconoce como IF, no como ID
+// "ifx" se reconoce como ID
+```
+
+### API Builder Pattern (Fluida)
+
+Construye DSLs de forma declarativa y encadenada:
+
+```go
+calc := dslbuilder.New("Calc").
+    WithToken("NUMBER", "[0-9]+").
+    WithToken("PLUS", "\\+").
+    WithToken("MINUS", "-").
+    WithRulePrecedence("expr", []string{"expr", "PLUS", "term"}, "add", 1, "left").
+    WithRulePrecedence("expr", []string{"expr", "MINUS", "term"}, "sub", 1, "left").
+    WithAction("add", func(args []interface{}) (interface{}, error) {
+        return toInt(args[0]) + toInt(args[2]), nil
+    }).
+    WithAction("sub", func(args []interface{}) (interface{}, error) {
+        return toInt(args[0]) - toInt(args[2]), nil
+    })
 ```
 
 ## Ejemplos por Dominio
@@ -642,8 +763,11 @@ dsl.Rule("expr", []string{"NUM"}, "procesar")
 
 - **Ejemplos Empresariales Completos**: `/examples/contabilidad/`, `/examples/accounting/`
 - **Ejemplo Declarativo**: `/examples/declarative/` - YAML/JSON y Builder Pattern
+- **Ejemplo Gramáticas Avanzadas**: `/examples/advanced_grammar/` - Precedencia, asociatividad y repetición
 - **Tests Unitarios**: `/pkg/dslbuilder/dsl_test.go` 
 - **Documentación de Mejoras**: `docs/es/propuesta_de_mejoras.md`
+- **Conceptos Teóricos Avanzados**: `docs/es/introduccion_dsl_segunda_parte.md`
+- **Limitaciones Conocidas**: `docs/es/limitaciones.md`
 - **README en Inglés**: Documentación completa con ejemplos multi-país
 
 ## 🛠️ Herramientas de Línea de Comandos
@@ -684,4 +808,4 @@ go run examples/accounting/main.go
 
 ---
 
-**Última actualización**: 2025-07-23 - Con soporte completo para gramáticas recursivas por la izquierda y estabilidad de producción.
+**Última actualización**: 2025-07-23 - Con soporte completo para gramáticas avanzadas: precedencia de operadores, asociatividad, Kleene star/plus y herramientas de desarrollo mejoradas.

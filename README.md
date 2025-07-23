@@ -341,10 +341,16 @@ See the [cmd/](cmd/) directory for detailed documentation of each tool.
 
 ## 📖 Documentation
 
-- [Quick Start Guide](docs/es/guia_rapida.md) (Spanish)
+### English
 - [API Reference](pkg/dslbuilder/)
 - [Examples](examples/)
 - [Command-Line Tools](cmd/)
+
+### Español
+- [Guía Rápida](docs/es/guia_rapida.md) - Introducción completa y ejemplos
+- [Conceptos Avanzados de DSL](docs/es/introduccion_dsl_segunda_parte.md) - Teoría de gramáticas y conceptos avanzados
+- [Limitaciones](docs/es/limitaciones.md) - Limitaciones conocidas y soluciones
+- [Propuesta de Mejoras](docs/es/propuesta_de_mejoras.md) - Roadmap y mejoras implementadas
 
 ## 🤝 Contributing
 
