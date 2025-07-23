@@ -14,7 +14,7 @@ type ImprovedParser struct {
 	pos     int
 	dsl     *DSL
 	memo    map[string]map[int]memoEntry // Memoization for packrat parsing
-	input   string // Original input for error reporting
+	input   string                       // Original input for error reporting
 }
 
 type memoEntry struct {
@@ -47,17 +47,17 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Parse from start rule
 	p.pos = 0
 	result, err := p.parseRuleWithMemo(p.grammar.startRule)
-	
+
 	// Check if we consumed all tokens
 	if err == nil && p.pos < len(p.tokens) {
 		message := fmt.Sprintf("unexpected token: %s", p.tokens[p.pos].Value)
 		return nil, createParseError(message, p.tokens[p.pos].Start, p.tokens[p.pos].Value, p.input)
 	}
-	
+
 	return result, err
 }
 
@@ -130,7 +130,7 @@ func (p *ImprovedParser) parseRuleWithMemo(ruleName string) (interface{}, error)
 	}
 
 	startPos := p.pos
-	
+
 	// Use iterative approach for left-recursive rules
 	if p.isLeftRecursive(ruleName) {
 		result, err := p.parseLeftRecursive(ruleName)
@@ -211,7 +211,7 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 			success := true
 			for i := 1; i < len(alt.sequence); i++ {
 				symbol := alt.sequence[i]
-				
+
 				if p.pos >= len(p.tokens) {
 					success = false
 					break
@@ -293,7 +293,7 @@ func (p *ImprovedParser) parseRuleRegular(ruleName string) (interface{}, error) 
 		token = "<end of input>"
 		position = len(p.input)
 	}
-	
+
 	message := fmt.Sprintf("no alternative matched for rule %s", ruleName)
 	return nil, createParseError(message, position, token, p.input)
 }

@@ -37,13 +37,13 @@ func main() {
 	query.KeywordToken("NAME", "name")
 	query.KeywordToken("AGE", "age")
 	query.KeywordToken("CITY", "city")
-	
+
 	// Operators
 	query.Token("GT", ">")
 	query.Token("LT", "<")
 	query.Token("EQ", "==")
 	query.Token("NEQ", "!=")
-	
+
 	// Values
 	query.Token("NUMBER", "[0-9]+")
 	query.Token("IDENTIFIER", "[a-zA-Z][a-zA-Z0-9]*")
@@ -51,12 +51,12 @@ func main() {
 	// Define grammar rules - more specific rules first
 	query.Rule("query", []string{"SELECT", "field", "FROM", "IDENTIFIER", "WHERE", "condition"}, "selectWithWhere")
 	query.Rule("query", []string{"SELECT", "field", "FROM", "IDENTIFIER"}, "simpleSelect")
-	
+
 	// Field rules
 	query.Rule("field", []string{"NAME"}, "fieldName")
 	query.Rule("field", []string{"AGE"}, "fieldAge")
 	query.Rule("field", []string{"CITY"}, "fieldCity")
-	
+
 	// Condition rules
 	query.Rule("condition", []string{"field", "GT", "NUMBER"}, "numberConditionGT")
 	query.Rule("condition", []string{"field", "LT", "NUMBER"}, "numberConditionLT")
@@ -192,7 +192,7 @@ func main() {
 			"value":    args[2].(string),
 		}, nil
 	})
-	
+
 	query.Action("numberConditionLT", func(args []interface{}) (interface{}, error) {
 		return map[string]interface{}{
 			"field":    args[0].(string),
@@ -200,7 +200,7 @@ func main() {
 			"value":    args[2].(string),
 		}, nil
 	})
-	
+
 	query.Action("numberConditionEQ", func(args []interface{}) (interface{}, error) {
 		return map[string]interface{}{
 			"field":    args[0].(string),
@@ -208,7 +208,7 @@ func main() {
 			"value":    args[2].(string),
 		}, nil
 	})
-	
+
 	query.Action("numberConditionNEQ", func(args []interface{}) (interface{}, error) {
 		return map[string]interface{}{
 			"field":    args[0].(string),
@@ -225,7 +225,7 @@ func main() {
 			"value":    args[2].(string),
 		}, nil
 	})
-	
+
 	query.Action("stringConditionNEQ", func(args []interface{}) (interface{}, error) {
 		return map[string]interface{}{
 			"field":    args[0].(string),
@@ -268,7 +268,7 @@ func main() {
 
 	// Demo 3: Multiple contexts
 	fmt.Println("=== Demo 3: Multiple contexts and queries ===")
-	
+
 	youngPeople := []Person{
 		{"Sofia Morales", 22, "Barcelona"},
 		{"Diego Ruiz", 24, "Sevilla"},
@@ -304,7 +304,7 @@ func main() {
 	for i, q := range queries {
 		fmt.Printf("%d. %s\n", i+1, q.desc)
 		fmt.Printf("   Query: %s\n", q.query)
-		
+
 		result, err := query.Use(q.query, q.context)
 		if err != nil {
 			fmt.Printf("   Error: %v\n", err)
@@ -316,13 +316,13 @@ func main() {
 
 	// Demo 4: Dynamic context manipulation
 	fmt.Println("=== Demo 4: Dynamic context manipulation ===")
-	
+
 	// Start with empty context
 	contextQuery := dslbuilder.New("DynamicContext")
 	contextQuery.KeywordToken("GET", "get")
 	contextQuery.Token("KEY", "[a-zA-Z]+")
 	contextQuery.Rule("command", []string{"GET", "KEY"}, "getValue")
-	
+
 	contextQuery.Action("getValue", func(args []interface{}) (interface{}, error) {
 		key := args[1].(string)
 		value := contextQuery.GetContext(key)

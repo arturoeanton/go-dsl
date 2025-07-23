@@ -32,7 +32,7 @@ func main() {
 	accounting.KeywordToken("POR", "por")
 	accounting.KeywordToken("CON", "con")
 	accounting.KeywordToken("DESCRIPCION", "descripcion")
-	
+
 	// Values - lower priority
 	accounting.Token("AMOUNT", "[0-9]+\\.?[0-9]*")
 	accounting.Token("STRING", "\"[^\"]*\"")
@@ -44,7 +44,7 @@ func main() {
 	accounting.Rule("transaction", []string{"CREAR", "COMPRA", "DE", "AMOUNT", "CON", "DESCRIPCION", "STRING"}, "fullTransaction")
 	accounting.Rule("transaction", []string{"ASIENTO", "VENTA", "DE", "AMOUNT", "CON", "DESCRIPCION", "STRING"}, "fullTransaction")
 	accounting.Rule("transaction", []string{"ASIENTO", "COMPRA", "DE", "AMOUNT", "CON", "DESCRIPCION", "STRING"}, "fullTransaction")
-	
+
 	// Simple rules (shorter patterns last)
 	accounting.Rule("transaction", []string{"REGISTRAR", "VENTA", "DE", "AMOUNT"}, "simpleTransaction")
 	accounting.Rule("transaction", []string{"REGISTRAR", "COMPRA", "DE", "AMOUNT"}, "simpleTransaction")
@@ -81,7 +81,7 @@ func main() {
 	accounting.Action("simpleTransaction", func(args []interface{}) (interface{}, error) {
 		if len(args) >= 4 {
 			// args[0] = action (registrar/crear/asiento)
-			// args[1] = type (venta/compra)  
+			// args[1] = type (venta/compra)
 			// args[2] = "de"
 			// args[3] = amount
 			transType := args[1].(string)
@@ -118,7 +118,7 @@ func main() {
 		if len(args) >= 7 {
 			// args[0] = action (registrar/crear/asiento)
 			// args[1] = type (venta/compra)
-			// args[2] = "de"  
+			// args[2] = "de"
 			// args[3] = amount
 			// args[4] = "con"
 			// args[5] = "descripcion"

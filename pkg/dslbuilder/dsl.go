@@ -29,11 +29,11 @@ func (pe *ParseError) DetailedError() string {
 	if pe.Line == 0 && pe.Column == 0 {
 		return pe.Message // Fallback to simple message
 	}
-	
+
 	context := pe.getContextLine()
 	pointer := strings.Repeat(" ", pe.Column-1) + "^"
-	
-	return fmt.Sprintf("%s at line %d, column %d:\n%s\n%s", 
+
+	return fmt.Sprintf("%s at line %d, column %d:\n%s\n%s",
 		pe.Message, pe.Line, pe.Column, context, pointer)
 }
 
@@ -42,12 +42,12 @@ func (pe *ParseError) getContextLine() string {
 	if pe.Input == "" {
 		return ""
 	}
-	
+
 	lines := strings.Split(pe.Input, "\n")
 	if pe.Line > 0 && pe.Line <= len(lines) {
 		return lines[pe.Line-1]
 	}
-	
+
 	return ""
 }
 
@@ -70,10 +70,10 @@ func calculateLineColumn(input string, position int) (line int, column int) {
 	if position < 0 || position > len(input) {
 		return 0, 0
 	}
-	
+
 	line = 1
 	column = 1
-	
+
 	for i := 0; i < position && i < len(input); i++ {
 		if input[i] == '\n' {
 			line++
@@ -82,14 +82,14 @@ func calculateLineColumn(input string, position int) (line int, column int) {
 			column++
 		}
 	}
-	
+
 	return line, column
 }
 
 // createParseError creates a ParseError with line/column information
 func createParseError(message string, position int, token string, input string) *ParseError {
 	line, column := calculateLineColumn(input, position)
-	
+
 	return &ParseError{
 		Message:  message,
 		Line:     line,
@@ -171,12 +171,12 @@ func (d *DSL) Debug() map[string]interface{} {
 	debug["name"] = d.name
 	debug["tokens"] = make(map[string]string)
 	debug["rules"] = make(map[string]interface{})
-	
+
 	// Add token info
 	for name, token := range d.grammar.tokens {
 		debug["tokens"].(map[string]string)[name] = token.pattern
 	}
-	
+
 	// Add rule info
 	for name, rule := range d.grammar.rules {
 		alternatives := make([]map[string]interface{}, 0)
@@ -189,7 +189,7 @@ func (d *DSL) Debug() map[string]interface{} {
 		}
 		debug["rules"].(map[string]interface{})[name] = alternatives
 	}
-	
+
 	return debug
 }
 
@@ -211,7 +211,7 @@ func (d *DSL) Use(code string, ctx map[string]interface{}) (*Result, error) {
 			d.context[k] = v
 		}
 	}
-	
+
 	return d.Parse(code)
 }
 
@@ -332,7 +332,7 @@ type Parser struct {
 	grammar *Grammar
 	tokens  []TokenMatch
 	pos     int
-	dsl     *DSL // Reference to parent DSL for function access
+	dsl     *DSL   // Reference to parent DSL for function access
 	input   string // Original input for error reporting
 }
 
@@ -456,7 +456,7 @@ func (p *Parser) parseRule(ruleName string) (interface{}, error) {
 		token = "<end of input>"
 		position = len(p.input)
 	}
-	
+
 	message := fmt.Sprintf("no alternative matched for rule %s", ruleName)
 	return nil, createParseError(message, position, token, p.input)
 }

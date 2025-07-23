@@ -221,4 +221,3 @@ func testUniversalQueries(query *universal.UniversalQueryDSL, engine *universal.
 		fmt.Println()
 	}
 }
-

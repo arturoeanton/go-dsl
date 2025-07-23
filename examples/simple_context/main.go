@@ -14,12 +14,12 @@ func main() {
 	// Example 1: Simple variable access from context
 	fmt.Println("1. Simple Variable Access")
 	fmt.Println("------------------------")
-	
+
 	varDSL := dslbuilder.New("Variables")
 	varDSL.KeywordToken("GET", "get")
 	varDSL.Token("VAR", "[a-zA-Z_][a-zA-Z0-9_]*")
 	varDSL.Rule("command", []string{"GET", "VAR"}, "getVariable")
-	
+
 	varDSL.Action("getVariable", func(args []interface{}) (interface{}, error) {
 		varName := args[1].(string)
 		value := varDSL.GetContext(varName)
@@ -52,7 +52,7 @@ func main() {
 	// Example 2: Working with data arrays
 	fmt.Println("2. Data Array Processing")
 	fmt.Println("------------------------")
-	
+
 	dataDSL := dslbuilder.New("DataProcessor")
 	dataDSL.KeywordToken("COUNT", "count")
 	dataDSL.KeywordToken("LIST", "list")
@@ -68,7 +68,7 @@ func main() {
 		if data == nil {
 			return 0, nil
 		}
-		
+
 		if slice, ok := data.([]interface{}); ok {
 			return len(slice), nil
 		}
@@ -96,7 +96,7 @@ func main() {
 		if data == nil {
 			return 0, nil
 		}
-		
+
 		if numbers, ok := data.([]int); ok {
 			sum := 0
 			for _, n := range numbers {
@@ -159,7 +159,7 @@ func main() {
 
 	complexDSL.Action("findName", func(args []interface{}) (interface{}, error) {
 		dataset := args[3].(string)
-		
+
 		data := complexDSL.GetContext(dataset)
 		if data == nil {
 			return nil, fmt.Errorf("dataset '%s' not found", dataset)
@@ -179,7 +179,7 @@ func main() {
 
 	complexDSL.Action("findAge", func(args []interface{}) (interface{}, error) {
 		dataset := args[3].(string)
-		
+
 		data := complexDSL.GetContext(dataset)
 		if data == nil {
 			return nil, fmt.Errorf("dataset '%s' not found", dataset)
@@ -199,7 +199,7 @@ func main() {
 
 	complexDSL.Action("findCity", func(args []interface{}) (interface{}, error) {
 		dataset := args[3].(string)
-		
+
 		data := complexDSL.GetContext(dataset)
 		if data == nil {
 			return nil, fmt.Errorf("dataset '%s' not found", dataset)
@@ -264,7 +264,7 @@ func main() {
 	fmt.Println("  Method 1: Using SetContext()")
 	methodDSL.SetContext("user", "Alice")
 	methodDSL.SetContext("role", "admin")
-	
+
 	result1, _ := methodDSL.Parse("show user")
 	result2, _ := methodDSL.Parse("show role")
 	fmt.Printf("    %s\n", result1.GetOutput())
@@ -277,7 +277,7 @@ func main() {
 		"role": "user",
 		"temp": "override",
 	}
-	
+
 	result3, _ := methodDSL.Use("show user", context2)
 	result4, _ := methodDSL.Use("show role", context2)
 	result5, _ := methodDSL.Use("show temp", context2)

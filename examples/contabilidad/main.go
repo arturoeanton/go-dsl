@@ -65,7 +65,7 @@ func createContabilidadDSL(sistema *SistemaContable) *dslbuilder.DSL {
 	contabilidad.KeywordToken("DEBE", "debe")
 	contabilidad.KeywordToken("HABER", "haber")
 
-	// Values - IMPORTE first to get priority over CUENTA  
+	// Values - IMPORTE first to get priority over CUENTA
 	contabilidad.Token("IMPORTE", "[0-9]+\\.?[0-9]*")
 	contabilidad.Token("STRING", "\"[^\"]*\"")
 	// CUENTA pattern should be more specific than IMPORTE
@@ -76,7 +76,7 @@ func createContabilidadDSL(sistema *SistemaContable) *dslbuilder.DSL {
 	contabilidad.Rule("command", []string{"VENTA", "DE", "IMPORTE", "A", "CLIENTE", "STRING"}, "saleToClient")
 	contabilidad.Rule("command", []string{"VENTA", "DE", "IMPORTE", "CON", "IVA"}, "saleWithTax")
 	contabilidad.Rule("command", []string{"VENTA", "DE", "IMPORTE"}, "simpleSale")
-	
+
 	// Purchase patterns (most specific first)
 	contabilidad.Rule("command", []string{"COMPRA", "DE", "IMPORTE", "CON", "IVA"}, "purchaseWithTax")
 	contabilidad.Rule("command", []string{"COMPRA", "DE", "IMPORTE"}, "simplePurchase")
@@ -373,9 +373,9 @@ func main() {
 
 		// Create a fresh DSL instance for each operation to avoid state issues
 		contabilidad := createContabilidadDSL(sistema)
-		
+
 		result, err := contabilidad.Parse(op.code)
-		
+
 		if err != nil {
 			log.Printf("   Error en '%s': %v\n", op.code, err)
 			// Debug tokenization for failing commands
@@ -475,7 +475,7 @@ func main() {
 		// Create a fresh DSL instance for each complex operation
 		contabilidad := createContabilidadDSL(sistema)
 		result, err := contabilidad.Parse(entry.code)
-		
+
 		if err != nil {
 			log.Printf("Error en '%s': %v\n", entry.code, err)
 			continue

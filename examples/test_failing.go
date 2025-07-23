@@ -10,7 +10,7 @@ import (
 
 func main() {
 	fmt.Println("=== Testing Failing Commands ===")
-	
+
 	// Create DSL exactly like in contabilidad
 	contabilidad := dslbuilder.New("Test-Failing")
 
@@ -24,7 +24,7 @@ func main() {
 	contabilidad.Token("IMPORTE", "[0-9]+\\.?[0-9]*")
 
 	// Grammar rules - MOST SPECIFIC rules first
-	// Sales patterns (most specific first) 
+	// Sales patterns (most specific first)
 	contabilidad.Rule("command", []string{"VENTA", "DE", "IMPORTE", "CON", "IVA"}, "saleWithTax")
 	contabilidad.Rule("command", []string{"VENTA", "DE", "IMPORTE"}, "simpleSale")
 

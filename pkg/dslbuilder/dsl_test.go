@@ -421,7 +421,7 @@ func TestErrorHandling(t *testing.T) {
 	_, err = dsl.Parse("anything")
 	assert.Error(t, err)
 
-	// Test successful parse with action error (simpler test case) 
+	// Test successful parse with action error (simpler test case)
 	simpleDSL := New("SimpleTest")
 	require.NoError(t, simpleDSL.Token("TEST", "test"))
 	simpleDSL.Rule("simple", []string{"TEST"}, "simpleAction")
@@ -434,7 +434,7 @@ func TestErrorHandling(t *testing.T) {
 	result, err := simpleDSL.Parse("test")
 	assert.NoError(t, err)
 	assert.Equal(t, "success", result.GetOutput())
-	
+
 	// Test that invalid input produces error
 	_, err = simpleDSL.Parse("invalid")
 	assert.Error(t, err)

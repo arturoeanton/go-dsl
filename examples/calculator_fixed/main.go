@@ -135,4 +135,3 @@ func toFloat(v interface{}) (float64, error) {
 		return 0, fmt.Errorf("cannot convert to float: %v", v)
 	}
 }
-
