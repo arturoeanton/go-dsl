@@ -64,6 +64,9 @@ validator -dsl mydsl.yaml -format json
 - ✓ Duplicate pattern detection
 - ✓ Overly broad pattern warnings
 - ✓ Unescaped special character detection
+- ✓ **NEW:** Token priority calculation
+- ✓ **NEW:** Token conflict detection
+- ✓ **NEW:** Pattern subset analysis
 
 ### Rule Validation
 - ✓ Token/rule reference verification
@@ -71,17 +74,23 @@ validator -dsl mydsl.yaml -format json
 - ✓ Duplicate rule warnings
 - ✓ Left recursion detection
 - ✓ Action reference tracking
+- ✓ **NEW:** Circular dependency detection
+- ✓ **NEW:** Unreachable rule analysis
+- ✓ **NEW:** Rule cycle detection with path
 
 ### Grammar Analysis
 - ✓ Start rule identification
 - ✓ Unreachable rule detection
 - ✓ Ambiguous grammar patterns
 - ✓ Token priority conflicts
+- ✓ **NEW:** Advanced pattern conflict detection
+- ✓ **NEW:** Rule dependency graph analysis
 
 ### Best Practices
 - ✓ Naming convention checks
 - ✓ Complexity warnings
 - ✓ Performance impact analysis
+- ✓ **NEW:** Token priority recommendations
 
 ## Output Examples
 
@@ -135,6 +144,10 @@ Warnings (2):
 - Overly broad token patterns
 - Missing action implementations
 - No clear start rule
+- Token priority conflicts
+- Circular dependencies
+- Unreachable rules
+- Pattern subset conflicts
 
 ## Use Cases
 

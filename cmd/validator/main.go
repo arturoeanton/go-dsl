@@ -234,12 +234,11 @@ func validateTokens(config *DSLConfig, result *ValidationResult, strict bool) {
 			checkTokenPattern(name, pattern, result, strict)
 		}
 
-		// Determine priority (simplified - would need DSL internals for accurate priority)
-		if strings.Contains(pattern, "[") || strings.Contains(pattern, "\\") {
-			tokenInfo.Priority = 0 // Regular pattern
-		} else {
-			tokenInfo.Priority = 90 // Keyword pattern
-		}
+		// Determine priority based on pattern complexity
+		tokenInfo.Priority = calculateTokenPriority(pattern)
+		
+		// Check for token conflicts
+		checkTokenConflicts(name, pattern, config.Tokens, result)
 
 		result.Info.Tokens = append(result.Info.Tokens, tokenInfo)
 	}
@@ -287,6 +286,90 @@ func isRegexConstruct(pattern, char string) bool {
 	return false
 }
 
+func calculateTokenPriority(pattern string) int {
+	// Higher priority for more specific patterns
+	// KeywordTokens (exact matches) get highest priority
+	if !strings.ContainsAny(pattern, "[]\\+*?(){}^$.|") {
+		return 90 // Keyword token
+	}
+	
+	// Escaped special characters get high priority
+	if strings.Contains(pattern, "\\") && !strings.Contains(pattern, "[") {
+		return 80
+	}
+	
+	// Character classes get medium priority
+	if strings.Contains(pattern, "[") {
+		return 50
+	}
+	
+	// Wildcards get low priority
+	if strings.Contains(pattern, ".") || strings.Contains(pattern, "*") {
+		return 20
+	}
+	
+	return 60 // Default priority
+}
+
+func checkTokenConflicts(name, pattern string, allTokens map[string]string, result *ValidationResult) {
+	// Check if this token might conflict with others
+	for otherName, otherPattern := range allTokens {
+		if name == otherName {
+			continue
+		}
+		
+		// Check for subset patterns
+		if isPatternSubset(pattern, otherPattern) {
+			result.Warnings = append(result.Warnings, ValidationWarning{
+				Type:    "TokenConflict",
+				Message: fmt.Sprintf("Token %s pattern might be overshadowed by %s", name, otherName),
+				Details: fmt.Sprintf("%s: %s may match before %s: %s", otherName, otherPattern, name, pattern),
+			})
+		}
+	}
+}
+
+func isPatternSubset(pattern1, pattern2 string) bool {
+	// Simple heuristic to detect if pattern1 might be a subset of pattern2
+	// This is a simplified check - a full implementation would need proper regex analysis
+	
+	// If pattern2 is more general (has wildcards), it might match pattern1
+	if pattern2 == ".*" || pattern2 == ".+" {
+		return true
+	}
+	
+	// If pattern1 is a literal and pattern2 is a character class that includes it
+	if !strings.ContainsAny(pattern1, "[]\\+*?(){}^$.|") {
+		// pattern1 is a literal
+		if strings.Contains(pattern2, "[") && strings.Contains(pattern2, "]") {
+			// Very simplified check - would need proper parsing
+			if strings.Contains(pattern2, "a-z") && isLowerCase(pattern1) {
+				return true
+			}
+			if strings.Contains(pattern2, "A-Z") && isUpperCase(pattern1) {
+				return true
+			}
+			if strings.Contains(pattern2, "0-9") && isDigits(pattern1) {
+				return true
+			}
+		}
+	}
+	
+	return false
+}
+
+func isLowerCase(s string) bool {
+	return strings.ToLower(s) == s && regexp.MustCompile(`^[a-z]+$`).MatchString(s)
+}
+
+func isUpperCase(s string) bool {
+	return strings.ToUpper(s) == s && regexp.MustCompile(`^[A-Z]+$`).MatchString(s)
+}
+
+func isDigits(s string) bool {
+	return regexp.MustCompile(`^[0-9]+$`).MatchString(s)
+}
+
 func validateRules(config *DSLConfig, result *ValidationResult, strict bool) {
 	ruleCount := 0
 	ruleNames := make(map[string]bool)
@@ -316,18 +399,31 @@ func validateRules(config *DSLConfig, result *ValidationResult, strict bool) {
 
 		// Validate pattern tokens exist
 		for _, token := range rule.Pattern {
-			if _, exists := config.Tokens[token]; !exists {
-				// Check if it's a rule reference (for recursive grammars)
-				if !ruleNames[token] {
-					ruleInfo.Valid = false
-					ruleInfo.Error = fmt.Sprintf("Unknown token or rule: %s", token)
-					result.Valid = false
-					result.Errors = append(result.Errors, ValidationError{
-						Type:    "RuleError",
-						Message: fmt.Sprintf("Rule %s references unknown token/rule: %s", rule.Name, token),
-						Details: "All tokens in rule patterns must be defined",
-					})
+			tokenExists := false
+			ruleExists := false
+			
+			// Check if it's a token
+			if _, exists := config.Tokens[token]; exists {
+				tokenExists = true
+			}
+			
+			// Check if it's a rule reference
+			for _, r := range config.Rules {
+				if r.Name == token {
+					ruleExists = true
+					break
 				}
+			}
+			
+			if !tokenExists && !ruleExists {
+				ruleInfo.Valid = false
+				ruleInfo.Error = fmt.Sprintf("Unknown token or rule: %s", token)
+				result.Valid = false
+				result.Errors = append(result.Errors, ValidationError{
+					Type:    "RuleError",
+					Message: fmt.Sprintf("Rule %s references unknown token/rule: %s", rule.Name, token),
+					Details: "All tokens in rule patterns must be defined tokens or valid rule names",
+				})
 			}
 		}
 
@@ -370,6 +466,12 @@ func checkCommonIssues(config *DSLConfig, result *ValidationResult, strict bool)
 			})
 		}
 	}
+	
+	// Check for rule cycles
+	checkRuleCycles(config, result)
+	
+	// Check for unreachable rules
+	checkUnreachableRules(config, result)
 
 	// Check for ambiguous token patterns
 	tokenPatterns := make(map[string][]string)
@@ -412,6 +514,127 @@ func findStartRule(config *DSLConfig) (string, bool) {
 	}
 
 	return "", false
+}
+
+func checkRuleCycles(config *DSLConfig, result *ValidationResult) {
+	// Build rule dependency graph
+	dependencies := make(map[string][]string)
+	for _, rule := range config.Rules {
+		deps := []string{}
+		for _, token := range rule.Pattern {
+			// Check if token is a rule reference
+			isRule := false
+			for _, r := range config.Rules {
+				if r.Name == token {
+					isRule = true
+					break
+				}
+			}
+			if isRule && token != rule.Name { // Exclude direct self-reference (handled as left recursion)
+				deps = append(deps, token)
+			}
+		}
+		if dependencies[rule.Name] == nil {
+			dependencies[rule.Name] = []string{}
+		}
+		dependencies[rule.Name] = append(dependencies[rule.Name], deps...)
+	}
+	
+	// Detect cycles using DFS
+	visited := make(map[string]bool)
+	recursionStack := make(map[string]bool)
+	
+	var hasCycle func(string, []string) (bool, []string)
+	hasCycle = func(node string, path []string) (bool, []string) {
+		visited[node] = true
+		recursionStack[node] = true
+		path = append(path, node)
+		
+		for _, dep := range dependencies[node] {
+			if !visited[dep] {
+				if found, cyclePath := hasCycle(dep, path); found {
+					return true, cyclePath
+				}
+			} else if recursionStack[dep] {
+				// Found a cycle
+				cycleStart := -1
+				for i, n := range path {
+					if n == dep {
+						cycleStart = i
+						break
+					}
+				}
+				if cycleStart >= 0 {
+					return true, path[cycleStart:]
+				}
+			}
+		}
+		
+		recursionStack[node] = false
+		return false, nil
+	}
+	
+	for rule := range dependencies {
+		if !visited[rule] {
+			if found, cyclePath := hasCycle(rule, []string{}); found {
+				result.Warnings = append(result.Warnings, ValidationWarning{
+					Type:    "RuleCycle",
+					Message: fmt.Sprintf("Circular dependency detected: %s", strings.Join(cyclePath, " -> ")),
+					Details: "Circular dependencies may cause infinite loops or stack overflow",
+				})
+			}
+		}
+	}
+}
+
+func checkUnreachableRules(config *DSLConfig, result *ValidationResult) {
+	// Find all rules that are referenced
+	referencedRules := make(map[string]bool)
+	
+	// Start rule is always reachable
+	if start, found := findStartRule(config); found {
+		referencedRules[start] = true
+	}
+	
+	// Find all rules referenced in patterns
+	for _, rule := range config.Rules {
+		for _, token := range rule.Pattern {
+			// Check if token is a rule name
+			for _, r := range config.Rules {
+				if r.Name == token {
+					referencedRules[token] = true
+					break
+				}
+			}
+		}
+	}
+	
+	// Check for unreachable rules
+	for _, rule := range config.Rules {
+		if !referencedRules[rule.Name] {
+			// Check if it's the only rule or a start rule
+			if len(config.Rules) == 1 || isLikelyStartRule(rule.Name) {
+				continue
+			}
+			
+			result.Warnings = append(result.Warnings, ValidationWarning{
+				Type:    "UnreachableRule",
+				Message: fmt.Sprintf("Rule %s is never referenced", rule.Name),
+				Details: "This rule cannot be reached during parsing",
+			})
+		}
+	}
+}
+
+func isLikelyStartRule(name string) bool {
+	startPatterns := []string{"expr", "program", "start", "command", "statement", "query", "root"}
+	nameLower := strings.ToLower(name)
+	for _, pattern := range startPatterns {
+		if strings.Contains(nameLower, pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 func createDSLFromConfig(config *DSLConfig) (*dslbuilder.DSL, error) {

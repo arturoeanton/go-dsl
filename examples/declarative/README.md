@@ -62,8 +62,33 @@ The example will:
 ## Files
 
 - `main.go` - Example implementation
-- `calculator.yaml` - YAML DSL definition
+- `calculator.yaml` - Basic calculator DSL (binary operations only)
+- `calculator_advanced.yaml` - Advanced calculator with full expression support
 - `calculator.json` - Generated JSON configuration (after running)
+
+## Calculator Examples
+
+### Basic Calculator (`calculator.yaml`)
+- Supports simple binary operations: `1 + 2`, `10 * 5`
+- Does not support chained operations
+- Simpler grammar, easier to understand
+
+### Advanced Calculator (`calculator_advanced.yaml`)
+- Supports complex expressions: `1 + 2 + 3`, `2 * 3 + 4`
+- Proper operator precedence (multiplication before addition)
+- Uses left-recursive rules for expression parsing
+- More complete but more complex grammar
+
+## Testing the Calculators
+
+```bash
+# Basic calculator (will fail on chained operations)
+go run ../../cmd/ast_viewer/main.go -dsl calculator.yaml -input "1 + 2"
+
+# Advanced calculator (handles all expressions)
+go run ../../cmd/ast_viewer/main.go -dsl calculator_advanced.yaml -input "1 + 2 + 3"
+go run ../../cmd/ast_viewer/main.go -dsl calculator_advanced.yaml -input "2 * 3 + 4"
+```
 
 ## Backward Compatibility
 

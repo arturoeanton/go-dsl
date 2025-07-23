@@ -167,28 +167,89 @@ func (v *ASTViewer) visualize(input string) error {
 }
 
 func (v *ASTViewer) buildAST(result interface{}) ASTNode {
-	// This is a simplified AST builder
-	// In a real implementation, we would need access to the parser's internal state
-	// to build a proper AST with all parse tree information
+	return v.buildASTRecursive(result, "root", 0)
+}
 
+func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth int) ASTNode {
 	node := ASTNode{
-		Type:  "root",
-		Value: fmt.Sprintf("%v", result),
+		Type: nodeType,
 	}
 
-	// If result is a slice (from parsing actions), show structure
-	if slice, ok := result.([]interface{}); ok {
-		node.Children = make([]ASTNode, len(slice))
-		for i, item := range slice {
-			child := ASTNode{
-				Type:  fmt.Sprintf("arg_%d", i),
-				Value: fmt.Sprintf("%v", item),
+	// Handle different types of data
+	switch v := data.(type) {
+		
+	case []interface{}:
+		// Array of values (common in parsing results)
+		node.Type = nodeType
+		if nodeType == "root" {
+			node.Type = "expression"
+		}
+		for i, item := range v {
+			childType := "value"
+			// Try to determine better types based on position
+			if i%2 == 1 && len(v) > 2 {
+				// Likely an operator in expression
+				if str, ok := item.(string); ok && isOperator(str) {
+					childType = "operator"
+				}
 			}
-			node.Children[i] = child
+			child := av.buildASTRecursive(item, childType, depth+1)
+			node.Children = append(node.Children, child)
+		}
+		
+	case map[string]interface{}:
+		// Object/map structure
+		node.Type = "object"
+		for key, value := range v {
+			child := av.buildASTRecursive(value, key, depth+1)
+			node.Children = append(node.Children, child)
+		}
+		
+	case string:
+		node.Value = v
+		// Detect token types
+		if isNumber(v) {
+			node.Type = "number"
+		} else if isOperator(v) {
+			node.Type = "operator"
+		} else if nodeType == "value" {
+			node.Type = "identifier"
+		}
+		
+	case int, int64, float64:
+		node.Type = "number"
+		node.Value = fmt.Sprintf("%v", v)
+		
+	case bool:
+		node.Type = "boolean"
+		node.Value = fmt.Sprintf("%v", v)
+		
+	default:
+		// Generic handling
+		node.Value = fmt.Sprintf("%v", v)
+		if node.Value == "" {
+			node.Value = fmt.Sprintf("<%T>", v)
 		}
 	}
 
 	return node
+}
+
+func isOperator(s string) bool {
+	operators := []string{"+", "-", "*", "/", "=", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "and", "or", "not"}
+	for _, op := range operators {
+		if s == op {
+			return true
+		}
+	}
+	return false
+}
+
+func isNumber(s string) bool {
+	if _, err := fmt.Sscanf(s, "%f", new(float64)); err == nil {
+		return true
+	}
+	return false
 }
 
 func (v *ASTViewer) outputJSON(ast ASTNode) error {
@@ -220,37 +281,89 @@ func (v *ASTViewer) outputYAML(ast ASTNode) error {
 }
 
 func (v *ASTViewer) outputTree(ast ASTNode, depth int) error {
-	indent := strings.Repeat("  ", depth)
-	prefix := "├─"
-	if depth == 0 {
-		prefix = ""
+	v.outputTreeNode(ast, "", depth == 0)
+	return nil
+}
+
+func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
+	// Determine node symbol based on type
+	symbol := "○"
+	switch node.Type {
+	case "expression", "root":
+		symbol = "◆"
+	case "operator":
+		symbol = "●"
+	case "number":
+		symbol = "#"
+	case "identifier":
+		symbol = "□"
+	case "object":
+		symbol = "{}"
+	case "boolean":
+		symbol = "?"
 	}
 
-	fmt.Printf("%s%s %s", indent, prefix, ast.Type)
-	if ast.Value != "" {
-		fmt.Printf(": %s", ast.Value)
+	// Print current node
+	if isRoot {
+		fmt.Printf("%s %s", symbol, node.Type)
+	} else {
+		fmt.Printf("%s%s %s", prefix, symbol, node.Type)
 	}
-	if ast.Action != "" {
-		fmt.Printf(" [action: %s]", ast.Action)
+	
+	if node.Value != "" {
+		// Color-code values based on type
+		switch node.Type {
+		case "number":
+			fmt.Printf(" \033[36m%s\033[0m", node.Value) // Cyan for numbers
+		case "operator":
+			fmt.Printf(" \033[33m%s\033[0m", node.Value) // Yellow for operators
+		case "string", "identifier":
+			fmt.Printf(" \033[32m\"%s\"\033[0m", node.Value) // Green for strings
+		default:
+			fmt.Printf(": %s", node.Value)
+		}
+	}
+	
+	if node.Action != "" {
+		fmt.Printf(" \033[35m→ %s\033[0m", node.Action) // Magenta for actions
 	}
 	fmt.Println()
 
-	if v.verbose && ast.Token != nil {
-		fmt.Printf("%s  └─ token: %s = \"%s\" @ %d:%d\n",
-			indent, ast.Token.Type, ast.Token.Value, ast.Token.Line, ast.Token.Col)
-	}
-	if v.verbose && ast.Rule != nil {
-		fmt.Printf("%s  └─ rule: %s -> %v\n",
-			indent, ast.Rule.Name, ast.Rule.Pattern)
-	}
-
-	for i, child := range ast.Children {
-		if i == len(ast.Children)-1 {
-			// Last child
-			fmt.Printf("%s└─", strings.Repeat("  ", depth+1))
+	// Show additional info in verbose mode
+	if av.verbose {
+		if node.Token != nil {
+			fmt.Printf("%s  ├─ token: %s = \"%s\" @ %d:%d\n",
+				prefix, node.Token.Type, node.Token.Value, node.Token.Line, node.Token.Col)
 		}
-		v.outputTree(child, depth+1)
+		if node.Rule != nil {
+			fmt.Printf("%s  ├─ rule: %s → %v\n",
+				prefix, node.Rule.Name, node.Rule.Pattern)
+		}
 	}
 
-	return nil
+	// Print children
+	for i, child := range node.Children {
+		isLast := i == len(node.Children)-1
+		
+		var childPrefix string
+		if isRoot {
+			if isLast {
+				fmt.Print("└─ ")
+				childPrefix = "   "
+			} else {
+				fmt.Print("├─ ")
+				childPrefix = "│  "
+			}
+		} else {
+			if isLast {
+				fmt.Printf("%s└─ ", prefix)
+				childPrefix = prefix + "   "
+			} else {
+				fmt.Printf("%s├─ ", prefix)
+				childPrefix = prefix + "│  "
+			}
+		}
+		
+		av.outputTreeNode(child, childPrefix, false)
+	}
 }

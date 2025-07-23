@@ -61,32 +61,46 @@ ast_viewer -dsl accounting.yaml -input "venta de 1000 con iva" -format tree -ver
 ### JSON Format
 ```json
 {
-  "type": "root",
-  "value": "30",
+  "type": "expression",
   "children": [
     {
-      "type": "arg_0",
+      "type": "number",
       "value": "10"
     },
     {
-      "type": "arg_1",
+      "type": "operator",
       "value": "+"
     },
     {
-      "type": "arg_2",
+      "type": "number",
       "value": "20"
     }
   ]
 }
 ```
 
-### Tree Format
+### Tree Format (Enhanced)
 ```
-root: 30
-  ├─ arg_0: 10
-  ├─ arg_1: +
-  └─ arg_2: 20
+◆ expression
+├─ # number 10
+├─ ● operator +
+└─ # number 20
 ```
+
+**Tree Symbols:**
+- `◆` - Expression/Root nodes
+- `●` - Operators
+- `#` - Numbers
+- `□` - Identifiers
+- `{}` - Objects
+- `?` - Booleans
+- `○` - Generic nodes
+
+**Colors in Tree Mode:**
+- Cyan - Numbers
+- Yellow - Operators
+- Green - Strings/Identifiers
+- Magenta - Actions
 
 ### YAML Format
 ```yaml
@@ -108,11 +122,25 @@ children:
 3. **Rule Optimization**: Identify inefficient parsing patterns
 4. **Documentation**: Generate visual representations of parsing results
 
+## New Features
+
+### Enhanced AST Building
+- Recursive AST construction for nested structures
+- Automatic type detection (numbers, operators, identifiers)
+- Support for complex data types (objects, arrays)
+- Better representation of parsing results
+
+### Improved Tree Visualization
+- Color-coded output for better readability
+- Symbolic representation of node types
+- Hierarchical structure with proper indentation
+- Verbose mode shows token and rule details
+
 ## Limitations
 
-- The current implementation shows a simplified AST structure
-- Full parse tree information requires deeper integration with the parser
-- Actions are executed but their internal logic is not shown
+- Token and rule information requires DSL introspection API
+- Position tracking (line/column) not yet available
+- Actions are executed but internal logic is opaque
 
 ## Future Enhancements
 
@@ -120,4 +148,6 @@ children:
 - [ ] Token position tracking (line, column)
 - [ ] Rule matching visualization
 - [ ] Interactive web-based viewer
-- [ ] Export to GraphViz format
+- [ ] Export to GraphViz/DOT format
+- [ ] Real-time AST updates
+- [ ] Syntax highlighting in tree view

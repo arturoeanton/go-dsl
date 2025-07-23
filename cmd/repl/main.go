@@ -22,6 +22,9 @@ type REPL struct {
 	showAST     bool
 	showTime    bool
 	historyFile string
+	historyIdx  int
+	tokens      []string // For autocomplete
+	rules       []string // For autocomplete
 }
 
 type HistoryEntry struct {
@@ -344,8 +347,27 @@ func (r *REPL) handleCommand(input string) {
 		if r.multiline {
 			fmt.Println("Enter empty line to execute")
 		}
+	case ".tokens":
+		r.showTokens()
+	case ".rules":
+		r.showRules()
+	case ".reset":
+		r.context = make(map[string]interface{})
+		r.buffer = []string{}
+		fmt.Println("Context and buffer reset")
+	case ".last":
+		if len(r.history) > 0 {
+			last := r.history[len(r.history)-1]
+			fmt.Printf("Last command: %s\n", last.Input)
+			if last.Error == nil && last.Output != nil {
+				fmt.Printf("Result: %v\n", last.Output)
+			}
+		} else {
+			fmt.Println("No history available")
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", parts[0])
+		fmt.Println("Type .help for available commands")
 	}
 }
 
@@ -372,23 +394,20 @@ func (r *REPL) execute(input string) {
 	}
 
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("\033[31mError: %v\033[0m\n", err) // Red color for errors
+		
+		// Try to provide helpful suggestions
+		if strings.Contains(err.Error(), "unexpected token") {
+			r.suggestTokens(input)
+		} else if strings.Contains(err.Error(), "no matching rule") {
+			fmt.Println("\033[33mHint: Check available rules with .rules command\033[0m")
+		}
 	} else {
 		output := result.GetOutput()
 		entry.Output = output
 
-		// Display result
-		switch v := output.(type) {
-		case string:
-			fmt.Println(v)
-		case []interface{}:
-			for i, item := range v {
-				fmt.Printf("[%d] %v\n", i, item)
-			}
-		default:
-			data, _ := json.MarshalIndent(output, "", "  ")
-			fmt.Println(string(data))
-		}
+		// Display result with better formatting
+		r.displayOutput(output)
 
 		// Show AST if enabled
 		if r.showAST {
@@ -412,24 +431,6 @@ func (r *REPL) displayAST(result interface{}) {
 	fmt.Println("--- End AST ---\n")
 }
 
-func (r *REPL) showHelp() {
-	fmt.Println("REPL Commands:")
-	fmt.Println("  .help         Show this help message")
-	fmt.Println("  .exit         Exit the REPL")
-	fmt.Println("  .history      Show command history")
-	fmt.Println("  .clear        Clear the screen")
-	fmt.Println("  .context      Show current context variables")
-	fmt.Println("  .set k v      Set context variable k to value v")
-	fmt.Println("  .load file    Load and execute commands from file")
-	fmt.Println("  .save file    Save history to file")
-	fmt.Println("  .ast on/off   Toggle AST display")
-	fmt.Println("  .time on/off  Toggle execution time display")
-	fmt.Println("  .multiline    Toggle multiline input mode")
-	fmt.Println()
-	fmt.Println("DSL Tokens:")
-	// Would need DSL introspection API to list tokens
-	fmt.Println("  (Use validator tool to see DSL structure)")
-}
 
 func (r *REPL) showHistory() {
 	if len(r.history) == 0 {
@@ -538,4 +539,82 @@ func (r *REPL) saveHistory() {
 func isInteractive() bool {
 	fi, _ := os.Stdin.Stat()
 	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+func (r *REPL) displayOutput(output interface{}) {
+	switch v := output.(type) {
+	case string:
+		fmt.Println(v)
+	case int, int64, float64:
+		fmt.Printf("\033[36m%v\033[0m\n", v) // Cyan for numbers
+	case bool:
+		fmt.Printf("\033[35m%v\033[0m\n", v) // Magenta for booleans
+	case []interface{}:
+		if len(v) == 0 {
+			fmt.Println("[]")
+		} else {
+			fmt.Println("[")
+			for i, item := range v {
+				fmt.Printf("  [%d] %v\n", i, item)
+			}
+			fmt.Println("]")
+		}
+	case map[string]interface{}:
+		data, _ := json.MarshalIndent(v, "", "  ")
+		fmt.Println(string(data))
+	case nil:
+		fmt.Println("\033[90mnil\033[0m") // Gray for nil
+	default:
+		// Try JSON for complex types
+		if data, err := json.MarshalIndent(output, "", "  "); err == nil {
+			fmt.Println(string(data))
+		} else {
+			fmt.Printf("%v\n", output)
+		}
+	}
+}
+
+func (r *REPL) suggestTokens(input string) {
+	// This would need access to DSL tokens to provide suggestions
+	fmt.Println("\033[33mHint: Use .tokens to see available tokens\033[0m")
+}
+
+func (r *REPL) showTokens() {
+	fmt.Println("\033[1mAvailable Tokens:\033[0m")
+	// In a real implementation, we would introspect the DSL
+	// For now, show a message
+	fmt.Println("Token information not available in current implementation")
+	fmt.Println("Check your DSL configuration file for token definitions")
+}
+
+func (r *REPL) showRules() {
+	fmt.Println("\033[1mAvailable Rules:\033[0m")
+	// In a real implementation, we would introspect the DSL
+	// For now, show a message
+	fmt.Println("Rule information not available in current implementation")
+	fmt.Println("Check your DSL configuration file for rule definitions")
+}
+
+func (r *REPL) showHelp() {
+	fmt.Println("\033[1mREPL Commands:\033[0m")
+	fmt.Println("  \033[32m.help\033[0m         Show this help message")
+	fmt.Println("  \033[32m.exit\033[0m         Exit the REPL")
+	fmt.Println("  \033[32m.history\033[0m      Show command history")
+	fmt.Println("  \033[32m.clear\033[0m        Clear the screen")
+	fmt.Println("  \033[32m.context\033[0m      Show current context variables")
+	fmt.Println("  \033[32m.set k v\033[0m      Set context variable k to value v")
+	fmt.Println("  \033[32m.load file\033[0m    Load and execute commands from file")
+	fmt.Println("  \033[32m.save file\033[0m    Save history to file")
+	fmt.Println("  \033[32m.ast on/off\033[0m   Toggle AST display")
+	fmt.Println("  \033[32m.time on/off\033[0m  Toggle execution time display")
+	fmt.Println("  \033[32m.multiline\033[0m    Toggle multiline input mode")
+	fmt.Println("  \033[32m.tokens\033[0m       Show available tokens")
+	fmt.Println("  \033[32m.rules\033[0m        Show available rules")
+	fmt.Println("  \033[32m.reset\033[0m        Reset context and buffer")
+	fmt.Println("  \033[32m.last\033[0m         Show last command and result")
+	fmt.Println()
+	fmt.Println("\033[1mDSL Syntax:\033[0m")
+	fmt.Println("  Enter DSL commands directly")
+	fmt.Println("  Use context variables with .set command")
+	fmt.Println("  Check your DSL configuration for available syntax")
 }

@@ -108,11 +108,25 @@ children:
 3. **Optimización de Reglas**: Identificar patrones de parsing ineficientes
 4. **Documentación**: Generar representaciones visuales de resultados de parsing
 
+## Nuevas Características
+
+### Construcción Mejorada del AST
+- Construcción recursiva del AST para estructuras anidadas
+- Detección automática de tipos (números, operadores, identificadores)
+- Soporte para tipos de datos complejos (objetos, arreglos)
+- Mejor representación de resultados de parsing
+
+### Visualización de Árbol Mejorada
+- Salida con códigos de color para mejor legibilidad
+- Representación simbólica de tipos de nodos
+- Estructura jerárquica con indentación adecuada
+- Modo detallado muestra detalles de tokens y reglas
+
 ## Limitaciones
 
-- La implementación actual muestra una estructura AST simplificada
-- La información completa del árbol de parsing requiere integración más profunda con el parser
-- Las acciones se ejecutan pero su lógica interna no se muestra
+- La información de tokens y reglas requiere API de introspección del DSL
+- Seguimiento de posición (línea/columna) aún no disponible
+- Las acciones se ejecutan pero la lógica interna es opaca
 
 ## Mejoras Futuras
 
@@ -120,4 +134,6 @@ children:
 - [ ] Seguimiento de posición de tokens (línea, columna)
 - [ ] Visualización del emparejamiento de reglas
 - [ ] Visor interactivo basado en web
-- [ ] Exportar a formato GraphViz
+- [ ] Exportar a formato GraphViz/DOT
+- [ ] Actualizaciones de AST en tiempo real
+- [ ] Resaltado de sintaxis en vista de árbol

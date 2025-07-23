@@ -135,6 +135,10 @@ Advertencias (2):
 - Patrones de tokens demasiado amplios
 - Implementaciones de acciones faltantes
 - Sin regla de inicio clara
+- Conflictos de prioridad de tokens
+- Dependencias circulares
+- Reglas inalcanzables
+- Conflictos de subconjunto de patrones
 
 ## Casos de Uso
 

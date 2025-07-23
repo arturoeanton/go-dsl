@@ -72,18 +72,44 @@ repl -dsl mydsl.yaml -ast -time
 | `.ast on/off` | Toggle AST display |
 | `.time on/off` | Toggle execution time display |
 | `.multiline` | Toggle multiline input mode |
+| `.tokens` | **NEW:** Show available tokens |
+| `.rules` | **NEW:** Show available rules |
+| `.reset` | **NEW:** Reset context and buffer |
+| `.last` | **NEW:** Show last command and result |
+
+## New Features
+
+### Enhanced Error Display
+- Color-coded error messages (red)
+- Helpful suggestions for common errors
+- Token hints for unexpected token errors
+- Command suggestions for typos
+
+### Better Output Formatting
+- Color-coded output by type:
+  - Cyan for numbers
+  - Magenta for booleans
+  - Gray for nil values
+- Pretty-printed arrays and objects
+- JSON formatting for complex types
+
+### Improved Commands
+- `.tokens` - View available DSL tokens
+- `.rules` - View available DSL rules
+- `.reset` - Clear context and buffers
+- `.last` - Quickly see last command result
 
 ## Features
 
 ### Interactive Mode
 ```
-Calculator> 10 + 20
+DSL> 10 + 20
 30
-Calculator> 5 * (3 + 2)
+DSL> 5 * (3 + 2)
 25
-Calculator> .time on
+DSL> .time on
 Time display: true
-Calculator> 100 / 4
+DSL> 100 / 4
 25
 ⏱  125µs
 ```

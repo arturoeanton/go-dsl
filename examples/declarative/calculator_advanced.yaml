@@ -1,0 +1,46 @@
+name: "AdvancedCalculator"
+tokens:
+  NUMBER: "[0-9]+"
+  PLUS: "\\+"
+  MINUS: "\\-"
+  MULTIPLY: "\\*"
+  DIVIDE: "\\/"
+  LPAREN: "\\("
+  RPAREN: "\\)"
+rules:
+  # Start rule
+  - name: "expression"
+    pattern: ["term"]
+    action: "passthrough"
+    
+  # Left-recursive rules for addition/subtraction
+  - name: "expression"
+    pattern: ["expression", "PLUS", "term"]
+    action: "add"
+  - name: "expression"
+    pattern: ["expression", "MINUS", "term"]
+    action: "subtract"
+    
+  # Term rules
+  - name: "term"
+    pattern: ["factor"]
+    action: "passthrough"
+    
+  # Left-recursive rules for multiplication/division
+  - name: "term"
+    pattern: ["term", "MULTIPLY", "factor"]
+    action: "multiply"
+  - name: "term"
+    pattern: ["term", "DIVIDE", "factor"]
+    action: "divide"
+    
+  # Factor rules
+  - name: "factor"
+    pattern: ["NUMBER"]
+    action: "number"
+  - name: "factor"
+    pattern: ["LPAREN", "expression", "RPAREN"]
+    action: "paren"
+    
+context:
+  precision: 2

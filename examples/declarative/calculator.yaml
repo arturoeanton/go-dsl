@@ -1,3 +1,7 @@
+# Simple Calculator DSL
+# NOTE: This basic version only supports binary operations (e.g., "1 + 2")
+# For chained operations (e.g., "1 + 2 + 3"), use calculator_advanced.yaml
+
 name: "Calculator"
 tokens:
   NUMBER: "[0-9]+"

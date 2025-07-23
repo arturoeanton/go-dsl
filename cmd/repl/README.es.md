@@ -72,6 +72,10 @@ repl -dsl midsl.yaml -ast -time
 | `.ast on/off` | Alternar visualización de AST |
 | `.time on/off` | Alternar visualización de tiempo de ejecución |
 | `.multiline` | Alternar modo de entrada multilínea |
+| `.tokens` | **NUEVO:** Mostrar tokens disponibles |
+| `.rules` | **NUEVO:** Mostrar reglas disponibles |
+| `.reset` | **NUEVO:** Reiniciar contexto y buffer |
+| `.last` | **NUEVO:** Mostrar último comando y resultado |
 
 ## Características
 
