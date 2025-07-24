@@ -2085,3 +2085,330 @@ Found 5 templates
 [18:21:33] 500 - GET /favicon.ico (     158.25µs)
 [18:21:34] 500 - GET /img/avatar.png (    819.125µs)
 [18:21:34] 500 - GET /favicon.ico (     98.208µs)
+[18:29:39] 200 - GET / (    259.708µs)
+[18:29:57] 200 - GET / (    136.458µs)
+[18:30:07] 200 - GET /dashboard.html (    197.834µs)
+[18:30:07] 200 - GET /css/layout.css (    143.667µs)
+[18:30:07] 200 - GET /css/tables.css (     144.75µs)
+[18:30:07] 304 - GET /js/utils.js (     80.292µs)
+[18:30:07] 200 - GET /css/style.css (    566.625µs)
+[18:30:07] 200 - GET /js/api_service.js (    102.125µs)
+[18:30:07] 200 - GET /css/sidebar-collapsed.css (    122.542µs)
+[18:30:07] 304 - GET /css/components.css (    785.375µs)
+[18:30:07] 200 - GET /js/sidebar.js (    196.792µs)
+[18:30:07] 200 - GET /js/dashboard.js (     99.542µs)
+[18:30:07] 500 - GET /img/avatar.png (    416.459µs)
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/organization_repository.go:23
+[0m[33m[0.509ms] [34;1m[rows:1][0m SELECT * FROM `organizations` WHERE is_active = true ORDER BY `organizations`.`id` LIMIT 1
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.145ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-24 00:00:00" AND "2025-07-24 18:30:07.753"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.105ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-01 00:00:00" AND "2025-07-24 18:30:07.753"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:286
+[0m[33m[0.099ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND status = "DRAFT"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:286
+[0m[33m[0.060ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND status = "POSTED"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.041ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-18 00:00:00" AND "2025-07-19 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.037ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-19 00:00:00" AND "2025-07-20 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.033ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-20 00:00:00" AND "2025-07-21 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.031ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-21 00:00:00" AND "2025-07-22 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.030ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-22 00:00:00" AND "2025-07-23 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.031ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-23 00:00:00" AND "2025-07-24 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:277
+[0m[33m[0.033ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND date BETWEEN "2025-07-24 00:00:00" AND "2025-07-25 00:00:00"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:203
+[0m[33m[0.144ms] [34;1m[rows:10][0m SELECT voucher_type, COUNT(*) as count FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" GROUP BY `voucher_type`
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:295
+[0m[33m[0.035ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:286
+[0m[33m[0.061ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND status = "POSTED"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:286
+[0m[33m[0.048ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND status = "DRAFT"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:286
+[0m[33m[0.057ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND status = "CANCELLED"
+
+2025/07/24 18:30:07 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/voucher_repository.go:286
+[0m[33m[0.084ms] [34;1m[rows:1][0m SELECT count(*) FROM `vouchers` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" AND status = "ERROR"
+[18:30:07] 200 - GET /api/v1/dashboard/stats (   2.429291ms)
+[18:30:09] 200 - GET /reports.html (    143.208µs)
+[18:30:09] 200 - GET /js/reports.js (    151.042µs)
+[18:30:09] 500 - GET /img/avatar.png (     91.333µs)
+[18:31:52] 200 - GET /reports.html (    325.667µs)
+[18:31:52] 500 - GET /img/avatar.png (         70µs)
+[18:31:52] 304 - GET /js/reports.js (    379.792µs)
+[18:32:04] 500 - GET /apple-touch-icon-precomposed.png (    388.667µs)
+[18:32:04] 500 - GET /apple-touch-icon.png (    143.166µs)
+[18:32:04] 500 - GET /favicon.ico (     37.083µs)
+[18:32:07] 500 - GET /img/avatar.png (    136.416µs)
+[18:32:07] 500 - GET /favicon.ico (      94.75µs)
+[18:32:08] 200 - GET /reports.html (    342.709µs)
+[18:32:08] 200 - GET /css/style.css (    314.708µs)
+[18:32:08] 200 - GET /css/components.css (    113.791µs)
+[18:32:08] 200 - GET /css/layout.css (       80.5µs)
+[18:32:08] 500 - GET /img/avatar.png (        201µs)
+[18:32:08] 200 - GET /js/utils.js (      852.5µs)
+[18:32:08] 200 - GET /css/sidebar-collapsed.css (      64.25µs)
+[18:32:08] 200 - GET /js/api_service.js (    563.959µs)
+[18:32:08] 200 - GET /js/sidebar.js (    455.542µs)
+[18:32:08] 200 - GET /js/reports.js (    170.958µs)
+[18:32:08] 500 - GET /favicon.ico (    111.958µs)
+[18:32:10] 200 - GET /reports.html (     11.125µs)
+[18:32:10] 200 - GET /css/style.css (      13.75µs)
+[18:32:10] 200 - GET /css/components.css (      5.792µs)
+[18:32:10] 200 - GET /css/sidebar-collapsed.css (      5.792µs)
+[18:32:10] 200 - GET /css/layout.css (      2.458µs)
+[18:32:10] 200 - GET /js/utils.js (     11.166µs)
+[18:32:10] 500 - GET /img/avatar.png (    104.917µs)
+[18:32:10] 200 - GET /js/sidebar.js (      4.833µs)
+[18:32:10] 200 - GET /js/api_service.js (      7.208µs)
+[18:32:10] 200 - GET /js/reports.js (    401.042µs)
+[18:32:10] 500 - GET /favicon.ico (     97.875µs)
+[18:32:10] 200 - GET /reports.html (     10.708µs)
+[18:32:10] 200 - GET /js/utils.js (     11.042µs)
+[18:32:10] 200 - GET /css/style.css (     11.042µs)
+[18:32:10] 200 - GET /css/components.css (      2.125µs)
+[18:32:10] 200 - GET /css/layout.css (      2.708µs)
+[18:32:10] 200 - GET /css/sidebar-collapsed.css (      4.417µs)
+[18:32:10] 500 - GET /img/avatar.png (       66.5µs)
+[18:32:10] 200 - GET /js/api_service.js (     11.958µs)
+[18:32:10] 200 - GET /js/sidebar.js (      3.375µs)
+[18:32:10] 200 - GET /js/reports.js (      4.583µs)
+[18:32:10] 500 - GET /favicon.ico (     190.25µs)
+[18:32:10] 200 - GET /reports.html (     10.416µs)
+[18:32:10] 200 - GET /css/style.css (         11µs)
+[18:32:10] 200 - GET /css/layout.css (          8µs)
+[18:32:10] 200 - GET /css/components.css (     55.375µs)
+[18:32:10] 200 - GET /css/sidebar-collapsed.css (      3.709µs)
+[18:32:10] 500 - GET /img/avatar.png (    144.125µs)
+[18:32:10] 200 - GET /js/utils.js (    101.625µs)
+[18:32:10] 200 - GET /js/reports.js (     13.459µs)
+[18:32:10] 200 - GET /js/sidebar.js (      4.625µs)
+[18:32:10] 200 - GET /js/api_service.js (      3.959µs)
+[18:32:10] 500 - GET /favicon.ico (    168.583µs)
+[18:32:11] 200 - GET /reports.html (     11.209µs)
+[18:32:11] 200 - GET /css/style.css (      10.75µs)
+[18:32:11] 500 - GET /img/avatar.png (    173.917µs)
+[18:32:11] 200 - GET /css/sidebar-collapsed.css (      6.209µs)
+[18:32:11] 200 - GET /css/components.css (      3.708µs)
+[18:32:11] 200 - GET /js/utils.js (      3.542µs)
+[18:32:11] 200 - GET /css/layout.css (      2.875µs)
+[18:32:11] 200 - GET /js/api_service.js (      5.333µs)
+[18:32:11] 200 - GET /js/sidebar.js (     11.666µs)
+[18:32:11] 200 - GET /js/reports.js (     12.292µs)
+[18:32:11] 500 - GET /favicon.ico (    163.042µs)
+[18:32:11] 200 - GET /reports.html (     13.167µs)
+[18:32:11] 200 - GET /css/style.css (     10.666µs)
+[18:32:11] 200 - GET /css/layout.css (      4.916µs)
+[18:32:11] 500 - GET /img/avatar.png (    561.916µs)
+[18:32:11] 200 - GET /css/sidebar-collapsed.css (      4.583µs)
+[18:32:11] 200 - GET /css/components.css (        2.5µs)
+[18:32:11] 200 - GET /js/utils.js (      3.542µs)
+[18:32:11] 200 - GET /js/api_service.js (     18.583µs)
+[18:32:11] 200 - GET /js/sidebar.js (      8.083µs)
+[18:32:11] 200 - GET /js/reports.js (          4µs)
+[18:32:11] 500 - GET /favicon.ico (     90.875µs)
+[18:32:11] 200 - GET /reports.html (      48.75µs)
+[18:32:11] 200 - GET /css/style.css (         12µs)
+[18:32:11] 200 - GET /css/layout.css (     12.375µs)
+[18:32:11] 500 - GET /img/avatar.png (        755µs)
+[18:32:11] 200 - GET /js/utils.js (      6.167µs)
+[18:32:11] 200 - GET /css/sidebar-collapsed.css (      2.834µs)
+[18:32:11] 200 - GET /css/components.css (      2.041µs)
+[18:32:11] 200 - GET /js/sidebar.js (      2.334µs)
+[18:32:11] 200 - GET /js/api_service.js (      1.833µs)
+[18:32:11] 200 - GET /js/reports.js (         10µs)
+[18:32:11] 500 - GET /favicon.ico (     88.292µs)
+[18:32:11] 200 - GET /reports.html (     12.958µs)
+[18:32:11] 200 - GET /css/style.css (     12.542µs)
+[18:32:11] 200 - GET /css/components.css (      6.834µs)
+[18:32:11] 500 - GET /img/avatar.png (      183.5µs)
+[18:32:11] 200 - GET /css/sidebar-collapsed.css (      4.334µs)
+[18:32:11] 200 - GET /js/utils.js (          3µs)
+[18:32:11] 200 - GET /css/layout.css (      1.834µs)
+[18:32:11] 200 - GET /js/api_service.js (      6.333µs)
+[18:32:11] 200 - GET /js/sidebar.js (      6.125µs)
+[18:32:11] 200 - GET /js/reports.js (      3.916µs)
+[18:32:11] 500 - GET /favicon.ico (    286.083µs)
+[18:32:11] 200 - GET /reports.html (     13.458µs)
+[18:32:11] 200 - GET /css/style.css (      41.75µs)
+[18:32:11] 200 - GET /css/components.css (       5.75µs)
+[18:32:11] 200 - GET /css/layout.css (      5.541µs)
+[18:32:11] 200 - GET /css/sidebar-collapsed.css (      6.333µs)
+[18:32:11] 500 - GET /img/avatar.png (     67.083µs)
+[18:32:11] 200 - GET /js/utils.js (      3.209µs)
+[18:32:11] 200 - GET /js/api_service.js (     11.042µs)
+[18:32:11] 200 - GET /js/sidebar.js (      9.291µs)
+[18:32:11] 200 - GET /js/reports.js (      6.792µs)
+[18:32:11] 500 - GET /favicon.ico (     82.666µs)
+[18:32:11] 200 - GET /reports.html (     11.834µs)
+[18:32:11] 200 - GET /css/style.css (     11.375µs)
+[18:32:11] 200 - GET /css/layout.css (     10.292µs)
+[18:32:11] 200 - GET /js/utils.js (        3.5µs)
+[18:32:11] 200 - GET /css/sidebar-collapsed.css (      4.542µs)
+[18:32:11] 500 - GET /img/avatar.png (    179.334µs)
+[18:32:11] 200 - GET /css/components.css (      3.625µs)
+[18:32:11] 200 - GET /js/reports.js (     13.333µs)
+[18:32:11] 200 - GET /js/sidebar.js (       46.5µs)
+[18:32:11] 200 - GET /js/api_service.js (      3.417µs)
+[18:32:11] 500 - GET /favicon.ico (     76.959µs)
+[18:32:12] 200 - GET /reports.html (     12.459µs)
+[18:32:12] 200 - GET /css/style.css (     12.542µs)
+[18:32:12] 500 - GET /img/avatar.png (     78.334µs)
+[18:32:12] 200 - GET /css/components.css (      3.708µs)
+[18:32:12] 200 - GET /css/layout.css (     63.459µs)
+[18:32:12] 200 - GET /css/sidebar-collapsed.css (     83.375µs)
+[18:32:12] 200 - GET /js/utils.js (       3.25µs)
+[18:32:12] 200 - GET /js/api_service.js (    119.458µs)
+[18:32:12] 200 - GET /js/reports.js (       4.75µs)
+[18:32:12] 200 - GET /js/sidebar.js (      4.084µs)
+[18:32:12] 500 - GET /favicon.ico (     155.25µs)
+[18:32:12] 200 - GET /reports.html (     11.333µs)
+[18:32:12] 200 - GET /css/style.css (      12.75µs)
+[18:32:12] 200 - GET /css/layout.css (      5.292µs)
+[18:32:12] 200 - GET /css/components.css (      6.875µs)
+[18:32:12] 200 - GET /js/utils.js (       3.75µs)
+[18:32:12] 500 - GET /img/avatar.png (     87.417µs)
+[18:32:12] 200 - GET /css/sidebar-collapsed.css (      3.625µs)
+[18:32:12] 200 - GET /js/api_service.js (     26.416µs)
+[18:32:12] 200 - GET /js/sidebar.js (       4.75µs)
+[18:32:12] 200 - GET /js/reports.js (      4.334µs)
+[18:32:12] 500 - GET /favicon.ico (    201.042µs)
+[18:34:16] 200 - GET /reports.html (      163.5µs)
+[18:34:16] 200 - GET /css/components.css (        152µs)
+[18:34:16] 200 - GET /css/reports-enhanced.css (        139µs)
+[18:34:16] 200 - GET /css/sidebar-collapsed.css (    134.083µs)
+[18:34:16] 200 - GET /css/style.css (     93.291µs)
+[18:34:16] 200 - GET /css/layout.css (    189.583µs)
+[18:34:16] 500 - GET /img/avatar.png (    376.333µs)
+[18:34:16] 200 - GET /js/utils.js (    290.041µs)
+[18:34:16] 200 - GET /js/sidebar.js (    110.792µs)
+[18:34:16] 200 - GET /js/reports.js (      125.5µs)
+[18:34:16] 200 - GET /js/api_service.js (     321.25µs)
+[18:34:16] 200 - GET /reports.html (     11.792µs)
+[18:34:16] 200 - GET /css/reports-enhanced.css (      5.708µs)
+[18:34:16] 500 - GET /img/avatar.png (    160.792µs)
+[18:34:16] 200 - GET /css/sidebar-collapsed.css (      5.209µs)
+[18:34:16] 200 - GET /css/layout.css (      2.583µs)
+[18:34:16] 200 - GET /css/components.css (     16.875µs)
+[18:34:16] 200 - GET /css/style.css (          3µs)
+[18:34:16] 200 - GET /js/reports.js (     11.083µs)
+[18:34:16] 200 - GET /js/api_service.js (      8.417µs)
+[18:34:16] 200 - GET /js/sidebar.js (        4.5µs)
+[18:34:16] 200 - GET /js/utils.js (      3.625µs)
+[18:34:16] 200 - GET /reports.html (     11.125µs)
+[18:34:16] 200 - GET /css/components.css (     88.709µs)
+[18:34:16] 200 - GET /css/style.css (      8.833µs)
+[18:34:16] 200 - GET /js/utils.js (      1.125µs)
+[18:34:16] 500 - GET /img/avatar.png (     57.625µs)
+[18:34:16] 200 - GET /css/sidebar-collapsed.css (        1.5µs)
+[18:34:16] 200 - GET /css/layout.css (      7.042µs)
+[18:34:16] 200 - GET /css/reports-enhanced.css (        833ns)
+[18:34:16] 200 - GET /js/reports.js (      5.875µs)
+[18:34:16] 200 - GET /js/sidebar.js (      1.917µs)
+[18:34:16] 200 - GET /js/api_service.js (          1µs)
+[18:34:16] 200 - GET /reports.html (     15.916µs)
+[18:34:16] 200 - GET /css/components.css (      5.541µs)
+[18:34:16] 200 - GET /css/reports-enhanced.css (       6.25µs)
+[18:34:16] 500 - GET /img/avatar.png (    113.375µs)
+[18:34:16] 200 - GET /css/sidebar-collapsed.css (     22.166µs)
+[18:34:16] 200 - GET /css/style.css (      2.583µs)
+[18:34:16] 200 - GET /css/layout.css (       2.75µs)
+[18:34:16] 200 - GET /js/utils.js (       9.75µs)
+[18:34:16] 200 - GET /js/api_service.js (     11.833µs)
+[18:34:16] 200 - GET /js/sidebar.js (      6.417µs)
+[18:34:16] 200 - GET /js/reports.js (      3.083µs)
+[18:34:16] 500 - GET /favicon.ico (     86.292µs)
+[18:34:16] 200 - GET /reports.html (     12.333µs)
+[18:34:16] 200 - GET /css/style.css (     12.708µs)
+[18:34:16] 200 - GET /css/components.css (      8.041µs)
+[18:34:16] 200 - GET /css/reports-enhanced.css (     56.041µs)
+[18:34:16] 500 - GET /img/avatar.png (    670.375µs)
+[18:34:16] 200 - GET /js/utils.js (      2.375µs)
+[18:34:16] 200 - GET /css/sidebar-collapsed.css (          5µs)
+[18:34:16] 200 - GET /css/layout.css (      2.667µs)
+[18:34:16] 200 - GET /js/reports.js (      10.25µs)
+[18:34:16] 200 - GET /js/api_service.js (      3.167µs)
+[18:34:16] 200 - GET /js/sidebar.js (      4.708µs)
+[18:34:16] 500 - GET /favicon.ico (    102.375µs)
+[18:34:17] 200 - GET /reports.html (     15.292µs)
+[18:34:17] 200 - GET /css/style.css (     14.041µs)
+[18:34:17] 200 - GET /css/reports-enhanced.css (      3.209µs)
+[18:34:17] 200 - GET /css/layout.css (      14.25µs)
+[18:34:17] 200 - GET /css/components.css (      4.416µs)
+[18:34:17] 200 - GET /css/sidebar-collapsed.css (      7.375µs)
+[18:34:17] 500 - GET /img/avatar.png (    170.083µs)
+[18:34:17] 200 - GET /js/utils.js (     12.583µs)
+[18:34:17] 200 - GET /js/reports.js (      4.125µs)
+[18:34:17] 200 - GET /js/sidebar.js (       2.75µs)
+[18:34:17] 200 - GET /js/api_service.js (      3.084µs)
+[18:34:17] 500 - GET /favicon.ico (     82.083µs)
+[18:34:17] 200 - GET /reports.html (     12.458µs)
+[18:34:17] 200 - GET /css/style.css (     10.458µs)
+[18:34:17] 200 - GET /css/layout.css (       11.5µs)
+[18:34:17] 200 - GET /css/components.css (    784.916µs)
+[18:34:17] 200 - GET /js/utils.js (      6.458µs)
+[18:34:17] 200 - GET /js/api_service.js (      3.208µs)
+[18:34:17] 200 - GET /css/reports-enhanced.css (      3.833µs)
+[18:34:17] 200 - GET /css/sidebar-collapsed.css (      2.375µs)
+[18:34:17] 500 - GET /img/avatar.png (    103.667µs)
+[18:34:17] 200 - GET /js/sidebar.js (     11.209µs)
+[18:34:17] 200 - GET /js/reports.js (     17.792µs)
+[18:34:17] 500 - GET /favicon.ico (    122.209µs)
+[18:39:59] 200 - GET /reports.html (    205.666µs)
+[18:39:59] 200 - GET /js/reports.js (     90.917µs)
+[18:39:59] 200 - GET /css/reports-enhanced.css (    369.084µs)
+[18:39:59] 304 - GET /css/layout.css (     44.708µs)
+[18:39:59] 500 - GET /img/avatar.png (    445.583µs)
+[18:39:59] 304 - GET /css/style.css (        115µs)
+[18:39:59] 304 - GET /css/sidebar-collapsed.css (    202.709µs)
+[18:39:59] 304 - GET /css/components.css (    106.875µs)
+[18:39:59] 304 - GET /js/utils.js (     42.625µs)
+[18:39:59] 304 - GET /js/api_service.js (    222.417µs)
+[18:39:59] 304 - GET /js/sidebar.js (     58.917µs)
+[18:40:08] 304 - GET /templates.html (    113.166µs)
+[18:40:08] 304 - GET /js/templates.js (     81.042µs)
+[18:40:08] 500 - GET /img/avatar.png (    121.708µs)
+GetTemplates called - Looking for templates with company_id: DEMO-CO
+
+2025/07/24 18:40:08 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/handlers/template_simple_handler.go:54
+[0m[33m[2.677ms] [34;1m[rows:5][0m SELECT * FROM `templates` WHERE company_id = "DEMO-CO" AND is_active = true ORDER BY created_at DESC
+Found 5 templates
+[18:40:08] 200 - GET /api/v1/templates (   4.925834ms)
+[18:40:10] 304 - GET /accounts_chart.html (    116.625µs)
+[18:40:10] 304 - GET /js/accounts_chart.js (     67.375µs)
+[18:40:10] 500 - GET /img/avatar.png (     99.584µs)
+[18:40:10] 304 - GET /css/tables.css (      83.25µs)
+
+2025/07/24 18:40:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/organization_repository.go:23
+[0m[33m[0.552ms] [34;1m[rows:1][0m SELECT * FROM `organizations` WHERE is_active = true ORDER BY `organizations`.`id` LIMIT 1
+
+2025/07/24 18:40:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/data/account_repository.go:52
+[0m[33m[7.313ms] [34;1m[rows:257][0m SELECT * FROM `accounts` WHERE organization_id = "85557c86-2a49-4f2e-80e4-8c8924ad6bfe" ORDER BY code
+[18:40:10] 200 - GET /api/v1/accounts/tree (   9.149084ms)
+[18:40:11] 500 - GET /img/avatar.png (    111.667µs)
+[18:40:11] 304 - GET /js/reports.js (     17.084µs)
+[18:40:11] 500 - GET /img/avatar.png (    105.833µs)
+[18:40:11] 304 - GET /js/reports.js (      19.25µs)
