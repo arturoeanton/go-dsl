@@ -1,0 +1,867 @@
+[0;34m=====================================[0m
+[0;34m🧪 Test de Integración DSL Completa[0m
+[0;34m=====================================[0m
+
+[1;33m1. Verificando servidor...[0m
+[0;31m❌ Servidor no responde. Iniciando...[0m
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.017ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="organizations"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.048ms] [34;1m[rows:3][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "organizations" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.015ms] [34;1m[rows:-][0m SELECT * FROM `organizations` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.009ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "organizations" AND name = "idx_organizations_code"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "organizations" AND name = "idx_organizations_tax_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="accounts"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.042ms] [34;1m[rows:5][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "accounts" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT * FROM `accounts` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.008ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "accounts" AND name = "accounts"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.214ms] [34;1m[rows:0][0m CREATE TABLE `accounts__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`code` text NOT NULL,`name` text NOT NULL,`description` text,`account_type` text NOT NULL,`level` integer NOT NULL,`parent_account_id` text,`puc_code` text,`natural_balance` text NOT NULL,`accepts_movement` numeric DEFAULT true,`requires_third_party` numeric DEFAULT false,`requires_cost_center` numeric DEFAULT false,`is_active` numeric DEFAULT true,`balance_debit` decimal(15,2) DEFAULT 0,`balance_credit` decimal(15,2) DEFAULT 0,`current_balance` decimal(15,2) DEFAULT 0,`metadata` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.216ms] [34;1m[rows:257][0m INSERT INTO `accounts__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`account_type`,`level`,`parent_account_id`,`puc_code`,`natural_balance`,`accepts_movement`,`requires_third_party`,`requires_cost_center`,`is_active`,`balance_debit`,`balance_credit`,`current_balance`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`account_type`,`level`,`parent_account_id`,`puc_code`,`natural_balance`,`accepts_movement`,`requires_third_party`,`requires_cost_center`,`is_active`,`balance_debit`,`balance_credit`,`current_balance`,`metadata` FROM `accounts`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.174ms] [34;1m[rows:257][0m DROP TABLE `accounts`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.668ms] [34;1m[rows:257][0m ALTER TABLE `accounts__temp` RENAME TO `accounts`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.008ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "accounts" AND name = "accounts"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.158ms] [34;1m[rows:257][0m CREATE TABLE `accounts__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`code` text NOT NULL,`name` text NOT NULL,`description` text,`account_type` text NOT NULL,`level` integer NOT NULL,`parent_account_id` text,`puc_code` text,`natural_balance` text NOT NULL,`accepts_movement` numeric DEFAULT true,`requires_third_party` numeric DEFAULT false,`requires_cost_center` numeric DEFAULT false,`is_active` numeric DEFAULT true,`balance_debit` decimal(15,2) DEFAULT 0,`balance_credit` decimal(15,2) DEFAULT 0,`current_balance` decimal(15,2) DEFAULT 0,`metadata` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.190ms] [34;1m[rows:257][0m INSERT INTO `accounts__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`account_type`,`level`,`parent_account_id`,`puc_code`,`natural_balance`,`accepts_movement`,`requires_third_party`,`requires_cost_center`,`is_active`,`balance_debit`,`balance_credit`,`current_balance`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`account_type`,`level`,`parent_account_id`,`puc_code`,`natural_balance`,`accepts_movement`,`requires_third_party`,`requires_cost_center`,`is_active`,`balance_debit`,`balance_credit`,`current_balance`,`metadata` FROM `accounts`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.043ms] [34;1m[rows:257][0m DROP TABLE `accounts`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.680ms] [34;1m[rows:257][0m ALTER TABLE `accounts__temp` RENAME TO `accounts`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.010ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.016ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "accounts" AND name = "accounts"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.192ms] [34;1m[rows:257][0m CREATE TABLE `accounts__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`code` text NOT NULL,`name` text NOT NULL,`description` text,`account_type` text NOT NULL,`level` integer NOT NULL,`parent_account_id` text,`puc_code` text,`natural_balance` text NOT NULL,`accepts_movement` numeric DEFAULT true,`requires_third_party` numeric DEFAULT false,`requires_cost_center` numeric DEFAULT false,`is_active` numeric DEFAULT true,`balance_debit` decimal(15,2) DEFAULT 0,`balance_credit` decimal(15,2) DEFAULT 0,`current_balance` decimal(15,2) DEFAULT 0,`metadata` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.195ms] [34;1m[rows:257][0m INSERT INTO `accounts__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`account_type`,`level`,`parent_account_id`,`puc_code`,`natural_balance`,`accepts_movement`,`requires_third_party`,`requires_cost_center`,`is_active`,`balance_debit`,`balance_credit`,`current_balance`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`account_type`,`level`,`parent_account_id`,`puc_code`,`natural_balance`,`accepts_movement`,`requires_third_party`,`requires_cost_center`,`is_active`,`balance_debit`,`balance_credit`,`current_balance`,`metadata` FROM `accounts`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.060ms] [34;1m[rows:257][0m DROP TABLE `accounts`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.706ms] [34;1m[rows:257][0m ALTER TABLE `accounts__temp` RENAME TO `accounts`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.009ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "accounts" AND name = "idx_accounts_parent_account_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.328ms] [34;1m[rows:257][0m CREATE INDEX `idx_accounts_parent_account_id` ON `accounts`(`parent_account_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.009ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "accounts" AND name = "idx_accounts_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.325ms] [34;1m[rows:257][0m CREATE INDEX `idx_accounts_organization_id` ON `accounts`(`organization_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.008ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "accounts" AND name = "idx_org_account"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.305ms] [34;1m[rows:257][0m CREATE UNIQUE INDEX `idx_org_account` ON `accounts`(`code`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="third_parties"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.035ms] [34;1m[rows:5][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "third_parties" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.010ms] [34;1m[rows:-][0m SELECT * FROM `third_parties` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "third_parties" AND name = "idx_third_parties_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "third_parties" AND name = "idx_org_third_party"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "third_parties" AND name = "idx_third_parties_document_number"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="periods"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.034ms] [34;1m[rows:10][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "periods" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.008ms] [34;1m[rows:-][0m SELECT * FROM `periods` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_org_period"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_quarter"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_start_date"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_is_current"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_closed_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_year"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_month"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "periods" AND name = "idx_periods_end_date"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="tax_types"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.027ms] [34;1m[rows:4][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "tax_types" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT * FROM `tax_types` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "tax_types" AND name = "tax_types"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.156ms] [34;1m[rows:257][0m CREATE TABLE `tax_types__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`code` text NOT NULL,`name` text NOT NULL,`description` text,`tax_category` text NOT NULL,`rate` decimal(5,2) NOT NULL,`is_active` numeric DEFAULT true,`account_id` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.018ms] [34;1m[rows:5][0m INSERT INTO `tax_types__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`tax_category`,`rate`,`is_active`,`account_id`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`tax_category`,`rate`,`is_active`,`account_id` FROM `tax_types`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.103ms] [34;1m[rows:5][0m DROP TABLE `tax_types`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.683ms] [34;1m[rows:5][0m ALTER TABLE `tax_types__temp` RENAME TO `tax_types`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "tax_types" AND name = "idx_tax_types_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.278ms] [34;1m[rows:5][0m CREATE INDEX `idx_tax_types_organization_id` ON `tax_types`(`organization_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "tax_types" AND name = "idx_org_tax_type"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.273ms] [34;1m[rows:5][0m CREATE UNIQUE INDEX `idx_org_tax_type` ON `tax_types`(`code`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "tax_types" AND name = "idx_tax_types_account_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.276ms] [34;1m[rows:5][0m CREATE INDEX `idx_tax_types_account_id` ON `tax_types`(`account_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="document_types"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.029ms] [34;1m[rows:3][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "document_types" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.008ms] [34;1m[rows:-][0m SELECT * FROM `document_types` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "document_types" AND name = "idx_document_types_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "document_types" AND name = "idx_org_doc_type"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="cost_centers"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.027ms] [34;1m[rows:5][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "cost_centers" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT * FROM `cost_centers` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "cost_centers" AND name = "cost_centers"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.124ms] [34;1m[rows:5][0m CREATE TABLE `cost_centers__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`code` text NOT NULL,`name` text NOT NULL,`description` text,`parent_id` text,`level` integer NOT NULL,`is_active` numeric DEFAULT true,`budget_amount` decimal(15,2) DEFAULT 0,`actual_amount` decimal(15,2) DEFAULT 0,`responsible_user_id` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.013ms] [34;1m[rows:0][0m INSERT INTO `cost_centers__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`parent_id`,`level`,`is_active`,`budget_amount`,`actual_amount`,`responsible_user_id`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`parent_id`,`level`,`is_active`,`budget_amount`,`actual_amount`,`responsible_user_id` FROM `cost_centers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.099ms] [34;1m[rows:0][0m DROP TABLE `cost_centers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.663ms] [34;1m[rows:0][0m ALTER TABLE `cost_centers__temp` RENAME TO `cost_centers`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "cost_centers" AND name = "cost_centers"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.138ms] [34;1m[rows:0][0m CREATE TABLE `cost_centers__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`code` text NOT NULL,`name` text NOT NULL,`description` text,`parent_id` text,`level` integer NOT NULL,`is_active` numeric DEFAULT true,`budget_amount` decimal(15,2) DEFAULT 0,`actual_amount` decimal(15,2) DEFAULT 0,`responsible_user_id` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.010ms] [34;1m[rows:0][0m INSERT INTO `cost_centers__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`parent_id`,`level`,`is_active`,`budget_amount`,`actual_amount`,`responsible_user_id`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`code`,`name`,`description`,`parent_id`,`level`,`is_active`,`budget_amount`,`actual_amount`,`responsible_user_id` FROM `cost_centers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.035ms] [34;1m[rows:0][0m DROP TABLE `cost_centers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.645ms] [34;1m[rows:0][0m ALTER TABLE `cost_centers__temp` RENAME TO `cost_centers`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "cost_centers" AND name = "idx_cost_centers_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.328ms] [34;1m[rows:0][0m CREATE INDEX `idx_cost_centers_organization_id` ON `cost_centers`(`organization_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "cost_centers" AND name = "idx_org_cost_center"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.309ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_org_cost_center` ON `cost_centers`(`code`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "cost_centers" AND name = "idx_cost_centers_parent_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.361ms] [34;1m[rows:0][0m CREATE INDEX `idx_cost_centers_parent_id` ON `cost_centers`(`parent_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.016ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "cost_centers" AND name = "idx_cost_centers_responsible_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.387ms] [34;1m[rows:0][0m CREATE INDEX `idx_cost_centers_responsible_user_id` ON `cost_centers`(`responsible_user_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="vouchers"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.039ms] [34;1m[rows:10][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "vouchers" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.012ms] [34;1m[rows:-][0m SELECT * FROM `vouchers` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "vouchers" AND name = "vouchers"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.154ms] [34;1m[rows:0][0m CREATE TABLE `vouchers__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`number` text NOT NULL,`voucher_type` text NOT NULL,`date` datetime NOT NULL,`description` text NOT NULL,`reference` text,`period_id` text NOT NULL,`status` text DEFAULT "DRAFT",`total_debit` decimal(15,2) DEFAULT 0,`total_credit` decimal(15,2) DEFAULT 0,`is_balanced` numeric DEFAULT false,`created_by_user_id` text,`posted_by_user_id` text,`posted_at` datetime,`third_party_id` text,`cost_center_id` text,`attachments` text,`dsl_processing` text,`additional_data` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.036ms] [34;1m[rows:12][0m INSERT INTO `vouchers__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`number`,`voucher_type`,`date`,`description`,`reference`,`period_id`,`status`,`total_debit`,`total_credit`,`is_balanced`,`created_by_user_id`,`posted_by_user_id`,`posted_at`,`third_party_id`,`cost_center_id`,`attachments`,`dsl_processing`,`additional_data`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`number`,`voucher_type`,`date`,`description`,`reference`,`period_id`,`status`,`total_debit`,`total_credit`,`is_balanced`,`created_by_user_id`,`posted_by_user_id`,`posted_at`,`third_party_id`,`cost_center_id`,`attachments`,`dsl_processing`,`additional_data` FROM `vouchers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.230ms] [34;1m[rows:12][0m DROP TABLE `vouchers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.697ms] [34;1m[rows:12][0m ALTER TABLE `vouchers__temp` RENAME TO `vouchers`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "vouchers" AND name = "vouchers"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.163ms] [34;1m[rows:12][0m CREATE TABLE `vouchers__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`number` text NOT NULL,`voucher_type` text NOT NULL,`date` datetime NOT NULL,`description` text NOT NULL,`reference` text,`period_id` text NOT NULL,`status` text DEFAULT "DRAFT",`total_debit` decimal(15,2) DEFAULT 0,`total_credit` decimal(15,2) DEFAULT 0,`is_balanced` numeric DEFAULT false,`created_by_user_id` text,`posted_by_user_id` text,`posted_at` datetime,`third_party_id` text,`cost_center_id` text,`attachments` text,`dsl_processing` text,`additional_data` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.031ms] [34;1m[rows:12][0m INSERT INTO `vouchers__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`number`,`voucher_type`,`date`,`description`,`reference`,`period_id`,`status`,`total_debit`,`total_credit`,`is_balanced`,`created_by_user_id`,`posted_by_user_id`,`posted_at`,`third_party_id`,`cost_center_id`,`attachments`,`dsl_processing`,`additional_data`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`number`,`voucher_type`,`date`,`description`,`reference`,`period_id`,`status`,`total_debit`,`total_credit`,`is_balanced`,`created_by_user_id`,`posted_by_user_id`,`posted_at`,`third_party_id`,`cost_center_id`,`attachments`,`dsl_processing`,`additional_data` FROM `vouchers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.037ms] [34;1m[rows:12][0m DROP TABLE `vouchers`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.657ms] [34;1m[rows:12][0m ALTER TABLE `vouchers__temp` RENAME TO `vouchers`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.011ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "vouchers" AND (sql LIKE "%CONSTRAINT \"fk_vouchers_third_party\" %" OR sql LIKE "%CONSTRAINT fk_vouchers_third_party %" OR sql LIKE "%CONSTRAINT `fk_vouchers_third_party`%" OR sql LIKE "%CONSTRAINT [fk_vouchers_third_party]%" OR sql LIKE "%CONSTRAINT 	fk_vouchers_third_party	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.311ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_organization_id` ON `vouchers`(`organization_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_org_voucher"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.314ms] [34;1m[rows:12][0m CREATE UNIQUE INDEX `idx_org_voucher` ON `vouchers`(`number`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_date"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.317ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_date` ON `vouchers`(`date`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_period_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.323ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_period_id` ON `vouchers`(`period_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_created_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.308ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_created_by_user_id` ON `vouchers`(`created_by_user_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_posted_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.287ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_posted_by_user_id` ON `vouchers`(`posted_by_user_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_third_party_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.355ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_third_party_id` ON `vouchers`(`third_party_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "vouchers" AND name = "idx_vouchers_cost_center_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.304ms] [34;1m[rows:12][0m CREATE INDEX `idx_vouchers_cost_center_id` ON `vouchers`(`cost_center_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="voucher_lines"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.038ms] [34;1m[rows:6][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "voucher_lines" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.009ms] [34;1m[rows:-][0m SELECT * FROM `voucher_lines` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND name = "voucher_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.159ms] [34;1m[rows:12][0m CREATE TABLE `voucher_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`voucher_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`tax_amount` decimal(15,2) DEFAULT 0,`tax_rate` decimal(5,2) DEFAULT 0,`base_amount` decimal(15,2) DEFAULT 0,`line_number` integer NOT NULL,`metadata` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_voucher_lines` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers`(`id`) ON DELETE CASCADE,CONSTRAINT `fk_voucher_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_voucher_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.052ms] [34;1m[rows:56][0m INSERT INTO `voucher_lines__temp`(`id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata` FROM `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.108ms] [34;1m[rows:56][0m DROP TABLE `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.695ms] [34;1m[rows:56][0m ALTER TABLE `voucher_lines__temp` RENAME TO `voucher_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.019ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND name = "voucher_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.181ms] [34;1m[rows:56][0m CREATE TABLE `voucher_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`voucher_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`tax_amount` decimal(15,2) DEFAULT 0,`tax_rate` decimal(5,2) DEFAULT 0,`base_amount` decimal(15,2) DEFAULT 0,`line_number` integer NOT NULL,`metadata` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_voucher_lines` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers`(`id`) ON DELETE CASCADE,CONSTRAINT `fk_voucher_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_voucher_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.050ms] [34;1m[rows:56][0m INSERT INTO `voucher_lines__temp`(`id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata` FROM `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.050ms] [34;1m[rows:56][0m DROP TABLE `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.719ms] [34;1m[rows:56][0m ALTER TABLE `voucher_lines__temp` RENAME TO `voucher_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND name = "voucher_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.130ms] [34;1m[rows:56][0m CREATE TABLE `voucher_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`voucher_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`tax_amount` decimal(15,2) DEFAULT 0,`tax_rate` decimal(5,2) DEFAULT 0,`base_amount` decimal(15,2) DEFAULT 0,`line_number` integer NOT NULL,`metadata` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_voucher_lines` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers`(`id`) ON DELETE CASCADE,CONSTRAINT `fk_voucher_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_voucher_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.042ms] [34;1m[rows:56][0m INSERT INTO `voucher_lines__temp`(`id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata` FROM `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.045ms] [34;1m[rows:56][0m DROP TABLE `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.663ms] [34;1m[rows:56][0m ALTER TABLE `voucher_lines__temp` RENAME TO `voucher_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND name = "voucher_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.129ms] [34;1m[rows:56][0m CREATE TABLE `voucher_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`voucher_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`tax_amount` decimal(15,2) DEFAULT 0,`tax_rate` decimal(5,2) DEFAULT 0,`base_amount` decimal(15,2) DEFAULT 0,`line_number` integer NOT NULL,`metadata` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_voucher_lines` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers`(`id`) ON DELETE CASCADE,CONSTRAINT `fk_voucher_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_voucher_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.040ms] [34;1m[rows:56][0m INSERT INTO `voucher_lines__temp`(`id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata` FROM `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.043ms] [34;1m[rows:56][0m DROP TABLE `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.641ms] [34;1m[rows:56][0m ALTER TABLE `voucher_lines__temp` RENAME TO `voucher_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND name = "voucher_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.172ms] [34;1m[rows:56][0m CREATE TABLE `voucher_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`voucher_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`tax_amount` decimal(15,2) DEFAULT 0,`tax_rate` decimal(5,2) DEFAULT 0,`base_amount` decimal(15,2) DEFAULT 0,`line_number` integer NOT NULL,`metadata` text,PRIMARY KEY (`id`),CONSTRAINT `fk_vouchers_voucher_lines` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers`(`id`) ON DELETE CASCADE,CONSTRAINT `fk_voucher_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_voucher_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.041ms] [34;1m[rows:56][0m INSERT INTO `voucher_lines__temp`(`id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`voucher_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`tax_amount`,`tax_rate`,`base_amount`,`line_number`,`metadata` FROM `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.037ms] [34;1m[rows:56][0m DROP TABLE `voucher_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.670ms] [34;1m[rows:56][0m ALTER TABLE `voucher_lines__temp` RENAME TO `voucher_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.015ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND (sql LIKE "%CONSTRAINT \"fk_vouchers_voucher_lines\" %" OR sql LIKE "%CONSTRAINT fk_vouchers_voucher_lines %" OR sql LIKE "%CONSTRAINT `fk_vouchers_voucher_lines`%" OR sql LIKE "%CONSTRAINT [fk_vouchers_voucher_lines]%" OR sql LIKE "%CONSTRAINT 	fk_vouchers_voucher_lines	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND (sql LIKE "%CONSTRAINT \"fk_voucher_lines_account\" %" OR sql LIKE "%CONSTRAINT fk_voucher_lines_account %" OR sql LIKE "%CONSTRAINT `fk_voucher_lines_account`%" OR sql LIKE "%CONSTRAINT [fk_voucher_lines_account]%" OR sql LIKE "%CONSTRAINT 	fk_voucher_lines_account	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "voucher_lines" AND (sql LIKE "%CONSTRAINT \"fk_voucher_lines_third_party\" %" OR sql LIKE "%CONSTRAINT fk_voucher_lines_third_party %" OR sql LIKE "%CONSTRAINT `fk_voucher_lines_third_party`%" OR sql LIKE "%CONSTRAINT [fk_voucher_lines_third_party]%" OR sql LIKE "%CONSTRAINT 	fk_voucher_lines_third_party	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "voucher_lines" AND name = "idx_voucher_lines_account_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.324ms] [34;1m[rows:56][0m CREATE INDEX `idx_voucher_lines_account_id` ON `voucher_lines`(`account_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "voucher_lines" AND name = "idx_voucher_lines_third_party_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.309ms] [34;1m[rows:56][0m CREATE INDEX `idx_voucher_lines_third_party_id` ON `voucher_lines`(`third_party_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "voucher_lines" AND name = "idx_voucher_lines_cost_center_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.334ms] [34;1m[rows:56][0m CREATE INDEX `idx_voucher_lines_cost_center_id` ON `voucher_lines`(`cost_center_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "voucher_lines" AND name = "idx_voucher_lines_voucher_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.309ms] [34;1m[rows:56][0m CREATE INDEX `idx_voucher_lines_voucher_id` ON `voucher_lines`(`voucher_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="journal_entries"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.033ms] [34;1m[rows:9][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "journal_entries" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.009ms] [34;1m[rows:-][0m SELECT * FROM `journal_entries` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_entries" AND name = "journal_entries"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.144ms] [34;1m[rows:56][0m CREATE TABLE `journal_entries__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`entry_number` text NOT NULL,`date` datetime NOT NULL,`description` text NOT NULL,`reference` text,`voucher_id` text,`period_id` text NOT NULL,`status` text DEFAULT "POSTED",`total_debit` decimal(15,2) DEFAULT 0,`total_credit` decimal(15,2) DEFAULT 0,`is_reversed` numeric DEFAULT false,`reversed_by_entry_id` text,`reversal_reason` text,`created_by_user_id` text,`posted_at` datetime NOT NULL,`metadata` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.020ms] [34;1m[rows:5][0m INSERT INTO `journal_entries__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`entry_number`,`date`,`description`,`reference`,`voucher_id`,`period_id`,`status`,`total_debit`,`total_credit`,`is_reversed`,`reversed_by_entry_id`,`reversal_reason`,`created_by_user_id`,`posted_at`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`entry_number`,`date`,`description`,`reference`,`voucher_id`,`period_id`,`status`,`total_debit`,`total_credit`,`is_reversed`,`reversed_by_entry_id`,`reversal_reason`,`created_by_user_id`,`posted_at`,`metadata` FROM `journal_entries`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.183ms] [34;1m[rows:5][0m DROP TABLE `journal_entries`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.649ms] [34;1m[rows:5][0m ALTER TABLE `journal_entries__temp` RENAME TO `journal_entries`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_entries" AND name = "journal_entries"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.131ms] [34;1m[rows:5][0m CREATE TABLE `journal_entries__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`organization_id` text NOT NULL,`entry_number` text NOT NULL,`date` datetime NOT NULL,`description` text NOT NULL,`reference` text,`voucher_id` text,`period_id` text NOT NULL,`status` text DEFAULT "POSTED",`total_debit` decimal(15,2) DEFAULT 0,`total_credit` decimal(15,2) DEFAULT 0,`is_reversed` numeric DEFAULT false,`reversed_by_entry_id` text,`reversal_reason` text,`created_by_user_id` text,`posted_at` datetime NOT NULL,`metadata` text,PRIMARY KEY (`id`))
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.017ms] [34;1m[rows:5][0m INSERT INTO `journal_entries__temp`(`id`,`created_at`,`updated_at`,`organization_id`,`entry_number`,`date`,`description`,`reference`,`voucher_id`,`period_id`,`status`,`total_debit`,`total_credit`,`is_reversed`,`reversed_by_entry_id`,`reversal_reason`,`created_by_user_id`,`posted_at`,`metadata`) SELECT `id`,`created_at`,`updated_at`,`organization_id`,`entry_number`,`date`,`description`,`reference`,`voucher_id`,`period_id`,`status`,`total_debit`,`total_credit`,`is_reversed`,`reversed_by_entry_id`,`reversal_reason`,`created_by_user_id`,`posted_at`,`metadata` FROM `journal_entries`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.041ms] [34;1m[rows:5][0m DROP TABLE `journal_entries`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.628ms] [34;1m[rows:5][0m ALTER TABLE `journal_entries__temp` RENAME TO `journal_entries`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_journal_entries_created_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.318ms] [34;1m[rows:5][0m CREATE INDEX `idx_journal_entries_created_by_user_id` ON `journal_entries`(`created_by_user_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_journal_entries_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.314ms] [34;1m[rows:5][0m CREATE INDEX `idx_journal_entries_organization_id` ON `journal_entries`(`organization_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_org_entry"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.317ms] [34;1m[rows:5][0m CREATE UNIQUE INDEX `idx_org_entry` ON `journal_entries`(`entry_number`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_journal_entries_date"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.316ms] [34;1m[rows:5][0m CREATE INDEX `idx_journal_entries_date` ON `journal_entries`(`date`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_journal_entries_voucher_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.302ms] [34;1m[rows:5][0m CREATE INDEX `idx_journal_entries_voucher_id` ON `journal_entries`(`voucher_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_journal_entries_period_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.309ms] [34;1m[rows:5][0m CREATE INDEX `idx_journal_entries_period_id` ON `journal_entries`(`period_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_entries" AND name = "idx_journal_entries_reversed_by_entry_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.280ms] [34;1m[rows:5][0m CREATE INDEX `idx_journal_entries_reversed_by_entry_id` ON `journal_entries`(`reversed_by_entry_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="journal_lines"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.031ms] [34;1m[rows:7][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "journal_lines" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT * FROM `journal_lines` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_lines" AND name = "journal_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.142ms] [34;1m[rows:5][0m CREATE TABLE `journal_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`journal_entry_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`line_number` integer NOT NULL,`voucher_line_id` text,PRIMARY KEY (`id`),CONSTRAINT `fk_journal_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_journal_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`),CONSTRAINT `fk_journal_entries_journal_lines` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries`(`id`) ON DELETE CASCADE)
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.018ms] [34;1m[rows:10][0m INSERT INTO `journal_lines__temp`(`id`,`created_at`,`updated_at`,`journal_entry_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`line_number`,`voucher_line_id`) SELECT `id`,`created_at`,`updated_at`,`journal_entry_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`line_number`,`voucher_line_id` FROM `journal_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.113ms] [34;1m[rows:10][0m DROP TABLE `journal_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.644ms] [34;1m[rows:10][0m ALTER TABLE `journal_lines__temp` RENAME TO `journal_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_lines" AND name = "journal_lines"
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.135ms] [34;1m[rows:10][0m CREATE TABLE `journal_lines__temp`  (`id` text,`created_at` datetime,`updated_at` datetime,`journal_entry_id` text NOT NULL,`account_id` text NOT NULL,`description` text NOT NULL,`debit_amount` decimal(15,2) DEFAULT 0,`credit_amount` decimal(15,2) DEFAULT 0,`third_party_id` text,`cost_center_id` text,`line_number` integer NOT NULL,`voucher_line_id` text,PRIMARY KEY (`id`),CONSTRAINT `fk_journal_lines_account` FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),CONSTRAINT `fk_journal_lines_third_party` FOREIGN KEY (`third_party_id`) REFERENCES `third_parties`(`id`),CONSTRAINT `fk_journal_entries_journal_lines` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries`(`id`) ON DELETE CASCADE)
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.016ms] [34;1m[rows:10][0m INSERT INTO `journal_lines__temp`(`id`,`created_at`,`updated_at`,`journal_entry_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`line_number`,`voucher_line_id`) SELECT `id`,`created_at`,`updated_at`,`journal_entry_id`,`account_id`,`description`,`debit_amount`,`credit_amount`,`third_party_id`,`cost_center_id`,`line_number`,`voucher_line_id` FROM `journal_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.036ms] [34;1m[rows:10][0m DROP TABLE `journal_lines`
+
+2025/07/24 13:48:10 [32m
+[0m[33m[0.629ms] [34;1m[rows:10][0m ALTER TABLE `journal_lines__temp` RENAME TO `journal_lines`
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.010ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_lines" AND (sql LIKE "%CONSTRAINT \"fk_journal_lines_account\" %" OR sql LIKE "%CONSTRAINT fk_journal_lines_account %" OR sql LIKE "%CONSTRAINT `fk_journal_lines_account`%" OR sql LIKE "%CONSTRAINT [fk_journal_lines_account]%" OR sql LIKE "%CONSTRAINT 	fk_journal_lines_account	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_lines" AND (sql LIKE "%CONSTRAINT \"fk_journal_lines_third_party\" %" OR sql LIKE "%CONSTRAINT fk_journal_lines_third_party %" OR sql LIKE "%CONSTRAINT `fk_journal_lines_third_party`%" OR sql LIKE "%CONSTRAINT [fk_journal_lines_third_party]%" OR sql LIKE "%CONSTRAINT 	fk_journal_lines_third_party	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_lines" AND (sql LIKE "%CONSTRAINT \"fk_journal_entries_journal_lines\" %" OR sql LIKE "%CONSTRAINT fk_journal_entries_journal_lines %" OR sql LIKE "%CONSTRAINT `fk_journal_entries_journal_lines`%" OR sql LIKE "%CONSTRAINT [fk_journal_entries_journal_lines]%" OR sql LIKE "%CONSTRAINT 	fk_journal_entries_journal_lines	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_lines" AND name = "idx_journal_lines_third_party_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.315ms] [34;1m[rows:10][0m CREATE INDEX `idx_journal_lines_third_party_id` ON `journal_lines`(`third_party_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_lines" AND name = "idx_journal_lines_cost_center_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.308ms] [34;1m[rows:10][0m CREATE INDEX `idx_journal_lines_cost_center_id` ON `journal_lines`(`cost_center_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_lines" AND name = "idx_journal_lines_voucher_line_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.295ms] [34;1m[rows:10][0m CREATE INDEX `idx_journal_lines_voucher_line_id` ON `journal_lines`(`voucher_line_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_lines" AND name = "idx_journal_lines_journal_entry_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.300ms] [34;1m[rows:10][0m CREATE INDEX `idx_journal_lines_journal_entry_id` ON `journal_lines`(`journal_entry_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "journal_lines" AND name = "idx_journal_lines_account_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.318ms] [34;1m[rows:10][0m CREATE INDEX `idx_journal_lines_account_id` ON `journal_lines`(`account_id`)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="dsl_templates"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.031ms] [34;1m[rows:6][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "dsl_templates" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.009ms] [34;1m[rows:-][0m SELECT * FROM `dsl_templates` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_templates" AND name = "idx_dsl_templates_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_templates" AND name = "idx_dsl_templates_category"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_templates" AND name = "idx_dsl_templates_created_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_templates" AND name = "idx_dsl_templates_updated_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="dsl_executions"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.027ms] [34;1m[rows:6][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "dsl_executions" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT * FROM `dsl_executions` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_executions" AND name = "idx_dsl_executions_generated_voucher_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_executions" AND name = "idx_dsl_executions_executed_at"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_executions" AND name = "idx_dsl_executions_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_executions" AND name = "idx_dsl_executions_template_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "dsl_executions" AND name = "idx_dsl_executions_executed_by_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="journal_templates"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.025ms] [34;1m[rows:1][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "journal_templates" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT * FROM `journal_templates` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.008ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "journal_templates" AND (sql LIKE "%CONSTRAINT \"fk_journal_templates_organization\" %" OR sql LIKE "%CONSTRAINT fk_journal_templates_organization %" OR sql LIKE "%CONSTRAINT `fk_journal_templates_organization`%" OR sql LIKE "%CONSTRAINT [fk_journal_templates_organization]%" OR sql LIKE "%CONSTRAINT 	fk_journal_templates_organization	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="template_executions"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.031ms] [34;1m[rows:3][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "template_executions" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT * FROM `template_executions` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "template_executions" AND (sql LIKE "%CONSTRAINT \"fk_template_executions_template\" %" OR sql LIKE "%CONSTRAINT fk_template_executions_template %" OR sql LIKE "%CONSTRAINT `fk_template_executions_template`%" OR sql LIKE "%CONSTRAINT [fk_template_executions_template]%" OR sql LIKE "%CONSTRAINT 	fk_template_executions_template	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "table" AND tbl_name = "template_executions" AND (sql LIKE "%CONSTRAINT \"fk_template_executions_journal_entry\" %" OR sql LIKE "%CONSTRAINT fk_template_executions_journal_entry %" OR sql LIKE "%CONSTRAINT `fk_template_executions_journal_entry`%" OR sql LIKE "%CONSTRAINT [fk_template_executions_journal_entry]%" OR sql LIKE "%CONSTRAINT 	fk_template_executions_journal_entry	%")
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.003ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="audit_logs"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.027ms] [34;1m[rows:8][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "audit_logs" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT * FROM `audit_logs` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "audit_logs" AND name = "idx_audit_logs_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "audit_logs" AND name = "idx_audit_logs_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "audit_logs" AND name = "idx_audit_logs_action"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "audit_logs" AND name = "idx_audit_logs_entity_type"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "audit_logs" AND name = "idx_audit_logs_entity_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "audit_logs" AND name = "idx_audit_logs_timestamp"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="user_preferences"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.024ms] [34;1m[rows:4][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "user_preferences" AND sql IS NOT NULL order by type = "table" desc
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT * FROM `user_preferences` LIMIT 1
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "user_preferences" AND name = "idx_user_preferences_organization_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "user_preferences" AND name = "idx_user_preferences_user_id"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:50
+[0m[33m[0.004ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "user_preferences" AND name = "idx_user_preferences_category"
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:97
+[0m[33m[0.431ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_accounts_org_code ON accounts(organization_id, code)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:100
+[0m[33m[0.013ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_third_parties_org_document ON third_parties(organization_id, document_type, document_number)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:103
+[0m[33m[0.279ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_vouchers_org_date ON vouchers(organization_id, date DESC)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:106
+[0m[33m[0.304ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_journal_entries_org_date ON journal_entries(organization_id, date DESC)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:109
+[0m[33m[0.302ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_voucher_lines_account ON voucher_lines(account_id)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:112
+[0m[33m[0.298ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_journal_lines_account ON journal_lines(account_id)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:115
+[0m[33m[0.011ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id, timestamp DESC)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:118
+[0m[33m[0.009ms] [34;1m[rows:10][0m CREATE INDEX IF NOT EXISTS idx_dsl_templates_category_status ON dsl_templates(category, status)
+
+2025/07/24 13:48:10 [32m/Users/arturoeliasanton/github.com/arturoeanton/go-dsl/docs/es/propuesta_motor/app/internal/database/database.go:152
+[0m[33m[0.014ms] [34;1m[rows:1][0m SELECT count(*) FROM `organizations`
+2025/07/24 13:48:10 🚀 Motor Contable POC iniciando en puerto 3000
+2025/07/24 13:48:10 📚 Documentación Swagger: http://localhost:3000/swagger/
+2025/07/24 13:48:10 💾 Base de datos SQLite: db_contable.db
+2025/07/24 13:48:10 🏥 Health Check: http://localhost:3000/health
+2025/07/24 13:48:10 failed to listen: listen tcp4 :3000: bind: address already in use
+exit status 1
+
+[1;33m2. Test: Factura de venta con IVA automático[0m
+[0;31m❌ Crear factura de venta: FALLÓ[0m
+[1;33mError: Error desconocido[0m
+
+[1;33m3. Test: Factura de compra con retención automática[0m
+[0;31m❌ Crear factura de compra: FALLÓ[0m
+[1;33mError: Error desconocido[0m
+
+[1;33m4. Test: Pago con workflow de aprobación[0m
+[0;32m✅ Crear pago: PASÓ[0m
+[0;31m❌ Workflow no se activó[0m
+
+[1;33m5. Test: Clasificaciones automáticas DSL[0m
+
+[1;33m6. Test: POS - Venta rápida[0m
+[0;31m❌ Venta POS: FALLÓ[0m
+[1;33mError: Error desconocido[0m
+
+[1;33m7. Test: Notificaciones DSL para montos altos[0m
+[0;31m❌ Crear venta alto valor: FALLÓ[0m
+[1;33mError: Error desconocido[0m
+
+[0;34m=====================================[0m
+[0;34m📊 Resumen de Pruebas DSL[0m
+[0;34m=====================================[0m
+[0;32mTotal comprobantes creados: 13[0m
+[0;32mKPIs actualizados:[0m
+jq: parse error: Invalid numeric literal at line 1, column 9
+
+[0;32m✅ Pruebas de integración DSL completadas[0m
+[0;34mAcceder a http://localhost:3000 para ver el sistema completo[0m
+[0;34mPOS disponible en http://localhost:3000/pos.html[0m
