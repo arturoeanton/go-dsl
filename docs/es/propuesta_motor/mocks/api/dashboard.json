@@ -1,0 +1,169 @@
+{
+  "success": true,
+  "data": {
+    "kpis": {
+      "vouchers_today": 127,
+      "vouchers_month": 3421,
+      "total_amount_month": 458750000.50,
+      "pending_vouchers": 23,
+      "processing_rate": 98.5,
+      "average_processing_time": 1.2
+    },
+    "charts": {
+      "vouchers_by_type": [
+        {
+          "type": "invoice_sale",
+          "label": "Facturas de Venta",
+          "count": 1250,
+          "amount": 185000000
+        },
+        {
+          "type": "invoice_purchase",
+          "label": "Facturas de Compra",
+          "count": 890,
+          "amount": 120000000
+        },
+        {
+          "type": "payment",
+          "label": "Pagos",
+          "count": 650,
+          "amount": 95000000
+        },
+        {
+          "type": "receipt",
+          "label": "Recibos",
+          "count": 430,
+          "amount": 45000000
+        },
+        {
+          "type": "credit_note",
+          "label": "Notas Crédito",
+          "count": 201,
+          "amount": 13750000.50
+        }
+      ],
+      "vouchers_by_day": {
+        "labels": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+        "values": [156, 143, 167, 134, 189, 98, 127]
+      },
+      "vouchers_by_day_detail": [
+        {
+          "date": "2024-01-15",
+          "count": 156,
+          "amount": 22500000
+        },
+        {
+          "date": "2024-01-16",
+          "count": 143,
+          "amount": 19800000
+        },
+        {
+          "date": "2024-01-17",
+          "count": 167,
+          "amount": 28900000
+        },
+        {
+          "date": "2024-01-18",
+          "count": 134,
+          "amount": 18500000
+        },
+        {
+          "date": "2024-01-19",
+          "count": 189,
+          "amount": 31200000
+        },
+        {
+          "date": "2024-01-20",
+          "count": 98,
+          "amount": 12300000
+        },
+        {
+          "date": "2024-01-21",
+          "count": 127,
+          "amount": 16800000
+        }
+      ],
+      "vouchers_by_type": {
+        "labels": ["Factura Venta", "Factura Compra", "Recibo", "Egreso", "Nota Crédito", "Asiento Manual"],
+        "values": [1250, 890, 456, 325, 234, 266]
+      },
+      "vouchers_by_status": {
+        "labels": ["Procesados", "Pendientes", "Con Error", "En Proceso"],
+        "values": [3200, 187, 34, 0]
+      },
+      "vouchers_by_status_detail": [
+        {
+          "status": "PROCESSED",
+          "label": "Procesados",
+          "count": 3200,
+          "percentage": 93.5
+        },
+        {
+          "status": "PENDING",
+          "label": "Pendientes",
+          "count": 187,
+          "percentage": 5.5
+        },
+        {
+          "status": "ERROR",
+          "label": "Con Errores",
+          "count": 34,
+          "percentage": 1.0
+        }
+      ]
+    },
+    "recent_activity": [
+      {
+        "id": "v-2024-0127",
+        "type": "invoice_sale",
+        "amount": 2450000,
+        "status": "PROCESSED",
+        "created_at": "2024-01-21T10:30:00Z",
+        "description": "Factura Cliente ABC S.A."
+      },
+      {
+        "id": "v-2024-0126",
+        "type": "payment",
+        "amount": 1800000,
+        "status": "PENDING",
+        "created_at": "2024-01-21T10:15:00Z",
+        "description": "Pago a Proveedor XYZ"
+      },
+      {
+        "id": "v-2024-0125",
+        "type": "invoice_purchase",
+        "amount": 890000,
+        "status": "PROCESSED",
+        "created_at": "2024-01-21T09:45:00Z",
+        "description": "Compra materiales oficina"
+      },
+      {
+        "id": "v-2024-0124",
+        "type": "credit_note",
+        "amount": 150000,
+        "status": "ERROR",
+        "created_at": "2024-01-21T09:30:00Z",
+        "description": "Devolución parcial FV-2024-0089",
+        "error": "Cuenta contable no encontrada"
+      },
+      {
+        "id": "v-2024-0123",
+        "type": "receipt",
+        "amount": 560000,
+        "status": "PROCESSED",
+        "created_at": "2024-01-21T09:00:00Z",
+        "description": "Recibo de caja #RC-0045"
+      }
+    ],
+    "system_health": {
+      "status": "healthy",
+      "uptime": 99.98,
+      "api_response_time": 45,
+      "database_connections": 12,
+      "queue_size": 3,
+      "workers_active": 5,
+      "cache_hit_rate": 87.5
+    }
+  },
+  "timestamp": "2024-01-21T11:00:00Z"
+}

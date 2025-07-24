@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor DSL - Motor Contable</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <style>
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            height: calc(100vh - 300px);
+            min-height: 500px;
+        }
+        .editor-pane {
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-header {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--gray-color);
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .code-editor {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            padding: var(--spacing-md);
+            overflow: auto;
+            background-color: #f8f8f8;
+            position: relative;
+        }
+        .line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40px;
+            padding: var(--spacing-md) var(--spacing-sm);
+            background-color: #f0f0f0;
+            border-right: 1px solid var(--border-color);
+            text-align: right;
+            color: #999;
+            user-select: none;
+        }
+        .code-content {
+            margin-left: 50px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            outline: none;
+            color: #333;
+            line-height: 1.5;
+        }
+        .syntax-error {
+            background-color: #ffebee;
+            border-left: 3px solid var(--danger-color);
+            padding: var(--spacing-sm);
+            margin: var(--spacing-sm) 0;
+            font-size: 12px;
+            color: var(--danger-color);
+        }
+        .syntax-valid {
+            background-color: #e8f5e9;
+            border-left: 3px solid var(--success-color);
+            padding: var(--spacing-sm);
+            margin: var(--spacing-sm) 0;
+            font-size: 12px;
+            color: var(--success-color);
+        }
+        .template-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .template-item {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color var(--transition-fast);
+        }
+        .template-item:hover {
+            background-color: var(--light-gray);
+        }
+        .template-item.active {
+            background-color: #e3f2fd;
+            border-left: 3px solid var(--primary-color);
+        }
+        .template-meta {
+            display: flex;
+            gap: var(--spacing-md);
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: var(--spacing-xs);
+        }
+        .dsl-toolbar {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+        .snippet-menu {
+            position: absolute;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            padding: var(--spacing-sm);
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .snippet-item {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+        }
+        .snippet-item:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .ast-tree {
+            font-family: monospace;
+            font-size: 12px;
+            padding: var(--spacing-md);
+            background-color: #f5f5f5;
+            border-radius: var(--radius-md);
+            overflow: auto;
+            max-height: 300px;
+        }
+        .test-data-section {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            background-color: var(--light-gray);
+            border-radius: var(--radius-md);
+        }
+        
+        /* Syntax highlighting - DISABLED for stability */
+        /* Plain text display for better reliability */
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="navbar-brand">
+                <h1>Motor Contable</h1>
+            </div>
+            <div class="navbar-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar plantilla..." id="searchInput">
+                    <button type="button" class="search-btn">🔍</button>
+                </div>
+                <div class="user-menu">
+                    <img src="../img/avatar.png" alt="Usuario" class="user-avatar">
+                    <span>Juan Pérez</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><span class="menu-icon">📊</span><span class="menu-text">Dashboard</span></a></li>
+                    <li><a href="vouchers_list.html"><span class="menu-icon">📄</span><span class="menu-text">Comprobantes</span></a></li>
+                    <li><a href="journal_entries.html"><span class="menu-icon">📚</span><span class="menu-text">Asientos</span></a></li>
+                    <li><a href="accounts_chart.html"><span class="menu-icon">🏦</span><span class="menu-text">Plan de Cuentas</span></a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📈</span><span class="menu-text">Reportes</span></a></li>
+                    <li class="active"><a href="dsl_editor.html"><span class="menu-icon">⚙️</span><span class="menu-text">Reglas DSL</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2>Editor de Reglas DSL</h2>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="showDSLDocs()">
+                        📚 Documentación
+                    </button>
+                    <button class="btn btn-primary" onclick="createNewTemplate()">
+                        ➕ Nueva Plantilla
+                    </button>
+                </div>
+            </div>
+
+            <!-- Template List -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Plantillas DSL</h3>
+                    <div class="card-actions">
+                        <select class="form-control form-control-sm" id="filterType" onchange="filterTemplates()">
+                            <option value="">Todos los tipos</option>
+                            <option value="invoice_sale">Factura de Venta</option>
+                            <option value="invoice_purchase">Factura de Compra</option>
+                            <option value="payment">Pago</option>
+                            <option value="receipt">Recibo</option>
+                            <option value="credit_note">Nota Crédito</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
+                        <select class="form-control form-control-sm" id="filterCountry" onchange="filterTemplates()">
+                            <option value="">Todos los países</option>
+                            <option value="CO">Colombia</option>
+                            <option value="MX">México</option>
+                            <option value="CL">Chile</option>
+                            <option value="EC">Ecuador</option>
+                            <option value="UY">Uruguay</option>
+                            <option value="PE">Perú</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="template-list" id="templateList">
+                        <!-- Templates will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- DSL Editor -->
+            <div class="card" id="editorCard" style="display: none;">
+                <div class="card-header">
+                    <h3 id="editorTitle">Editor DSL</h3>
+                    <div class="card-actions">
+                        <span id="templateVersion" class="badge badge-info">v1.0</span>
+                        <button class="btn btn-sm btn-secondary" onclick="showVersionHistory()">
+                            🕐 Historial
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Toolbar -->
+                    <div class="dsl-toolbar">
+                        <button class="btn btn-sm" onclick="validateSyntax()" title="Validar sintaxis">
+                            ✓ Validar
+                        </button>
+                        <button class="btn btn-sm" onclick="formatCode()" title="Formatear código">
+                            🎨 Formatear
+                        </button>
+                        <button class="btn btn-sm" onclick="showSnippets()" title="Insertar snippet">
+                            📌 Snippets
+                        </button>
+                        <button class="btn btn-sm" onclick="showVariables()" title="Variables disponibles">
+                            📊 Variables
+                        </button>
+                        <button class="btn btn-sm" onclick="showFunctions()" title="Funciones disponibles">
+                            ƒ Funciones
+                        </button>
+                        <div style="margin-left: auto;">
+                            <button class="btn btn-sm btn-success" onclick="saveTemplate()">
+                                💾 Guardar
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="testTemplate()">
+                                ▶️ Probar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Editor Container -->
+                    <div class="editor-container">
+                        <!-- DSL Code Editor -->
+                        <div class="editor-pane">
+                            <div class="editor-header">
+                                <span>📝 Código DSL</span>
+                                <span id="cursorPosition">Línea 1, Col 1</span>
+                            </div>
+                            <div class="code-editor">
+                                <div class="line-numbers" id="lineNumbers">1</div>
+                                <div class="code-content" 
+                                     contenteditable="true" 
+                                     id="codeEditor"
+                                     spellcheck="false"></div>
+                            </div>
+                            <div id="syntaxFeedback"></div>
+                        </div>
+
+                        <!-- Preview/Results -->
+                        <div class="editor-pane">
+                            <div class="editor-header">
+                                <span>👁️ Vista Previa</span>
+                                <select class="form-control form-control-sm" id="previewMode" onchange="updatePreview()">
+                                    <option value="result">Resultado</option>
+                                    <option value="ast">AST</option>
+                                    <option value="debug">Debug</option>
+                                </select>
+                            </div>
+                            <div class="code-editor" id="previewPane">
+                                <div class="code-content" id="previewContent">
+                                    <!-- Preview will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Data -->
+                    <div class="test-data-section">
+                        <h4>🧪 Datos de Prueba</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Comprobante de Prueba</label>
+                                <select class="form-control" id="testVoucher" onchange="loadTestData()">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="invoice_sale_1">Factura Venta - Simple</option>
+                                    <option value="invoice_sale_2">Factura Venta - Con múltiples items</option>
+                                    <option value="invoice_purchase_1">Factura Compra - Con retenciones</option>
+                                    <option value="payment_1">Pago - Efectivo</option>
+                                    <option value="payment_2">Pago - Transferencia</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>JSON de Entrada</label>
+                                <textarea class="form-control" id="testDataJson" rows="4" 
+                                          placeholder='{"voucher_number": "FV-2024-001", ...}'></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Reference -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📖 Referencia Rápida</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div>
+                            <h5>Sintaxis Básica</h5>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+<span class="keyword">template</span> <span class="type">invoice_sale_co</span> {
+  <span class="comment">// Variables</span>
+  <span class="keyword">let</span> <span class="variable">subtotal</span> = <span class="variable">voucher</span>.<span class="function">metadata</span>.<span class="function">subtotal</span>
+  
+  <span class="comment">// Validaciones</span>
+  <span class="keyword">require</span> <span class="variable">subtotal</span> > <span class="number">0</span> : <span class="string">"Error message"</span>
+  
+  <span class="comment">// Generar asiento</span>
+  <span class="keyword">entry</span> {
+    <span class="keyword">debit</span> <span class="function">account</span>(<span class="string">"1305.01"</span>) <span class="function">amount</span>(<span class="variable">total</span>)
+    <span class="keyword">credit</span> <span class="function">account</span>(<span class="string">"4135.01"</span>) <span class="function">amount</span>(<span class="variable">subtotal</span>)
+  }
+}</pre>
+                        </div>
+                        <div>
+                            <h5>Funciones Disponibles</h5>
+                            <ul style="font-size: 0.9rem;">
+                                <li><code>account(code)</code> - Obtener cuenta</li>
+                                <li><code>amount(value)</code> - Definir monto</li>
+                                <li><code>date_add(date, n, unit)</code> - Sumar fechas</li>
+                                <li><code>format_date(date, format)</code> - Formatear fecha</li>
+                                <li><code>round(number, decimals)</code> - Redondear</li>
+                                <li><code>abs(number)</code> - Valor absoluto</li>
+                                <li><code>tax_calculate(base, rate)</code> - Calcular impuesto</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h5>Variables del Contexto</h5>
+                            <ul style="font-size: 0.9rem;">
+                                <li><code>voucher</code> - Comprobante actual</li>
+                                <li><code>organization</code> - Organización</li>
+                                <li><code>user</code> - Usuario actual</li>
+                                <li><code>today</code> - Fecha actual</li>
+                                <li><code>period</code> - Período contable</li>
+                                <li><code>country_code</code> - Código país</li>
+                                <li><code>currency</code> - Moneda</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Template Modal -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Plantilla DSL</h3>
+                <button class="close-modal" onclick="closeTemplateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="templateForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre de la Plantilla</label>
+                            <input type="text" class="form-control" id="templateName" 
+                                   placeholder="Ej: invoice_sale_co" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <input type="text" class="form-control" id="templateDescription" 
+                                   placeholder="Descripción breve" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Comprobante</label>
+                            <select class="form-control" id="templateVoucherType" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="invoice_sale">Factura de Venta</option>
+                                <option value="invoice_purchase">Factura de Compra</option>
+                                <option value="payment">Pago</option>
+                                <option value="receipt">Recibo</option>
+                                <option value="credit_note">Nota Crédito</option>
+                                <option value="debit_note">Nota Débito</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>País</label>
+                            <select class="form-control" id="templateCountry" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="CO">Colombia</option>
+                                <option value="MX">México</option>
+                                <option value="CL">Chile</option>
+                                <option value="EC">Ecuador</option>
+                                <option value="UY">Uruguay</option>
+                                <option value="PE">Perú</option>
+                                <option value="ALL">Todos</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Plantilla Base</label>
+                            <select class="form-control" id="templateBase">
+                                <option value="">Empezar desde cero</option>
+                                <option value="basic_sale">Plantilla básica de venta</option>
+                                <option value="basic_purchase">Plantilla básica de compra</option>
+                                <option value="basic_payment">Plantilla básica de pago</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="createTemplate()">Crear Plantilla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variables Modal -->
+    <div class="modal" id="variablesModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>📊 Variables Disponibles</h3>
+                <button class="close-modal" onclick="closeVariablesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>voucher.voucher_number</code></td>
+                                <td>string</td>
+                                <td>Número del comprobante</td>
+                                <td>"FV-2024-001"</td>
+                            </tr>
+                            <tr>
+                                <td><code>voucher.voucher_date</code></td>
+                                <td>date</td>
+                                <td>Fecha del comprobante</td>
+                                <td>"2024-01-21"</td>
+                            </tr>
+                            <tr>
+                                <td><code>voucher.total_amount</code></td>
+                                <td>number</td>
+                                <td>Monto total</td>
+                                <td>1000000</td>
+                            </tr>
+                            <tr>
+                                <td><code>voucher.metadata.items</code></td>
+                                <td>array</td>
+                                <td>Items del comprobante</td>
+                                <td>[{...}, {...}]</td>
+                            </tr>
+                            <tr>
+                                <td><code>voucher.metadata.customer</code></td>
+                                <td>object</td>
+                                <td>Datos del cliente</td>
+                                <td>{id: "123", name: "..."}</td>
+                            </tr>
+                            <tr>
+                                <td><code>organization.tax_id</code></td>
+                                <td>string</td>
+                                <td>NIT de la organización</td>
+                                <td>"900123456-7"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snippet Menu -->
+    <div class="snippet-menu" id="snippetMenu" style="display: none;">
+        <div class="snippet-item" onclick="insertSnippet('validation')">Validación básica</div>
+        <div class="snippet-item" onclick="insertSnippet('entry')">Asiento simple</div>
+        <div class="snippet-item" onclick="insertSnippet('loop')">Bucle de items</div>
+        <div class="snippet-item" onclick="insertSnippet('conditional')">Condicional</div>
+        <div class="snippet-item" onclick="insertSnippet('tax')">Cálculo de impuesto</div>
+        <div class="snippet-item" onclick="insertSnippet('notification')">Notificación</div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Procesando...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/api_service.js"></script>
+    <script src="../js/dsl_editor.js"></script>
+</body>
+</html>

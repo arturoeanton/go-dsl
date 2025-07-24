@@ -1,0 +1,148 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/v1/vouchers",
+    "headers": {
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "voucher_number": "FV-001-2024",
+      "voucher_type": "INVOICE",
+      "voucher_date": "2024-01-15",
+      "description": "Venta de productos tecnológicos",
+      "currency_code": "COP",
+      "exchange_rate": 1.0,
+      "customer": {
+        "tax_id": "900789123-4",
+        "name": "Cliente Ejemplo S.A.S.",
+        "email": "contacto@cliente.com"
+      },
+      "line_items": [
+        {
+          "description": "Laptop Dell Latitude 5520",
+          "quantity": 2,
+          "unit_price": 3500000,
+          "discount_rate": 0,
+          "tax_rate": 19,
+          "account_code": "4135.01"
+        },
+        {
+          "description": "Mouse inalámbrico Logitech",
+          "quantity": 2,
+          "unit_price": 150000,
+          "discount_rate": 10,
+          "tax_rate": 19,
+          "account_code": "4135.01"
+        }
+      ],
+      "taxes": {
+        "iva_19": 1368000
+      },
+      "retentions": {
+        "rte_fuente": 0
+      },
+      "subtotal": 7200000,
+      "total_amount": 8568000,
+      "metadata": {
+        "payment_terms": "30 días",
+        "sales_person": "Juan Pérez"
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "data": {
+        "voucher": {
+          "id": "550e8400-e29b-41d4-a716-446655440005",
+          "organization_id": "11111111-1111-1111-1111-111111111111",
+          "voucher_number": "FV-001-2024",
+          "voucher_type": "INVOICE",
+          "voucher_date": "2024-01-15",
+          "description": "Venta de productos tecnológicos",
+          "total_amount": 8568000,
+          "currency_code": "COP",
+          "exchange_rate": 1.0,
+          "status": "PENDING",
+          "source_system": "WEB_APP",
+          "created_at": "2024-01-15T10:30:00Z",
+          "processed_at": null,
+          "customer": {
+            "tax_id": "900789123-4",
+            "name": "Cliente Ejemplo S.A.S.",
+            "email": "contacto@cliente.com"
+          },
+          "line_items": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440006",
+              "description": "Laptop Dell Latitude 5520",
+              "quantity": 2,
+              "unit_price": 3500000,
+              "discount_rate": 0,
+              "tax_rate": 19,
+              "subtotal": 7000000,
+              "tax_amount": 1330000,
+              "total": 8330000,
+              "account_code": "4135.01"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440007",
+              "description": "Mouse inalámbrico Logitech",
+              "quantity": 2,
+              "unit_price": 150000,
+              "discount_rate": 10,
+              "tax_rate": 19,
+              "subtotal": 270000,
+              "tax_amount": 51300,
+              "total": 321300,
+              "account_code": "4135.01"
+            }
+          ],
+          "taxes": {
+            "iva_19": 1368000
+          },
+          "retentions": {
+            "rte_fuente": 0
+          },
+          "subtotal": 7200000,
+          "metadata": {
+            "payment_terms": "30 días",
+            "sales_person": "Juan Pérez"
+          }
+        }
+      },
+      "meta": {
+        "timestamp": "2024-01-15T10:30:00Z",
+        "version": "1.0",
+        "request_id": "550e8400-e29b-41d4-a716-446655440008"
+      },
+      "errors": []
+    }
+  },
+  "validation_errors": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "data": null,
+      "meta": {
+        "timestamp": "2024-01-15T10:30:00Z",
+        "version": "1.0",
+        "request_id": "550e8400-e29b-41d4-a716-446655440009"
+      },
+      "errors": [
+        {
+          "code": "VALIDATION_ERROR",
+          "message": "El número de comprobante ya existe",
+          "field": "voucher_number"
+        },
+        {
+          "code": "VALIDATION_ERROR",
+          "message": "El total no coincide con la suma de los items",
+          "field": "total_amount"
+        }
+      ]
+    }
+  }
+}

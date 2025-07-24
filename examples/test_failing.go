@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/arturoeliasanton/go-dsl/pkg/dslbuilder"
+	"github.com/arturoeanton/go-dsl/pkg/dslbuilder"
 )
 
 func main() {

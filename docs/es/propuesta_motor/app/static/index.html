@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor Contable - Proof of Concept</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #262626;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #001529;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e8e8e8;
+            padding-bottom: 1rem;
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            background: #f0f2f5;
+        }
+
+        .nav-tab.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #1890ff;
+        }
+
+        .card p {
+            color: #8c8c8c;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .card-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f0f2f5;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #262626;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .card-link:hover {
+            background: #1890ff;
+            color: white;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .info-icon {
+            font-size: 1.5rem;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #8c8c8c;
+            border-top: 1px solid #e8e8e8;
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>🏢 Motor Contable Cloud-Native con go-dsl</h1>
+        <p>POC Funcional - Sistema Contable Completo con Automatización DSL</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('overview')">Vista General</button>
+            <button class="nav-tab" onclick="showSection('frontend')">Pantallas Completas</button>
+            <button class="nav-tab" onclick="showSection('api')">APIs Backend</button>
+            <button class="nav-tab" onclick="showSection('functionality')">Funcionalidades</button>
+        </div>
+
+        <!-- Overview Section -->
+        <section id="overview" class="section active">
+            <div class="info-box">
+                <span class="info-icon">🚀</span>
+                <div>
+                    <strong>POC con Integración go-dsl</strong><br>
+                    Sistema completo con 257 cuentas PUC colombiano, transformación automática 
+                    de comprobantes a asientos y editor DSL integrado.
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 1.5rem;">📊 Sistema Completo</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>📊 Dashboard Principal</h3>
+                    <p>Vista ejecutiva con KPIs reales, gráficos de procesamiento y métricas en tiempo real.</p>
+                    <div class="card-links">
+                        <a href="dashboard.html" class="card-link">
+                            🎯 Ver Dashboard Completo
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📄 Gestión de Comprobantes</h3>
+                    <p>Sistema completo para crear, editar y procesar comprobantes contables con validación DSL.</p>
+                    <div class="card-links">
+                        <a href="vouchers_form.html" class="card-link">
+                            ✏️ Crear Comprobante
+                        </a>
+                        <a href="vouchers_list.html" class="card-link">
+                            📋 Lista de Comprobantes
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📚 Asientos Contables</h3>
+                    <p>Gestión completa de asientos con balance automático y validaciones contables.</p>
+                    <div class="card-links">
+                        <a href="journal_entries.html" class="card-link">
+                            📖 Gestión de Asientos
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🏦 Plan de Cuentas</h3>
+                    <p>Vista jerárquica del catálogo de cuentas contables con búsqueda y navegación.</p>
+                    <div class="card-links">
+                        <a href="accounts_chart.html" class="card-link">
+                            🗂️ Ver Plan de Cuentas
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Reportes Contables</h3>
+                    <p>12 tipos de reportes con configuración avanzada y múltiples formatos de exportación.</p>
+                    <div class="card-links">
+                        <a href="reports.html" class="card-link">
+                            📊 Generar Reportes
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⚙️ Editor DSL</h3>
+                    <p>Editor avanzado con plantillas, validación de sintaxis y pruebas en tiempo real.</p>
+                    <div class="card-links">
+                        <a href="dsl_editor.html" class="card-link">
+                            🔧 Editor de Reglas
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Frontend Section -->
+        <section id="frontend" class="section">
+            <h2 style="margin-bottom: 1.5rem;">🖥️ Pantallas Completas del Sistema</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🏠 Dashboard Ejecutivo</h3>
+                    <p>Panel principal con métricas en tiempo real, gráficos de Chart.js y actividad reciente.</p>
+                    <div class="card-links">
+                        <a href="dashboard.html" class="card-link">
+                            📊 Dashboard Principal
+                        </a>
+                    </div>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ KPIs en tiempo real</li>
+                        <li>✅ Gráficos interactivos</li>
+                        <li>✅ Feed de actividad</li>
+                        <li>✅ Métricas de rendimiento</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📝 Sistema de Comprobantes</h3>
+                    <p>Gestión completa de comprobantes contables con validación y procesamiento automático.</p>
+                    <div class="card-links">
+                        <a href="vouchers_form.html" class="card-link">
+                            ✏️ Formulario de Comprobantes
+                        </a>
+                        <a href="vouchers_list.html" class="card-link">
+                            📋 Lista con Filtros
+                        </a>
+                    </div>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Formulario dinámico</li>
+                        <li>✅ Validación en tiempo real</li>
+                        <li>✅ Tabla con filtros y búsqueda</li>
+                        <li>✅ Paginación y ordenamiento</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📚 Asientos Contables</h3>
+                    <p>Interfaz completa para gestión de asientos con balance automático.</p>
+                    <div class="card-links">
+                        <a href="journal_entries.html" class="card-link">
+                            📖 Gestión de Asientos
+                        </a>
+                    </div>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Creación de asientos</li>
+                        <li>✅ Validación de balance</li>
+                        <li>✅ Vista detallada</li>
+                        <li>✅ Historial de cambios</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>🏦 Plan de Cuentas</h3>
+                    <p>Vista jerárquica del catálogo de cuentas con búsqueda avanzada.</p>
+                    <div class="card-links">
+                        <a href="accounts_chart.html" class="card-link">
+                            🗂️ Plan de Cuentas
+                        </a>
+                    </div>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Vista jerárquica</li>
+                        <li>✅ Búsqueda por código/nombre</li>
+                        <li>✅ Filtros por tipo</li>
+                        <li>✅ Navegación expandible</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Generador de Reportes</h3>
+                    <p>Sistema avanzado de reportes con 12 tipos diferentes y múltiples formatos.</p>
+                    <div class="card-links">
+                        <a href="reports.html" class="card-link">
+                            📊 Generar Reportes
+                        </a>
+                    </div>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ 12 tipos de reportes</li>
+                        <li>✅ Configuración avanzada</li>
+                        <li>✅ Exportación PDF/Excel/CSV</li>
+                        <li>✅ Vista previa</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>⚙️ Editor DSL Avanzado</h3>
+                    <p>Editor de código con syntax highlighting y validación para reglas de negocio.</p>
+                    <div class="card-links">
+                        <a href="dsl_editor.html" class="card-link">
+                            🔧 Editor de Reglas DSL
+                        </a>
+                    </div>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ 5 plantillas de ejemplo</li>
+                        <li>✅ Validación de sintaxis</li>
+                        <li>✅ Pruebas en tiempo real</li>
+                        <li>✅ Autocompletado</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Section -->
+        <section id="api" class="section">
+            <h2 style="margin-bottom: 1.5rem;">🔌 APIs Backend Reales</h2>
+            
+            <div class="info-box">
+                <span class="info-icon">⚡</span>
+                <div>
+                    <strong>Backend Go/Fiber con SQLite</strong><br>
+                    Todas las pantallas están conectadas a APIs reales con datos de demostración 
+                    incluyendo PUC colombiano completo y preparado para reglas DSL.
+                </div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>📊 Dashboard APIs</h3>
+                    <p>APIs para métricas, KPIs y datos del dashboard en tiempo real.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ GET /api/v1/dashboard/stats</li>
+                        <li>✅ GET /api/v1/dashboard/charts</li>
+                        <li>✅ GET /api/v1/dashboard/activity</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📄 Comprobantes APIs</h3>
+                    <p>CRUD completo de comprobantes con validación y procesamiento DSL.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ GET /api/v1/vouchers</li>
+                        <li>✅ POST /api/v1/vouchers</li>
+                        <li>✅ GET /api/v1/vouchers/:id</li>
+                        <li>✅ POST /api/v1/vouchers/:id/process</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📚 Asientos APIs</h3>
+                    <p>Gestión de asientos contables con validación de balance.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ GET /api/v1/journal-entries</li>
+                        <li>✅ POST /api/v1/journal-entries</li>
+                        <li>✅ GET /api/v1/journal-entries/:id</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>🏦 Plan de Cuentas APIs</h3>
+                    <p>APIs para navegación jerárquica del catálogo de cuentas.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ GET /api/v1/accounts/tree</li>
+                        <li>✅ GET /api/v1/accounts</li>
+                        <li>✅ GET /api/v1/accounts/:code</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Reportes APIs</h3>
+                    <p>Generación y gestión de reportes contables.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ GET /api/v1/reports/types</li>
+                        <li>✅ POST /api/v1/reports/generate</li>
+                        <li>✅ GET /api/v1/reports/:id/status</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>⚙️ DSL APIs</h3>
+                    <p>Validación y ejecución de reglas DSL personalizadas.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ GET /api/v1/dsl/templates</li>
+                        <li>✅ POST /api/v1/dsl/validate</li>
+                        <li>✅ POST /api/v1/dsl/test</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Functionality Section -->
+        <section id="functionality" class="section">
+            <h2 style="margin-bottom: 1.5rem;">🎯 Funcionalidades Implementadas</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🔄 Navegación Completa</h3>
+                    <p>Sistema de navegación unificado entre todas las pantallas.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Menú lateral responsive</li>
+                        <li>✅ Breadcrumbs contextuales</li>
+                        <li>✅ Estados activos</li>
+                        <li>✅ Navegación fluida</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Gráficos Interactivos</h3>
+                    <p>Visualizaciones avanzadas con Chart.js integrado.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Gráficos de líneas</li>
+                        <li>✅ Gráficos de barras</li>
+                        <li>✅ Gráficos de dona</li>
+                        <li>✅ Datos en tiempo real</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>🔍 Búsqueda y Filtros</h3>
+                    <p>Sistema avanzado de búsqueda y filtrado en todas las pantallas.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Búsqueda en tiempo real</li>
+                        <li>✅ Filtros múltiples</li>
+                        <li>✅ Paginación automática</li>
+                        <li>✅ Ordenamiento dinámico</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>✅ Validaciones en Tiempo Real</h3>
+                    <p>Sistema de validación completo integrado con el backend.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Validación de formularios</li>
+                        <li>✅ Balance de asientos</li>
+                        <li>✅ Reglas de negocio</li>
+                        <li>✅ Mensajes contextuales</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>⚡ Procesamiento DSL</h3>
+                    <p>Integración completa con el motor go-dsl para reglas de negocio.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Validación de sintaxis</li>
+                        <li>✅ Ejecución de reglas</li>
+                        <li>✅ Plantillas predefinidas</li>
+                        <li>✅ Testing interactivo</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📱 Diseño Responsive</h3>
+                    <p>Interfaz optimizada para todos los dispositivos.</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #666; font-size: 0.875rem;">
+                        <li>✅ Mobile-first design</li>
+                        <li>✅ Menús adaptativos</li>
+                        <li>✅ Tablas responsive</li>
+                        <li>✅ Touch-friendly</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h3 style="margin-bottom: 1rem;">🎨 Sistema de Diseño</h3>
+                <div class="card">
+                    <p>Implementación completa del sistema de diseño con:</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <strong style="color: #1890ff;">CSS Modular</strong>
+                            <ul style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.875rem; color: #595959;">
+                                <li>Variables CSS</li>
+                                <li>Componentes reutilizables</li>
+                                <li>Layout grid</li>
+                                <li>Tokens de diseño</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong style="color: #1890ff;">JavaScript Modular</strong>
+                            <ul style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.875rem; color: #595959;">
+                                <li>API service centralizado</li>
+                                <li>Utilidades comunes</li>
+                                <li>Módulos por pantalla</li>
+                                <li>Error handling</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong style="color: #1890ff;">UX/UI</strong>
+                            <ul style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.875rem; color: #595959;">
+                                <li>Estados de carga</li>
+                                <li>Feedback inmediato</li>
+                                <li>Navegación intuitiva</li>
+                                <li>Accesibilidad</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Motor Contable POC © 2025 | 
+        <a href="https://github.com/arturoeanton/go-dsl" target="_blank" style="color: #1890ff;">
+            Powered by go-dsl
+        </a> | 
+        <strong>Listo para Casos de Uso DSL</strong>
+        </p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Show section based on tab click
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Motor Contable POC - Sistema Completo Cargado');
+            
+            // Add smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

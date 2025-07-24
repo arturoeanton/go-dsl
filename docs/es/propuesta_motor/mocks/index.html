@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor Contable - Mockups Demo</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #262626;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #001529;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e8e8e8;
+            padding-bottom: 1rem;
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            background: #f0f2f5;
+        }
+
+        .nav-tab.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #1890ff;
+        }
+
+        .card p {
+            color: #8c8c8c;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .card-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f0f2f5;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #262626;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .card-link:hover {
+            background: #1890ff;
+            color: white;
+        }
+
+        /* API Endpoints List */
+        .endpoints-list {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .endpoint-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
+
+        .endpoint-item:hover {
+            background: #f0f2f5;
+        }
+
+        .endpoint-item:last-child {
+            border-bottom: none;
+        }
+
+        .method {
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            width: 60px;
+            text-align: center;
+        }
+
+        .method.get { background: #52c41a; color: white; }
+        .method.post { background: #1890ff; color: white; }
+        .method.put { background: #faad14; color: white; }
+        .method.delete { background: #f5222d; color: white; }
+
+        .endpoint-path {
+            flex: 1;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+        }
+
+        .endpoint-link {
+            padding: 0.5rem 1rem;
+            background: #1890ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: background 0.2s ease;
+        }
+
+        .endpoint-link:hover {
+            background: #096dd9;
+        }
+
+        /* Live Preview */
+        .preview-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .preview-header {
+            background: #f0f2f5;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-title {
+            font-weight: 600;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .preview-btn {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .preview-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .info-icon {
+            font-size: 1.5rem;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #8c8c8c;
+            border-top: 1px solid #e8e8e8;
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .endpoint-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .method {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>🏢 Motor Contable Cloud-Native</h1>
+        <p>Centro de Mockups y Prototipos Interactivos</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('overview')">Vista General</button>
+            <button class="nav-tab" onclick="showSection('frontend')">Frontend Mockups</button>
+            <button class="nav-tab" onclick="showSection('api')">API Mockups</button>
+            <button class="nav-tab" onclick="showSection('swagger')">API Swagger</button>
+            <button class="nav-tab" onclick="showSection('database')">Base de Datos</button>
+            <button class="nav-tab" onclick="showSection('documentation')">Documentación</button>
+        </div>
+
+        <!-- Overview Section -->
+        <section id="overview" class="section active">
+            <div class="info-box">
+                <span class="info-icon">ℹ️</span>
+                <div>
+                    <strong>Bienvenido al Centro de Mockups</strong><br>
+                    Aquí puedes explorar todos los prototipos interactivos del Motor Contable. 
+                    Usa las pestañas superiores para navegar entre las diferentes secciones.
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 1.5rem;">🚀 Accesos Rápidos</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>📊 Dashboard Principal</h3>
+                    <p>Vista general con KPIs, gráficos de procesamiento y actividad reciente.</p>
+                    <div class="card-links">
+                        <a href="front/html/dashboard.html" class="card-link" target="_blank">
+                            👁️ Ver Mockup
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/dashboard.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📄 Gestión de Comprobantes</h3>
+                    <p>Crear, editar y procesar comprobantes contables con validación en tiempo real.</p>
+                    <div class="card-links">
+                        <a href="front/html/vouchers_form.html" class="card-link" target="_blank">
+                            👁️ Ver Formulario
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/vouchers_form.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🔌 API REST</h3>
+                    <p>Documentación Swagger completa y ejemplos de respuestas de todos los endpoints.</p>
+                    <div class="card-links">
+                        <a href="#" class="card-link" onclick="showSection('swagger')">
+                            📚 Ver Swagger
+                        </a>
+                        <a href="#" class="card-link" onclick="showSection('api')">
+                            🔍 Ver Mocks JSON
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🗄️ Modelo de Datos</h3>
+                    <p>Esquema completo de base de datos PostgreSQL con todas las tablas y relaciones.</p>
+                    <div class="card-links">
+                        <a href="../model.sql" class="card-link" target="_blank">
+                            📋 Ver SQL
+                        </a>
+                        <a href="../initial_data.sql" class="card-link" target="_blank">
+                            🌱 Datos Iniciales
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <h2 style="margin: 2rem 0 1rem;">📚 Documentación Técnica</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🗺️ Roadmap de Implementación</h3>
+                    <p>Plan de 3 fases: Monolito → Autenticación → Dockerización con timeline detallado.</p>
+                    <div class="card-links">
+                        <a href="../roadmap.md" class="card-link" target="_blank">
+                            📖 Ver Roadmap
+                        </a>
+                        <a href="#" class="card-link" onclick="showSection('documentation')">
+                            📋 Ver Resumen
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>👥 Historias de Usuario</h3>
+                    <p>22 historias de usuario completas con criterios de aceptación y estimaciones.</p>
+                    <a href="../historias_usuario.md" class="card-link" target="_blank">
+                        📖 Ver Historias
+                    </a>
+                </div>
+
+                <div class="card">
+                    <h3>🎨 Guía de Mockups</h3>
+                    <p>Especificaciones completas del sistema de mocks funcionales.</p>
+                    <a href="../mocks.md" class="card-link" target="_blank">
+                        📖 Ver Guía
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Frontend Mockups Section -->
+        <section id="frontend" class="section">
+            <h2 style="margin-bottom: 1.5rem;">🖥️ Frontend Mockups</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🏠 Dashboard</h3>
+                    <p>Panel principal con métricas, gráficos y actividad reciente.</p>
+                    <div class="card-links">
+                        <a href="front/html/dashboard.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/dashboard.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📝 Formulario de Comprobantes</h3>
+                    <p>Interfaz para crear y editar comprobantes con validación dinámica.</p>
+                    <div class="card-links">
+                        <a href="front/html/vouchers_form.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/vouchers_form.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📄 Lista de Comprobantes</h3>
+                    <p>Tabla con filtros, búsqueda y paginación de comprobantes.</p>
+                    <div class="card-links">
+                        <a href="front/html/vouchers_list.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/vouchers_list.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📚 Asientos Contables</h3>
+                    <p>Gestión de asientos con validación de balance automático.</p>
+                    <div class="card-links">
+                        <a href="front/html/journal_entries.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/journal_entries.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🏦 Plan de Cuentas</h3>
+                    <p>Vista jerárquica del catálogo de cuentas contables con búsqueda.</p>
+                    <div class="card-links">
+                        <a href="front/html/accounts_chart.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/accounts_chart.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Generador de Reportes</h3>
+                    <p>12 tipos de reportes con configuración y exportación múltiple.</p>
+                    <div class="card-links">
+                        <a href="front/html/reports.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/reports.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⚙️ Editor DSL</h3>
+                    <p>Editor con 5 plantillas de ejemplo y validación de sintaxis.</p>
+                    <div class="card-links">
+                        <a href="front/html/dsl_editor.html" class="card-link" target="_blank">
+                            👁️ Ver Completo
+                        </a>
+                        <a href="#" class="card-link" onclick="showPreview('front/html/dsl_editor.html')">
+                            🖼️ Vista Previa
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">🎨 Recursos de Estilo</h3>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🎯 CSS Estándar</h3>
+                    <p>Sistema de diseño unificado con variables CSS y componentes reutilizables.</p>
+                    <div class="card-links">
+                        <a href="front/css/style.css" class="card-link" target="_blank">
+                            📄 style.css
+                        </a>
+                        <a href="front/css/components.css" class="card-link" target="_blank">
+                            📄 components.css
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⚡ JavaScript Modules</h3>
+                    <p>API service centralizado y lógica modular para cada pantalla.</p>
+                    <div class="card-links">
+                        <a href="front/js/api_service.js" class="card-link" target="_blank">
+                            📄 API Service
+                        </a>
+                        <a href="front/js/utils.js" class="card-link" target="_blank">
+                            📄 Utilidades
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Chart.js Integration</h3>
+                    <p>Gráficos interactivos con configuración optimizada para datos contables.</p>
+                    <a href="front/js/dashboard.js" class="card-link" target="_blank">
+                        📄 Dashboard Charts
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Mockups Section -->
+        <section id="api" class="section">
+            <h2 style="margin-bottom: 1.5rem;">🔍 API JSON Mockups</h2>
+            
+            <div class="info-box">
+                <span class="info-icon">💡</span>
+                <div>
+                    <strong>Respuestas JSON de Ejemplo</strong><br>
+                    Estos archivos contienen ejemplos de las respuestas JSON que retornará cada endpoint.
+                    Útiles para desarrollo frontend sin backend.
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem;">📊 Dashboard</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/dashboard</span>
+                    <a href="api/dashboard.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">📄 Comprobantes</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/vouchers</span>
+                    <a href="api/vouchers_list.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/vouchers/{id}</span>
+                    <a href="api/voucher_detail.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/v1/vouchers</span>
+                    <a href="api/voucher_create.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/vouchers/types</span>
+                    <a href="api/voucher_types.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">📚 Asientos Contables</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/journal-entries</span>
+                    <a href="api/journal_entries_list.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/journal-entries/{id}</span>
+                    <a href="api/journal_entries.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/v1/journal-entries</span>
+                    <a href="api/journal_entry_create.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">🏦 Plan de Cuentas</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/accounts/tree</span>
+                    <a href="api/accounts_tree.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/accounts</span>
+                    <a href="api/accounts_list.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/accounts/{id}</span>
+                    <a href="api/account_detail.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/accounts/types</span>
+                    <a href="api/account_types.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">📈 Reportes</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/reports/types</span>
+                    <a href="api/report_types.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/v1/reports/generate</span>
+                    <a href="api/report_generate.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/reports/{job_id}/status</span>
+                    <a href="api/report_status.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/reports/recent</span>
+                    <a href="api/reports_recent.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">⚙️ DSL Templates</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/dsl/templates</span>
+                    <a href="api/dsl_templates.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/dsl/templates/{id}</span>
+                    <a href="api/dsl_template_detail.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/v1/dsl/validate</span>
+                    <a href="api/dsl_validate.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/api/v1/dsl/test</span>
+                    <a href="api/dsl_test.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">👥 Terceros (Clientes/Proveedores)</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/third-parties/search</span>
+                    <a href="api/third_parties_search.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/third-parties/{id}</span>
+                    <a href="api/third_party_detail.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">🗂️ Catálogos y Lookups</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/catalogs/countries</span>
+                    <a href="api/countries.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/catalogs/currencies</span>
+                    <a href="api/currencies.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/catalogs/organizations</span>
+                    <a href="api/organizations.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/lookups/tax-types</span>
+                    <a href="api/tax_types.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/lookups/document-types</span>
+                    <a href="api/document_types.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">📅 Períodos Contables</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/periods/current</span>
+                    <a href="api/period_current.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/periods</span>
+                    <a href="api/periods.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">👤 Usuarios y Organizaciones</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/organizations/current</span>
+                    <a href="api/organization_current.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/users/profile</span>
+                    <a href="api/user_profile.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/users/preferences</span>
+                    <a href="api/user_preferences.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">🔍 Auditoría</h3>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/api/v1/audit/logs</span>
+                    <a href="api/audit_logs.json" class="endpoint-link" target="_blank">Ver Mock</a>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h3>📋 Catálogo Completo de APIs</h3>
+                <p>Lista completa de todos los endpoints con mapping para migración a backend real.</p>
+                <a href="api/catalog_api.json" class="card-link" target="_blank">
+                    📖 Ver catalog_api.json
+                </a>
+            </div>
+        </section>
+
+        <!-- Swagger Section -->
+        <section id="swagger" class="section">
+            <h2 style="margin-bottom: 1.5rem;">📚 API Swagger Documentation</h2>
+            
+            <div class="info-box">
+                <span class="info-icon">📋</span>
+                <div>
+                    <strong>Documentación OpenAPI 3.0</strong><br>
+                    Especificación completa de todas las APIs de la Fase 1 con ejemplos, 
+                    esquemas y códigos de respuesta.
+                </div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>📖 Swagger YAML</h3>
+                    <p>Documentación OpenAPI 3.0 completa con 40+ endpoints, esquemas y ejemplos.</p>
+                    <div class="card-links">
+                        <a href="api/swagger.yaml" class="card-link" target="_blank">
+                            📄 Ver swagger.yaml
+                        </a>
+                        <a href="#" class="card-link" onclick="alert('Swagger UI disponible tras implementación backend')">
+                            🌐 Swagger UI (Próximamente)
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🔍 Características</h3>
+                    <p>Documentación técnica completa para implementación:</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #595959; font-size: 0.9rem;">
+                        <li>✅ 40+ endpoints documentados</li>
+                        <li>✅ Esquemas de request/response</li>
+                        <li>✅ Códigos de error estándar</li>
+                        <li>✅ Parámetros y validaciones</li>
+                        <li>✅ Ejemplos de uso</li>
+                        <li>✅ Tags organizados por módulo</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>🏷️ Tags de API</h3>
+                    <p>APIs organizadas por funcionalidad:</p>
+                    <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Health</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Dashboard</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Vouchers</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Journal Entries</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Accounts</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Reports</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">DSL</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Catalogs</span>
+                        <span style="background: #f0f2f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Third Parties</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">🚀 Endpoints Principales</h3>
+            
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/health</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Health check del sistema</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/dashboard</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">KPIs, gráficos y actividad</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/vouchers</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Listar comprobantes con filtros</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/vouchers</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Crear nuevo comprobante</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/vouchers/{id}/process</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Procesar con DSL</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/journal-entries</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Asientos contables</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/accounts/tree</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Plan de cuentas jerárquico</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/reports/generate</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Generar reportes</span>
+                </div>
+                <div class="endpoint-item">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/dsl/templates</span>
+                    <span style="flex: 1; color: #8c8c8c; font-size: 0.875rem;">Plantillas DSL</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Section -->
+        <section id="database" class="section">
+            <h2 style="margin-bottom: 1.5rem;">🗄️ Base de Datos</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>📊 Modelo de Datos</h3>
+                    <p>Script completo para crear todas las tablas, índices, vistas y funciones.</p>
+                    <div class="card-links">
+                        <a href="../model.sql" class="card-link" target="_blank">
+                            📄 Ver model.sql
+                        </a>
+                        <a href="#" class="card-link" onclick="alert('Diagrama ER por implementar')">
+                            📐 Ver Diagrama ER
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🌱 Datos Iniciales</h3>
+                    <p>Datos de demo incluidos en model.sql con PUC Colombia y configuración básica.</p>
+                    <div class="card-links">
+                        <a href="../model.sql" class="card-link" target="_blank">
+                            📄 Ver Datos en model.sql
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🔧 Características Técnicas</h3>
+                    <p>PostgreSQL 15+ con características enterprise:</p>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #595959; font-size: 0.9rem;">
+                        <li>✅ 21 tablas + 6 auxiliares</li>
+                        <li>✅ Particionamiento por fecha</li>
+                        <li>✅ Row Level Security (RLS)</li>
+                        <li>✅ 25+ índices optimizados</li>
+                        <li>✅ Vistas materializadas</li>
+                        <li>✅ Triggers de auditoría</li>
+                        <li>✅ Funciones go-dsl</li>
+                        <li>✅ Validación de balance</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documentation Section -->
+        <section id="documentation" class="section">
+            <h2 style="margin-bottom: 1.5rem;">📚 Documentación Completa</h2>
+            
+            <div class="info-box">
+                <span class="info-icon">📖</span>
+                <div>
+                    <strong>Documentación Técnica Actualizada</strong><br>
+                    Toda la documentación ha sido actualizada para reflejar el estado actual 
+                    del proyecto y el plan de implementación en 3 fases.
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem;">🗺️ Plan de Implementación</h3>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>📋 Roadmap Estratégico</h3>
+                    <p>Plan de 3 fases con timeline detallado y KPIs por entregable.</p>
+                    <div class="card-links">
+                        <a href="../roadmap.md" class="card-link" target="_blank">
+                            📖 Ver Roadmap
+                        </a>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.875rem; color: #8c8c8c;">
+                        <strong>Fases:</strong>
+                        <br>• Fase 1: Monolito Go/Fiber/DSL (4 meses)
+                        <br>• Fase 2: Autenticación RBAC (2 meses)  
+                        <br>• Fase 3: Dockerización & Cloud (3 meses)
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>👥 Historias de Usuario</h3>
+                    <p>22 historias completas organizadas en 10 épicas con 172 story points.</p>
+                    <div class="card-links">
+                        <a href="../historias_usuario.md" class="card-link" target="_blank">
+                            📖 Ver Historias
+                        </a>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.875rem; color: #8c8c8c;">
+                        <strong>Incluye:</strong>
+                        <br>• Criterios de aceptación Given/When/Then
+                        <br>• Estimaciones en story points
+                        <br>• Planificación de 14 sprints
+                        <br>• Definition of Done (DoD)
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">📖 Especificaciones Técnicas</h3>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🏗️ Propuesta Técnica</h3>
+                    <p>Documento maestro con arquitectura, decisiones de diseño y justificaciones técnicas.</p>
+                    <div class="card-links">
+                        <a href="../propuesta_motor_contable.md" class="card-link" target="_blank">
+                            📖 Ver Propuesta
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🎨 Especificación de Mocks</h3>
+                    <p>Documentación completa del sistema de mocks con guía de migración a backend real.</p>
+                    <div class="card-links">
+                        <a href="../mocks.md" class="card-link" target="_blank">
+                            📖 Ver Mocks
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🗄️ Modelo de Datos</h3>
+                    <p>Script SQL completo con 21 tablas, particionamiento y datos de demo.</p>
+                    <div class="card-links">
+                        <a href="../model.sql" class="card-link" target="_blank">
+                            📄 Ver model.sql
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⚡ Guía de Implementación en Fiber</h3>
+                    <p>Guía completa con código Go/Fiber para implementar todas las APIs basada en los mocks y Swagger.</p>
+                    <div class="card-links">
+                        <a href="../implementacion_api_en_fiber.go" class="card-link" target="_blank">
+                            📄 Ver Guía Completa
+                        </a>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.875rem; color: #8c8c8c;">
+                        <strong>Incluye:</strong>
+                        <br>• Estructura completa del proyecto
+                        <br>• Modelos de datos con GORM
+                        <br>• Controladores para todos los endpoints
+                        <br>• Integración con go-dsl
+                        <br>• Configuración de PostgreSQL
+                        <br>• Scripts de Docker y deployment
+                        <br>• Ejemplos de testing
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">🎯 Stack Tecnológico</h3>
+            <div class="card">
+                <h3>⚡ Tecnologías Clave</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <strong style="color: #1890ff;">Backend Core</strong>
+                        <ul style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.875rem; color: #595959;">
+                            <li>Go 1.21+</li>
+                            <li>Fiber v2</li>
+                            <li>go-dsl (existing)</li>
+                            <li>PostgreSQL 15+</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: #1890ff;">Frontend</strong>
+                        <ul style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.875rem; color: #595959;">
+                            <li>HTML5 + CSS3</li>
+                            <li>Vanilla JavaScript</li>
+                            <li>Chart.js</li>
+                            <li>Responsive Design</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: #1890ff;">DevOps (Fase 3)</strong>
+                        <ul style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.875rem; color: #595959;">
+                            <li>Docker</li>
+                            <li>GitHub Actions</li>
+                            <li>Prometheus + Grafana</li>
+                            <li>Multi-cloud ready</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">📊 Resumen del Proyecto</h3>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🎯 Objetivos</h3>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #595959; font-size: 0.9rem;">
+                        <li>✅ Motor contable multi-tenant</li>
+                        <li>✅ Procesamiento DSL flexible</li>
+                        <li>✅ 1M+ comprobantes/día</li>
+                        <li>✅ 6 países LATAM</li>
+                        <li>✅ Cumplimiento normativo</li>
+                        <li>✅ Cloud-native scalable</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Métricas de Éxito</h3>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #595959; font-size: 0.9rem;">
+                        <li>⚡ Latencia < 200ms</li>
+                        <li>🔧 Disponibilidad 99.9%</li>
+                        <li>🧪 Coverage tests > 80%</li>
+                        <li>🔐 0 vulnerabilidades críticas</li>
+                        <li>📊 40+ APIs implementadas</li>
+                        <li>🎨 7 pantallas funcionales</li>
+                        <li>📄 25+ mocks JSON completos</li>
+                        <li>📚 Swagger con todas las APIs</li>
+                        <li>⚡ Guía implementación Fiber</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>⏱️ Timeline</h3>
+                    <div style="margin-top: 1rem; font-size: 0.875rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; padding: 0.5rem; background: #f0f2f5; border-radius: 4px;">
+                            <span><strong>Fase 1</strong></span>
+                            <span style="color: #8c8c8c;">Feb - May 2025</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; padding: 0.5rem; background: #f0f2f5; border-radius: 4px;">
+                            <span><strong>Fase 2</strong></span>
+                            <span style="color: #8c8c8c;">Jun - Jul 2025</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: #f0f2f5; border-radius: 4px;">
+                            <span><strong>Fase 3</strong></span>
+                            <span style="color: #8c8c8c;">Aug - Oct 2025</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Live Preview Modal (hidden by default) -->
+    <div id="previewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 1200px; height: 80%; background: white; border-radius: 8px; overflow: hidden;">
+            <div class="preview-header">
+                <span class="preview-title" id="previewTitle">Vista Previa</span>
+                <div class="preview-actions">
+                    <button class="preview-btn" onclick="window.open(document.getElementById('previewFrame').src, '_blank')">
+                        🔗 Abrir en Nueva Pestaña
+                    </button>
+                    <button class="preview-btn" onclick="closePreview()">
+                        ✕ Cerrar
+                    </button>
+                </div>
+            </div>
+            <iframe id="previewFrame" class="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Motor Contable Cloud-Native © 2025 | Versión 2.0 | 
+        <a href="https://github.com/arturoeanton/go-dsl" target="_blank" style="color: #1890ff;">
+            Powered by go-dsl
+        </a> | 
+        <a href="api/swagger.yaml" target="_blank" style="color: #1890ff;">
+            API Swagger
+        </a>
+        </p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Show section based on tab click
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Show preview in modal
+        function showPreview(url) {
+            const modal = document.getElementById('previewModal');
+            const frame = document.getElementById('previewFrame');
+            const title = document.getElementById('previewTitle');
+            
+            // Set the iframe source
+            frame.src = url;
+            
+            // Set title based on URL
+            if (url.includes('dashboard')) {
+                title.textContent = 'Vista Previa - Dashboard';
+            } else if (url.includes('vouchers_form')) {
+                title.textContent = 'Vista Previa - Formulario de Comprobantes';
+            } else if (url.includes('vouchers_list')) {
+                title.textContent = 'Vista Previa - Lista de Comprobantes';
+            } else if (url.includes('journal_entries')) {
+                title.textContent = 'Vista Previa - Asientos Contables';
+            } else if (url.includes('accounts_chart')) {
+                title.textContent = 'Vista Previa - Plan de Cuentas';
+            } else if (url.includes('reports')) {
+                title.textContent = 'Vista Previa - Generador de Reportes';
+            } else if (url.includes('dsl_editor')) {
+                title.textContent = 'Vista Previa - Editor DSL';
+            } else {
+                title.textContent = 'Vista Previa';
+            }
+            
+            // Show modal
+            modal.style.display = 'block';
+            
+            // Prevent scrolling on body
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close preview modal
+        function closePreview() {
+            const modal = document.getElementById('previewModal');
+            const frame = document.getElementById('previewFrame');
+            
+            // Hide modal
+            modal.style.display = 'none';
+            
+            // Clear iframe source
+            frame.src = '';
+            
+            // Restore body scrolling
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('previewModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePreview();
+            }
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePreview();
+            }
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Motor Contable Mockups - Loaded successfully');
+            
+            // Add smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

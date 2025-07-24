@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Motor Contable</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="navbar-brand">
+                <h1>Motor Contable</h1>
+            </div>
+            <div class="navbar-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar..." id="searchInput">
+                    <button type="button" class="search-btn">🔍</button>
+                </div>
+                <div class="user-menu">
+                    <img src="../img/avatar.png" alt="Usuario" class="user-avatar">
+                    <span>Juan Pérez</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active"><a href="dashboard.html"><span class="menu-icon">📊</span><span class="menu-text">Dashboard</span></a></li>
+                    <li><a href="vouchers_list.html"><span class="menu-icon">📄</span><span class="menu-text">Comprobantes</span></a></li>
+                    <li><a href="journal_entries.html"><span class="menu-icon">📚</span><span class="menu-text">Asientos</span></a></li>
+                    <li><a href="accounts_chart.html"><span class="menu-icon">🏦</span><span class="menu-text">Plan de Cuentas</span></a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📈</span><span class="menu-text">Reportes</span></a></li>
+                    <li><a href="dsl_editor.html"><span class="menu-icon">⚙️</span><span class="menu-text">Reglas DSL</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2>Dashboard</h2>
+                <div class="header-actions">
+                    <select class="form-control" style="width: 300px;">
+                        <option>DEMO-CO - Empresa Demo Colombia</option>
+                        <option>EMPRESA-001 - Comercializadora ABC</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #3498db20; color: #3498db;">📄</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Comprobantes</div>
+                        <div class="stat-value">150,234</div>
+                        <div class="stat-change positive">
+                            <span>📈 +12%</span>
+                            <small>vs mes anterior</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #2ecc7120; color: #2ecc71;">📚</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Asientos</div>
+                        <div class="stat-value">300,468</div>
+                        <div class="stat-change positive">
+                            <span>📈 +15%</span>
+                            <small>vs mes anterior</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #f39c1220; color: #f39c12;">⏰</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Pendientes</div>
+                        <div class="stat-value">1,234</div>
+                        <div class="stat-change negative">
+                            <span>📉 -5%</span>
+                            <small>vs mes anterior</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #9b59b620; color: #9b59b6;">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Procesados Hoy</div>
+                        <div class="stat-value">3,456</div>
+                        <div class="stat-change positive">
+                            <span>📈 +8%</span>
+                            <small>vs promedio</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid-2col">
+                <!-- Processing Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📊 Procesamiento Diario</h3>
+                        <select class="form-control form-control-sm" style="width: 150px;">
+                            <option>Últimos 7 días</option>
+                            <option>Últimos 30 días</option>
+                            <option>Este mes</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="processingChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>⚡ Rendimiento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="metric-item" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #666;">Velocidad procesamiento</span>
+                                <span style="font-weight: 600; color: #2ecc71;">58 comp/seg</span>
+                            </div>
+                        </div>
+                        <div class="metric-item" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #666;">Latencia promedio</span>
+                                <span style="font-weight: 600; color: #3498db;">145 ms</span>
+                            </div>
+                        </div>
+                        <div class="metric-item" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #666;">Tasa de error</span>
+                                <span style="font-weight: 600; color: #2ecc71;">0.02%</span>
+                            </div>
+                        </div>
+                        <div class="metric-item" style="padding: 10px 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #666;">Disponibilidad</span>
+                                <span style="font-weight: 600; color: #2ecc71;">99.95%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Charts Row -->
+            <div class="grid-2col" style="margin-bottom: var(--spacing-lg);">
+                <!-- Vouchers by Type Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📊 Comprobantes por Tipo</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="voucherTypeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vouchers by Status Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📈 Estado de Procesamiento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="voucherStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📄 Actividad Reciente</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="location.reload()">🔄 Actualizar</button>
+                </div>
+                <div class="card-body">
+                    <div id="activityFeed">
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #2ecc7120; color: #2ecc71;">✅</div>
+                            <div class="activity-content">
+                                <p>Factura <strong>#FV-001-2024</strong> procesada correctamente</p>
+                                <small>hace 2 minutos</small>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #3498db20; color: #3498db;">📃</div>
+                            <div class="activity-content">
+                                <p><strong>Libro Diario</strong> generado para Enero 2024</p>
+                                <small>hace 15 minutos</small>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #f39c1220; color: #f39c12;">⚠️</div>
+                            <div class="activity-content">
+                                <p><strong>500 comprobantes</strong> importados con 3 advertencias</p>
+                                <small>hace 1 hora</small>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #2ecc7120; color: #2ecc71;">✅</div>
+                            <div class="activity-content">
+                                <p><strong>Balance de Comprobación</strong> completado</p>
+                                <small>hace 2 horas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/api_service.js"></script>
+    <script src="../js/dashboard.js"></script>
+</body>
+</html>

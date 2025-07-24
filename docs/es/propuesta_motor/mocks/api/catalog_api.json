@@ -1,0 +1,215 @@
+{
+  "api_version": "1.0",
+  "base_url": "/api/v1",
+  "environment": "mock",
+  "endpoints": {
+    "dashboard": {
+      "url": "/dashboard/stats",
+      "method": "GET",
+      "description": "Obtiene estadísticas y métricas del dashboard",
+      "mock_file": "dashboard.json"
+    },
+    "vouchers": {
+      "list": {
+        "url": "/vouchers",
+        "method": "GET",
+        "description": "Lista de comprobantes con filtros y paginación",
+        "mock_file": "vouchers_list.json"
+      },
+      "detail": {
+        "url": "/vouchers/:id",
+        "method": "GET",
+        "description": "Detalle de un comprobante específico",
+        "mock_file": "voucher_detail.json"
+      },
+      "create": {
+        "url": "/vouchers",
+        "method": "POST",
+        "description": "Crear nuevo comprobante",
+        "mock_file": "voucher_create.json"
+      },
+      "types": {
+        "url": "/vouchers/types",
+        "method": "GET",
+        "description": "Tipos de comprobantes disponibles",
+        "mock_file": "voucher_types.json"
+      }
+    },
+    "journal_entries": {
+      "list": {
+        "url": "/journal-entries",
+        "method": "GET",
+        "description": "Lista de asientos contables",
+        "mock_file": "journal_entries.json"
+      },
+      "create": {
+        "url": "/journal-entries",
+        "method": "POST",
+        "description": "Crear asiento manual",
+        "mock_file": "journal_entry_create.json"
+      }
+    },
+    "accounts": {
+      "tree": {
+        "url": "/accounts/tree",
+        "method": "GET",
+        "description": "Árbol de plan de cuentas",
+        "mock_file": "accounts_tree.json"
+      },
+      "list": {
+        "url": "/accounts",
+        "method": "GET",
+        "description": "Lista plana de cuentas",
+        "mock_file": "accounts_list.json"
+      },
+      "detail": {
+        "url": "/accounts/:code",
+        "method": "GET",
+        "description": "Detalle de una cuenta",
+        "mock_file": "account_detail.json"
+      },
+      "types": {
+        "url": "/accounts/types",
+        "method": "GET",
+        "description": "Tipos de cuentas disponibles",
+        "mock_file": "account_types.json"
+      }
+    },
+    "reports": {
+      "types": {
+        "url": "/reports/types",
+        "method": "GET",
+        "description": "Tipos de reportes disponibles",
+        "mock_file": "report_types.json"
+      },
+      "generate": {
+        "url": "/reports/generate",
+        "method": "POST",
+        "description": "Generar reporte",
+        "mock_file": "report_generate.json"
+      },
+      "recent": {
+        "url": "/reports/recent",
+        "method": "GET",
+        "description": "Reportes recientes generados",
+        "mock_file": "reports_recent.json"
+      }
+    },
+    "dsl": {
+      "templates": {
+        "url": "/dsl/templates",
+        "method": "GET",
+        "description": "Lista de plantillas DSL",
+        "mock_file": "dsl_templates.json"
+      },
+      "template_detail": {
+        "url": "/dsl/templates/:id",
+        "method": "GET",
+        "description": "Detalle de una plantilla DSL",
+        "mock_file": "dsl_template_detail.json"
+      },
+      "validate": {
+        "url": "/dsl/validate",
+        "method": "POST",
+        "description": "Validar código DSL",
+        "mock_file": "dsl_validate.json"
+      },
+      "test": {
+        "url": "/dsl/test",
+        "method": "POST",
+        "description": "Probar plantilla DSL con datos",
+        "mock_file": "dsl_test.json"
+      }
+    },
+    "organizations": {
+      "list": {
+        "url": "/organizations",
+        "method": "GET",
+        "description": "Lista de organizaciones/empresas",
+        "mock_file": "organizations.json"
+      },
+      "current": {
+        "url": "/organizations/current",
+        "method": "GET",
+        "description": "Organización actual seleccionada",
+        "mock_file": "organization_current.json"
+      }
+    },
+    "users": {
+      "profile": {
+        "url": "/users/profile",
+        "method": "GET",
+        "description": "Perfil del usuario actual",
+        "mock_file": "user_profile.json"
+      },
+      "preferences": {
+        "url": "/users/preferences",
+        "method": "GET",
+        "description": "Preferencias del usuario",
+        "mock_file": "user_preferences.json"
+      }
+    },
+    "lookups": {
+      "countries": {
+        "url": "/lookups/countries",
+        "method": "GET",
+        "description": "Lista de países",
+        "mock_file": "countries.json"
+      },
+      "currencies": {
+        "url": "/lookups/currencies",
+        "method": "GET",
+        "description": "Lista de monedas",
+        "mock_file": "currencies.json"
+      },
+      "tax_types": {
+        "url": "/lookups/tax-types",
+        "method": "GET",
+        "description": "Tipos de impuestos",
+        "mock_file": "tax_types.json"
+      },
+      "document_types": {
+        "url": "/lookups/document-types",
+        "method": "GET",
+        "description": "Tipos de documentos",
+        "mock_file": "document_types.json"
+      }
+    },
+    "third_parties": {
+      "search": {
+        "url": "/third-parties/search",
+        "method": "GET",
+        "description": "Buscar terceros (clientes/proveedores)",
+        "mock_file": "third_parties_search.json"
+      },
+      "detail": {
+        "url": "/third-parties/:id",
+        "method": "GET",
+        "description": "Detalle de un tercero",
+        "mock_file": "third_party_detail.json"
+      }
+    },
+    "periods": {
+      "current": {
+        "url": "/periods/current",
+        "method": "GET",
+        "description": "Período contable actual",
+        "mock_file": "period_current.json"
+      },
+      "list": {
+        "url": "/periods",
+        "method": "GET",
+        "description": "Lista de períodos contables",
+        "mock_file": "periods.json"
+      }
+    },
+    "audit": {
+      "logs": {
+        "url": "/audit/logs",
+        "method": "GET",
+        "description": "Logs de auditoría",
+        "mock_file": "audit_logs.json"
+      }
+    }
+  }
+}

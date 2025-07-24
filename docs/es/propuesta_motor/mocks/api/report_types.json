@@ -1,0 +1,87 @@
+{
+  "success": true,
+  "data": {
+    "report_types": [
+      {
+        "id": "balance_general",
+        "name": "Balance General",
+        "description": "Estado de situación financiera con activos, pasivos y patrimonio",
+        "category": "financial_statements",
+        "icon": "⚖️",
+        "parameters": ["date", "organization", "compare_with", "detail_level"]
+      },
+      {
+        "id": "estado_resultados",
+        "name": "Estado de Resultados",
+        "description": "Ingresos, gastos y utilidad del período",
+        "category": "financial_statements",
+        "icon": "💰",
+        "parameters": ["date_from", "date_to", "organization", "compare_with", "cost_centers"]
+      },
+      {
+        "id": "libro_diario",
+        "name": "Libro Diario",
+        "description": "Registro cronológico de todos los asientos contables",
+        "category": "legal_books",
+        "icon": "📚",
+        "parameters": ["date_from", "date_to", "organization", "voucher_types"]
+      },
+      {
+        "id": "libro_mayor",
+        "name": "Libro Mayor",
+        "description": "Movimientos detallados por cuenta contable",
+        "category": "legal_books",
+        "icon": "📖",
+        "parameters": ["date_from", "date_to", "organization", "account_from", "account_to"]
+      },
+      {
+        "id": "balance_comprobacion",
+        "name": "Balance de Comprobación",
+        "description": "Saldos de todas las cuentas para verificación",
+        "category": "control",
+        "icon": "✅",
+        "parameters": ["date", "organization", "account_level"]
+      },
+      {
+        "id": "auxiliar_terceros",
+        "name": "Auxiliar de Terceros",
+        "description": "Movimientos y saldos por cliente o proveedor",
+        "category": "auxiliary",
+        "icon": "👥",
+        "parameters": ["date_from", "date_to", "organization", "third_party_type", "third_party_id"]
+      },
+      {
+        "id": "flujo_efectivo",
+        "name": "Flujo de Efectivo",
+        "description": "Entradas y salidas de efectivo del período",
+        "category": "financial_statements",
+        "icon": "💸",
+        "parameters": ["date_from", "date_to", "organization", "method"]
+      },
+      {
+        "id": "estado_cambios",
+        "name": "Estado de Cambios en el Patrimonio",
+        "description": "Variaciones en las cuentas patrimoniales",
+        "category": "financial_statements",
+        "icon": "🔄",
+        "parameters": ["date_from", "date_to", "organization"]
+      },
+      {
+        "id": "reporte_fiscal",
+        "name": "Reportes Fiscales",
+        "description": "Información para declaraciones tributarias",
+        "category": "tax",
+        "icon": "🏛️",
+        "parameters": ["period", "organization", "tax_type", "format"]
+      },
+      {
+        "id": "indicadores",
+        "name": "Indicadores Financieros",
+        "description": "Ratios y métricas de análisis financiero",
+        "category": "analysis",
+        "icon": "📊",
+        "parameters": ["date", "organization", "indicator_types"]
+      }
+    ]
+  }
+}

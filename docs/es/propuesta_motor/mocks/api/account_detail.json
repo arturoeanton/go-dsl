@@ -1,0 +1,101 @@
+{
+  "success": true,
+  "data": {
+    "id": "111e4567-e89b-12d3-a456-426614174101",
+    "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+    "account_code": "1105",
+    "name": "CAJA GENERAL",
+    "type": "ASSET",
+    "nature": "D",
+    "level": 3,
+    "parent_id": "111e4567-e89b-12d3-a456-426614174100",
+    "parent_code": "11",
+    "parent_name": "DISPONIBLE",
+    "is_detail": true,
+    "is_active": true,
+    "metadata": {
+      "description": "Cuenta para el manejo de efectivo en caja general",
+      "restrictions": ["no_negative_balance"],
+      "tags": ["cash", "daily_operations"],
+      "last_reconciliation": "2025-01-20"
+    },
+    "balance_info": {
+      "current_balance": 15450000.00,
+      "opening_balance": 12000000.00,
+      "period_movements": {
+        "total_debit": 45230000.00,
+        "total_credit": 41780000.00,
+        "net_movement": 3450000.00
+      },
+      "last_movement_date": "2025-01-24",
+      "reconciled_balance": 15450000.00,
+      "pending_reconciliation": 0.00
+    },
+    "hierarchy": [
+      {
+        "level": 1,
+        "code": "1",
+        "name": "ACTIVO"
+      },
+      {
+        "level": 2,
+        "code": "11",
+        "name": "DISPONIBLE"
+      },
+      {
+        "level": 3,
+        "code": "1105",
+        "name": "CAJA GENERAL"
+      }
+    ],
+    "recent_movements": [
+      {
+        "date": "2025-01-24",
+        "entry_number": 1249,
+        "description": "Recibo de caja #RC-0045",
+        "debit_amount": 560000.00,
+        "credit_amount": 0.00,
+        "balance_after": 15450000.00
+      },
+      {
+        "date": "2025-01-23",
+        "entry_number": 1248,
+        "description": "Pago gastos menores",
+        "debit_amount": 0.00,
+        "credit_amount": 150000.00,
+        "balance_after": 14890000.00
+      },
+      {
+        "date": "2025-01-23",
+        "entry_number": 1247,
+        "description": "Ingreso por venta contado",
+        "debit_amount": 1200000.00,
+        "credit_amount": 0.00,
+        "balance_after": 15040000.00
+      }
+    ],
+    "related_accounts": [
+      {
+        "code": "1110",
+        "name": "BANCOS",
+        "relationship": "sibling"
+      },
+      {
+        "code": "4135",
+        "name": "VENTAS",
+        "relationship": "frequent_counterpart"
+      }
+    ],
+    "permissions": {
+      "can_edit": true,
+      "can_delete": false,
+      "can_post": true,
+      "can_reconcile": true
+    },
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2025-01-24T10:00:00Z",
+    "created_by": "system",
+    "last_updated_by": "user-001"
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}

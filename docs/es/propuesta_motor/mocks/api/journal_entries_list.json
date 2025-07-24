@@ -1,0 +1,143 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/api/v1/journal-entries",
+    "headers": {
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    },
+    "query": {
+      "page": 1,
+      "limit": 50,
+      "period": "2024-01",
+      "status": "POSTED",
+      "entry_type": "STANDARD"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "journal_entries": [
+          {
+            "id": "660e8400-e29b-41d4-a716-446655440001",
+            "organization_id": "11111111-1111-1111-1111-111111111111",
+            "entry_number": 1001,
+            "entry_date": "2024-01-15",
+            "voucher_id": "550e8400-e29b-41d4-a716-446655440005",
+            "description": "Venta según factura FV-001-2024",
+            "entry_type": "STANDARD",
+            "period": "2024-01",
+            "status": "POSTED",
+            "created_by": "550e8400-e29b-41d4-a716-446655440001",
+            "created_at": "2024-01-15T10:35:00Z",
+            "approved_by": "550e8400-e29b-41d4-a716-446655440001",
+            "approved_at": "2024-01-15T10:36:00Z",
+            "lines": [
+              {
+                "id": "770e8400-e29b-41d4-a716-446655440001",
+                "line_number": 1,
+                "account_id": "880e8400-e29b-41d4-a716-446655440001",
+                "account_code": "1305.01",
+                "account_name": "Clientes Nacionales",
+                "debit_amount": 8568000,
+                "credit_amount": 0,
+                "description": "Factura FV-001-2024"
+              },
+              {
+                "id": "770e8400-e29b-41d4-a716-446655440002",
+                "line_number": 2,
+                "account_id": "880e8400-e29b-41d4-a716-446655440002",
+                "account_code": "4135.01",
+                "account_name": "Venta de Mercancías",
+                "debit_amount": 0,
+                "credit_amount": 7200000,
+                "description": "Venta de productos"
+              },
+              {
+                "id": "770e8400-e29b-41d4-a716-446655440003",
+                "line_number": 3,
+                "account_id": "880e8400-e29b-41d4-a716-446655440003",
+                "account_code": "2408.01",
+                "account_name": "IVA 19% por Pagar",
+                "debit_amount": 0,
+                "credit_amount": 1368000,
+                "description": "IVA 19% factura FV-001-2024"
+              }
+            ],
+            "totals": {
+              "debit": 8568000,
+              "credit": 8568000,
+              "is_balanced": true
+            }
+          },
+          {
+            "id": "660e8400-e29b-41d4-a716-446655440002",
+            "organization_id": "11111111-1111-1111-1111-111111111111",
+            "entry_number": 1002,
+            "entry_date": "2024-01-15",
+            "voucher_id": null,
+            "description": "Pago de servicios públicos enero 2024",
+            "entry_type": "STANDARD",
+            "period": "2024-01",
+            "status": "POSTED",
+            "created_by": "550e8400-e29b-41d4-a716-446655440001",
+            "created_at": "2024-01-15T11:00:00Z",
+            "approved_by": "550e8400-e29b-41d4-a716-446655440001",
+            "approved_at": "2024-01-15T11:01:00Z",
+            "lines": [
+              {
+                "id": "770e8400-e29b-41d4-a716-446655440004",
+                "line_number": 1,
+                "account_id": "880e8400-e29b-41d4-a716-446655440004",
+                "account_code": "5135.01",
+                "account_name": "Servicios Públicos",
+                "debit_amount": 850000,
+                "credit_amount": 0,
+                "description": "Servicios enero 2024"
+              },
+              {
+                "id": "770e8400-e29b-41d4-a716-446655440005",
+                "line_number": 2,
+                "account_id": "880e8400-e29b-41d4-a716-446655440005",
+                "account_code": "1110.01",
+                "account_name": "Banco Nacional - Cta Corriente",
+                "debit_amount": 0,
+                "credit_amount": 850000,
+                "description": "Pago servicios públicos"
+              }
+            ],
+            "totals": {
+              "debit": 850000,
+              "credit": 850000,
+              "is_balanced": true
+            }
+          }
+        ],
+        "summary": {
+          "total_entries": 45,
+          "total_debit": 125680000,
+          "total_credit": 125680000,
+          "by_status": {
+            "DRAFT": 5,
+            "POSTED": 40
+          }
+        },
+        "pagination": {
+          "page": 1,
+          "limit": 50,
+          "total_items": 45,
+          "total_pages": 1,
+          "has_next": false,
+          "has_prev": false
+        }
+      },
+      "meta": {
+        "timestamp": "2024-01-15T10:30:00Z",
+        "version": "1.0",
+        "request_id": "550e8400-e29b-41d4-a716-446655440010"
+      },
+      "errors": []
+    }
+  }
+}

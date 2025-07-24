@@ -1,0 +1,83 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/api/v1/organizations",
+    "headers": {
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    },
+    "query": {
+      "page": 1,
+      "limit": 20,
+      "country_code": "CO",
+      "is_active": true
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "organizations": [
+          {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "code": "DEMO-CO",
+            "name": "Empresa Demo Colombia",
+            "country_code": "CO",
+            "tax_id": "900123456-7",
+            "settings": {
+              "currency": "COP",
+              "fiscal_year": "calendar",
+              "decimal_places": 2,
+              "timezone": "America/Bogota"
+            },
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-15T10:00:00Z",
+            "is_active": true,
+            "stats": {
+              "total_vouchers": 15234,
+              "pending_vouchers": 45,
+              "total_accounts": 125,
+              "users_count": 12
+            }
+          },
+          {
+            "id": "22222222-2222-2222-2222-222222222222",
+            "code": "EMPRESA-001",
+            "name": "Comercializadora ABC S.A.S.",
+            "country_code": "CO",
+            "tax_id": "900456789-1",
+            "settings": {
+              "currency": "COP",
+              "fiscal_year": "calendar",
+              "decimal_places": 2,
+              "timezone": "America/Bogota"
+            },
+            "created_at": "2024-01-05T00:00:00Z",
+            "updated_at": "2024-01-15T09:30:00Z",
+            "is_active": true,
+            "stats": {
+              "total_vouchers": 8523,
+              "pending_vouchers": 12,
+              "total_accounts": 98,
+              "users_count": 5
+            }
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 20,
+          "total_items": 2,
+          "total_pages": 1,
+          "has_next": false,
+          "has_prev": false
+        }
+      },
+      "meta": {
+        "timestamp": "2024-01-15T10:30:00Z",
+        "version": "1.0",
+        "request_id": "550e8400-e29b-41d4-a716-446655440004"
+      },
+      "errors": []
+    }
+  }
+}

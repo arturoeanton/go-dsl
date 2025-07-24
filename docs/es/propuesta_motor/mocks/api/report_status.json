@@ -1,0 +1,59 @@
+{
+  "success": true,
+  "data": {
+    "job_id": "report-job-001-2025",
+    "status": "COMPLETED",
+    "progress": 100,
+    "file_url": "/api/v1/reports/report-job-001-2025/download",
+    "file_size": 2456789,
+    "file_format": "PDF",
+    "error_message": null,
+    "created_at": "2025-01-24T11:00:00Z",
+    "started_at": "2025-01-24T11:00:05Z",
+    "completed_at": "2025-01-24T11:00:42Z",
+    "expires_at": "2025-01-31T11:00:42Z",
+    "processing_time": 37,
+    "report_info": {
+      "type": "balance_general",
+      "name": "Balance General - Enero 2025",
+      "organization": "DEMO-CO - Empresa Demo Colombia",
+      "period": "2025-01-01 to 2025-01-31",
+      "total_accounts": 156,
+      "pages": 8,
+      "generated_by": "user-001"
+    },
+    "status_updates": [
+      {
+        "timestamp": "2025-01-24T11:00:05Z",
+        "status": "GENERATING",
+        "message": "Iniciando generación del reporte",
+        "progress": 0
+      },
+      {
+        "timestamp": "2025-01-24T11:00:15Z",
+        "status": "GENERATING",
+        "message": "Consultando datos contables",
+        "progress": 25
+      },
+      {
+        "timestamp": "2025-01-24T11:00:25Z",
+        "status": "GENERATING",
+        "message": "Procesando cálculos",
+        "progress": 50
+      },
+      {
+        "timestamp": "2025-01-24T11:00:35Z",
+        "status": "GENERATING",
+        "message": "Generando archivo PDF",
+        "progress": 75
+      },
+      {
+        "timestamp": "2025-01-24T11:00:42Z",
+        "status": "COMPLETED",
+        "message": "Reporte generado exitosamente",
+        "progress": 100
+      }
+    ]
+  },
+  "timestamp": "2025-01-24T11:05:00Z"
+}

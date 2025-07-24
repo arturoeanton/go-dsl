@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asientos Contables - Motor Contable</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="navbar-brand">
+                <h1>Motor Contable</h1>
+            </div>
+            <div class="navbar-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar asientos..." id="searchInput">
+                    <button type="button" class="search-btn">🔍</button>
+                </div>
+                <div class="user-menu">
+                    <img src="../img/avatar.png" alt="Usuario" class="user-avatar">
+                    <span>Juan Pérez</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><span class="menu-icon">📊</span><span class="menu-text">Dashboard</span></a></li>
+                    <li><a href="vouchers_list.html"><span class="menu-icon">📄</span><span class="menu-text">Comprobantes</span></a></li>
+                    <li class="active"><a href="journal_entries.html"><span class="menu-icon">📚</span><span class="menu-text">Asientos</span></a></li>
+                    <li><a href="accounts_chart.html"><span class="menu-icon">🏦</span><span class="menu-text">Plan de Cuentas</span></a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📈</span><span class="menu-text">Reportes</span></a></li>
+                    <li><a href="dsl_editor.html"><span class="menu-icon">⚙️</span><span class="menu-text">Reglas DSL</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2>Asientos Contables</h2>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="showManualEntry()">
+                        ✏️ Asiento Manual
+                    </button>
+                    <button class="btn btn-primary" onclick="showImportDialog()">
+                        📥 Importar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="card filters-card">
+                <div class="card-header">
+                    <h3>🔍 Filtros de Búsqueda</h3>
+                    <button class="btn btn-secondary btn-sm" id="toggleFilters">Mostrar/Ocultar</button>
+                </div>
+                <div class="card-body filters-body" id="filtersBody">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label>Fecha Desde</label>
+                            <input type="date" class="form-control" id="dateFrom" value="2024-01-01">
+                        </div>
+                        <div class="filter-group">
+                            <label>Fecha Hasta</label>
+                            <input type="date" class="form-control" id="dateTo" value="2024-01-31">
+                        </div>
+                        <div class="filter-group">
+                            <label>Número de Asiento</label>
+                            <input type="text" class="form-control" id="entryNumber" placeholder="Ej: AS-2024-0001">
+                        </div>
+                        <div class="filter-group">
+                            <label>Cuenta Contable</label>
+                            <input type="text" class="form-control" id="accountCode" placeholder="Código o nombre">
+                        </div>
+                        <div class="filter-group">
+                            <label>Comprobante Origen</label>
+                            <input type="text" class="form-control" id="sourceVoucher" placeholder="Número comprobante">
+                        </div>
+                        <div class="filter-group">
+                            <label>Monto</label>
+                            <div class="range-inputs">
+                                <input type="number" class="form-control" id="amountFrom" placeholder="Desde">
+                                <span>-</span>
+                                <input type="number" class="form-control" id="amountTo" placeholder="Hasta">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Estado</label>
+                            <select class="form-control" id="entryStatus">
+                                <option value="">Todos</option>
+                                <option value="DRAFT">Borrador</option>
+                                <option value="POSTED">Mayorizado</option>
+                                <option value="REVERSED">Reversado</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary btn-block" onclick="applyFilters()">
+                                🔍 Buscar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="summary-icon">📊</div>
+                    <div class="summary-content">
+                        <h4>Total Asientos</h4>
+                        <p class="summary-value" id="totalEntries">0</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">💰</div>
+                    <div class="summary-content">
+                        <h4>Total Débitos</h4>
+                        <p class="summary-value text-success" id="totalDebits">$0</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">💳</div>
+                    <div class="summary-content">
+                        <h4>Total Créditos</h4>
+                        <p class="summary-value text-danger" id="totalCredits">$0</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">⚖️</div>
+                    <div class="summary-content">
+                        <h4>Balance</h4>
+                        <p class="summary-value" id="balance">$0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Journal Entries Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📚 Libro Diario</h3>
+                    <div class="card-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="exportToExcel()">
+                            📊 Exportar Excel
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="printEntries()">
+                            🖨️ Imprimir
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table journal-table" id="journalTable">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" width="30">
+                                        <input type="checkbox" id="selectAll">
+                                    </th>
+                                    <th rowspan="2">Fecha</th>
+                                    <th rowspan="2">Número</th>
+                                    <th rowspan="2">Comprobante</th>
+                                    <th colspan="2">Cuenta</th>
+                                    <th rowspan="2">Descripción</th>
+                                    <th rowspan="2">Débito</th>
+                                    <th rowspan="2">Crédito</th>
+                                    <th rowspan="2">Estado</th>
+                                    <th rowspan="2" width="100">Acciones</th>
+                                </tr>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre</th>
+                                </tr>
+                            </thead>
+                            <tbody id="journalTableBody">
+                                <!-- Data will be loaded dynamically -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="totals-row">
+                                    <td colspan="7" class="text-right"><strong>Totales Página:</strong></td>
+                                    <td class="text-right"><strong id="pageDebits">$0</strong></td>
+                                    <td class="text-right"><strong id="pageCredits">$0</strong></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-container">
+                        <div class="pagination-info">
+                            Mostrando <span id="showingFrom">1</span> - <span id="showingTo">20</span> 
+                            de <span id="totalRecords">0</span> líneas
+                        </div>
+                        <div class="pagination">
+                            <button class="btn btn-sm" id="prevPage" disabled>◀ Anterior</button>
+                            <span class="page-numbers" id="pageNumbers"></span>
+                            <button class="btn btn-sm" id="nextPage">Siguiente ▶</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Check -->
+            <div class="balance-check card">
+                <div class="card-body">
+                    <div class="balance-info">
+                        <span class="balance-label">Verificación de Balance:</span>
+                        <span class="balance-status" id="balanceStatus">
+                            <span class="status-icon">✅</span>
+                            <span class="status-text">Asientos balanceados correctamente</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Manual Entry Modal -->
+    <div class="modal" id="manualEntryModal">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h3>✏️ Crear Asiento Manual</h3>
+                <button class="close-modal" onclick="closeManualEntry()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="manualEntryForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Fecha del Asiento</label>
+                            <input type="date" class="form-control" id="entryDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción General</label>
+                            <input type="text" class="form-control" id="entryDescription" 
+                                   placeholder="Descripción del asiento" required>
+                        </div>
+                    </div>
+
+                    <h4>Líneas del Asiento</h4>
+                    <div class="entry-lines-container">
+                        <table class="table entry-lines-table">
+                            <thead>
+                                <tr>
+                                    <th>Cuenta</th>
+                                    <th>Descripción</th>
+                                    <th>Débito</th>
+                                    <th>Crédito</th>
+                                    <th>Centro Costo</th>
+                                    <th width="50"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="entryLinesBody">
+                                <!-- Entry lines will be added here -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2" class="text-right"><strong>Totales:</strong></td>
+                                    <td><strong id="totalDebitsModal">$0</strong></td>
+                                    <td><strong id="totalCreditsModal">$0</strong></td>
+                                    <td colspan="2">
+                                        <span id="balanceCheckModal" class="balance-indicator"></span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <button type="button" class="btn btn-secondary" onclick="addEntryLine()">
+                            ➕ Agregar Línea
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeManualEntry()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveManualEntry()">Guardar Asiento</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry Detail Modal -->
+    <div class="modal" id="entryDetailModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Detalle del Asiento</h3>
+                <button class="close-modal" onclick="closeEntryDetail()">&times;</button>
+            </div>
+            <div class="modal-body" id="entryDetailContent">
+                <!-- Entry details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEntryDetail()">Cerrar</button>
+                <button class="btn btn-warning" onclick="reverseEntry()" id="reverseBtn">
+                    ↩️ Reversar Asiento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Cargando asientos contables...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/api_service.js"></script>
+    <script src="../js/journal_entries.js"></script>
+</body>
+</html>

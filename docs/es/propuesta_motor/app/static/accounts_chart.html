@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Cuentas - Motor Contable</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        .tree-view {
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .tree-node {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            margin: 2px 0;
+        }
+        .tree-node:hover {
+            background-color: #f0f0f0;
+        }
+        .tree-node.selected {
+            background-color: #e3f2fd;
+        }
+        .tree-toggle {
+            display: inline-block;
+            width: 20px;
+            text-align: center;
+            user-select: none;
+        }
+        .tree-icon {
+            display: inline-block;
+            width: 20px;
+            text-align: center;
+        }
+        .tree-label {
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .tree-children {
+            margin-left: 20px;
+            display: none;
+        }
+        .tree-children.expanded {
+            display: block;
+        }
+        .account-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .account-type.asset { background-color: #4CAF50; color: white; }
+        .account-type.liability { background-color: #FF9800; color: white; }
+        .account-type.equity { background-color: #2196F3; color: white; }
+        .account-type.income { background-color: #9C27B0; color: white; }
+        .account-type.expense { background-color: #F44336; color: white; }
+        .account-nature {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .nature-d { color: #4CAF50; }
+        .nature-c { color: #F44336; }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="navbar-brand">
+                <h1>Motor Contable</h1>
+            </div>
+            <div class="navbar-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar cuenta..." id="searchInput">
+                    <button type="button" class="search-btn">🔍</button>
+                </div>
+                <div class="user-menu">
+                    <img src="../img/avatar.png" alt="Usuario" class="user-avatar">
+                    <span>Juan Pérez</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><span class="menu-icon">📊</span><span class="menu-text">Dashboard</span></a></li>
+                    <li><a href="vouchers_list.html"><span class="menu-icon">📄</span><span class="menu-text">Comprobantes</span></a></li>
+                    <li><a href="journal_entries.html"><span class="menu-icon">📚</span><span class="menu-text">Asientos</span></a></li>
+                    <li class="active"><a href="accounts_chart.html"><span class="menu-icon">🏦</span><span class="menu-text">Plan de Cuentas</span></a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📈</span><span class="menu-text">Reportes</span></a></li>
+                    <li><a href="dsl_editor.html"><span class="menu-icon">⚙️</span><span class="menu-text">Reglas DSL</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2>Plan de Cuentas Contables</h2>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="showImportModal()">
+                        📥 Importar
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportAccounts()">
+                        📤 Exportar
+                    </button>
+                    <button class="btn btn-primary" onclick="showAccountModal()">
+                        ➕ Nueva Cuenta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter and View Options -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>Tipo de Cuenta:</label>
+                            <select class="form-control" id="filterType" onchange="applyFilter()">
+                                <option value="">Todos</option>
+                                <option value="ASSET">Activos</option>
+                                <option value="LIABILITY">Pasivos</option>
+                                <option value="EQUITY">Patrimonio</option>
+                                <option value="INCOME">Ingresos</option>
+                                <option value="EXPENSE">Gastos</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Estado:</label>
+                            <select class="form-control" id="filterStatus" onchange="applyFilter()">
+                                <option value="active">Activas</option>
+                                <option value="all">Todas</option>
+                                <option value="inactive">Inactivas</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Vista:</label>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="setView('tree')">🌳 Árbol</button>
+                                <button class="btn btn-sm btn-secondary" onclick="setView('list')">📋 Lista</button>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-secondary" onclick="expandAll()">➕ Expandir Todo</button>
+                            <button class="btn btn-secondary" onclick="collapseAll()">➖ Colapsar Todo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Stats -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <h4>Total Cuentas</h4>
+                        <p class="stat-value" id="totalAccounts">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📂</div>
+                    <div class="stat-content">
+                        <h4>Cuentas Mayor</h4>
+                        <p class="stat-value" id="majorAccounts">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📄</div>
+                    <div class="stat-content">
+                        <h4>Cuentas Detalle</h4>
+                        <p class="stat-value" id="detailAccounts">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-content">
+                        <h4>Con Movimientos</h4>
+                        <p class="stat-value" id="activeAccounts">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tree View -->
+            <div class="card" id="treeViewCard">
+                <div class="card-header">
+                    <h3>🌳 Estructura del Plan de Cuentas</h3>
+                    <div class="card-actions">
+                        <span class="legend">
+                            <span class="account-type asset">Activo</span>
+                            <span class="account-type liability">Pasivo</span>
+                            <span class="account-type equity">Patrimonio</span>
+                            <span class="account-type income">Ingreso</span>
+                            <span class="account-type expense">Gasto</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tree-view" id="accountsTree">
+                        <!-- Tree will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div class="card" id="listViewCard" style="display: none;">
+                <div class="card-header">
+                    <h3>📋 Lista de Cuentas</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="accountsTable">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Naturaleza</th>
+                                    <th>Nivel</th>
+                                    <th>Estado</th>
+                                    <th>Último Mov.</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountsTableBody">
+                                <!-- Table rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Templates -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Plantillas Disponibles</h3>
+                </div>
+                <div class="card-body">
+                    <div class="templates-grid">
+                        <div class="template-card" onclick="loadTemplate('colombia_niif')">
+                            <div class="template-icon">🇨🇴</div>
+                            <h4>Colombia NIIF</h4>
+                            <p>Plan de cuentas NIIF para PYMES colombianas</p>
+                        </div>
+                        <div class="template-card" onclick="loadTemplate('mexico_sat')">
+                            <div class="template-icon">🇲🇽</div>
+                            <h4>México SAT</h4>
+                            <p>Catálogo de cuentas del SAT</p>
+                        </div>
+                        <div class="template-card" onclick="loadTemplate('chile_sii')">
+                            <div class="template-icon">🇨🇱</div>
+                            <h4>Chile SII</h4>
+                            <p>Plan de cuentas SII chileno</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Account Modal -->
+    <div class="modal" id="accountModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nueva Cuenta</h3>
+                <button class="close-modal" onclick="closeAccountModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="accountForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Cuenta Padre</label>
+                            <select class="form-control" id="parentAccount">
+                                <option value="">Cuenta de Nivel Superior (Raíz)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Código de Cuenta</label>
+                            <input type="text" class="form-control" id="accountCode" 
+                                   placeholder="Ej: 1105" required>
+                            <small class="form-text">Código completo: <span id="fullCode"></span></small>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre de la Cuenta</label>
+                            <input type="text" class="form-control" id="accountName" 
+                                   placeholder="Ej: Caja General" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Cuenta</label>
+                            <select class="form-control" id="accountType" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="ASSET">Activo</option>
+                                <option value="LIABILITY">Pasivo</option>
+                                <option value="EQUITY">Patrimonio</option>
+                                <option value="INCOME">Ingreso</option>
+                                <option value="EXPENSE">Gasto</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Naturaleza</label>
+                            <select class="form-control" id="accountNature" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="D">Débito</option>
+                                <option value="C">Crédito</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Es Cuenta de Detalle</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="isDetail" value="true" checked>
+                                    Sí (Permite movimientos)
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="isDetail" value="false">
+                                    No (Cuenta de mayor)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="isActive" value="true" checked>
+                                    Activa
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="isActive" value="false">
+                                    Inactiva
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Descripción</label>
+                            <textarea class="form-control" id="accountDescription" rows="3"
+                                      placeholder="Descripción opcional de la cuenta"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAccountModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveAccount()">Guardar Cuenta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📥 Importar Plan de Cuentas</h3>
+                <button class="close-modal" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-section">
+                    <p>Seleccione un archivo Excel o CSV con el plan de cuentas:</p>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                        <div class="upload-icon">📁</div>
+                        <p>Arrastre el archivo aquí o haga clic para seleccionar</p>
+                        <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                            Seleccionar Archivo
+                        </button>
+                    </div>
+                    <div class="import-info">
+                        <h4>Formato esperado:</h4>
+                        <ul>
+                            <li>Columna A: Código de cuenta</li>
+                            <li>Columna B: Nombre de cuenta</li>
+                            <li>Columna C: Tipo (ASSET, LIABILITY, EQUITY, INCOME, EXPENSE)</li>
+                            <li>Columna D: Naturaleza (D o C)</li>
+                            <li>Columna E: Es detalle (SI o NO)</li>
+                        </ul>
+                        <a href="#" onclick="downloadTemplate()">📥 Descargar plantilla de ejemplo</a>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="importAccounts()" disabled id="importBtn">
+                    Importar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <ul>
+            <li onclick="editAccount()">✏️ Editar</li>
+            <li onclick="addChildAccount()">➕ Agregar Subcuenta</li>
+            <li onclick="viewAccountDetails()">👁️ Ver Detalles</li>
+            <li onclick="viewAccountMovements()">📊 Ver Movimientos</li>
+            <li class="separator"></li>
+            <li onclick="duplicateAccount()">📋 Duplicar</li>
+            <li onclick="deactivateAccount()">🚫 Desactivar</li>
+            <li onclick="deleteAccount()" class="danger">🗑️ Eliminar</li>
+        </ul>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Cargando plan de cuentas...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/api_service.js"></script>
+    <script src="js/accounts_chart.js"></script>
+</body>
+</html>

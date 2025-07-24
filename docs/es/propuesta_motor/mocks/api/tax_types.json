@@ -1,0 +1,203 @@
+{
+  "success": true,
+  "data": {
+    "tax_types": [
+      {
+        "id": "tax-001",
+        "code": "IVA_19",
+        "name": "IVA 19%",
+        "description": "Impuesto al Valor Agregado - Tarifa General",
+        "rate": 0.19,
+        "type": "PERCENTAGE",
+        "category": "IVA",
+        "is_retention": false,
+        "applies_to": ["SALES", "PURCHASES"],
+        "account_config": {
+          "sales_account": "2408",
+          "purchase_account": "2365",
+          "retention_account": null
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-002",
+        "code": "IVA_5",
+        "name": "IVA 5%",
+        "description": "Impuesto al Valor Agregado - Tarifa Reducida",
+        "rate": 0.05,
+        "type": "PERCENTAGE",
+        "category": "IVA",
+        "is_retention": false,
+        "applies_to": ["SALES", "PURCHASES"],
+        "account_config": {
+          "sales_account": "2408",
+          "purchase_account": "2365",
+          "retention_account": null
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-003",
+        "code": "IVA_0",
+        "name": "IVA 0%",
+        "description": "Impuesto al Valor Agregado - Exento",
+        "rate": 0.00,
+        "type": "PERCENTAGE",
+        "category": "IVA",
+        "is_retention": false,
+        "applies_to": ["SALES", "PURCHASES"],
+        "account_config": {
+          "sales_account": null,
+          "purchase_account": null,
+          "retention_account": null
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-004",
+        "code": "RTE_FTE_11",
+        "name": "Retención en la Fuente 11%",
+        "description": "Retención en la Fuente por Servicios",
+        "rate": 0.11,
+        "type": "PERCENTAGE",
+        "category": "RETENCION_FUENTE",
+        "is_retention": true,
+        "applies_to": ["PURCHASES"],
+        "account_config": {
+          "sales_account": null,
+          "purchase_account": null,
+          "retention_account": "2355"
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-005",
+        "code": "RTE_FTE_35",
+        "name": "Retención en la Fuente 3.5%",
+        "description": "Retención en la Fuente por Compra de Bienes",
+        "rate": 0.035,
+        "type": "PERCENTAGE",
+        "category": "RETENCION_FUENTE",
+        "is_retention": true,
+        "applies_to": ["PURCHASES"],
+        "account_config": {
+          "sales_account": null,
+          "purchase_account": null,
+          "retention_account": "2355"
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-006",
+        "code": "RTE_IVA_15",
+        "name": "Retención de IVA 15%",
+        "description": "Retención del Impuesto al Valor Agregado",
+        "rate": 0.15,
+        "type": "PERCENTAGE",
+        "category": "RETENCION_IVA",
+        "is_retention": true,
+        "applies_to": ["PURCHASES"],
+        "account_config": {
+          "sales_account": null,
+          "purchase_account": null,
+          "retention_account": "2367"
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-007",
+        "code": "RTE_ICA_10",
+        "name": "Retención de ICA 1.0%",
+        "description": "Retención de Industria y Comercio",
+        "rate": 0.01,
+        "type": "PERCENTAGE",
+        "category": "RETENCION_ICA",
+        "is_retention": true,
+        "applies_to": ["PURCHASES"],
+        "account_config": {
+          "sales_account": null,
+          "purchase_account": null,
+          "retention_account": "2368"
+        },
+        "country_code": "CO",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      },
+      {
+        "id": "tax-008",
+        "code": "IC_BOGOTA",
+        "name": "ICA Bogotá",
+        "description": "Impuesto de Industria y Comercio - Bogotá",
+        "rate": 0.00414,
+        "type": "PERCENTAGE",
+        "category": "ICA",
+        "is_retention": false,
+        "applies_to": ["SALES"],
+        "account_config": {
+          "sales_account": "2424",
+          "purchase_account": null,
+          "retention_account": null
+        },
+        "country_code": "CO",
+        "city_code": "BOGOTA",
+        "is_active": true,
+        "effective_from": "2020-01-01",
+        "effective_to": null
+      }
+    ],
+    "categories": [
+      {
+        "code": "IVA",
+        "name": "Impuesto al Valor Agregado",
+        "description": "Impuesto nacional sobre las ventas"
+      },
+      {
+        "code": "RETENCION_FUENTE",
+        "name": "Retención en la Fuente",
+        "description": "Retención del impuesto de renta"
+      },
+      {
+        "code": "RETENCION_IVA",
+        "name": "Retención de IVA",
+        "description": "Retención del IVA en compras"
+      },
+      {
+        "code": "RETENCION_ICA",
+        "name": "Retención de ICA",
+        "description": "Retención del impuesto de industria y comercio"
+      },
+      {
+        "code": "ICA",
+        "name": "Industria y Comercio",
+        "description": "Impuesto municipal de industria y comercio"
+      }
+    ],
+    "summary": {
+      "total_tax_types": 8,
+      "active_tax_types": 8,
+      "retention_types": 4,
+      "sales_applicable": 4,
+      "purchase_applicable": 6
+    }
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}

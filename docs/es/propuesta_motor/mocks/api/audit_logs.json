@@ -1,0 +1,303 @@
+{
+  "success": true,
+  "data": {
+    "logs": [
+      {
+        "id": "audit-001",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T10:45:00Z",
+        "level": "INFO",
+        "event_type": "VOUCHER_CREATED",
+        "action": "CREATE",
+        "resource_type": "VOUCHER",
+        "resource_id": "FV-000127",
+        "user_id": "user-001",
+        "user_email": "juan.perez@empresa.com",
+        "ip_address": "192.168.1.100",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "session_id": "session-abc123",
+        "description": "Creación de factura de venta FV-000127",
+        "details": {
+          "voucher_number": "FV-000127",
+          "voucher_type": "invoice_sale",
+          "amount": 2380000.00,
+          "third_party": "ABC Comercializadora S.A.S.",
+          "period": "2025-01"
+        },
+        "changes": {
+          "before": null,
+          "after": {
+            "status": "PENDING",
+            "total_amount": 2380000.00,
+            "created_at": "2025-01-24T10:45:00Z"
+          }
+        },
+        "result": "SUCCESS",
+        "duration_ms": 250
+      },
+      {
+        "id": "audit-002",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T10:30:15Z",
+        "level": "INFO",
+        "event_type": "VOUCHER_PROCESSED",
+        "action": "UPDATE",
+        "resource_type": "VOUCHER",
+        "resource_id": "FV-000126",
+        "user_id": "system",
+        "user_email": "system@empresa.com",
+        "ip_address": "127.0.0.1",
+        "user_agent": "DSL-Engine/1.0",
+        "session_id": "system-process",
+        "description": "Procesamiento automático de factura FV-000126",
+        "details": {
+          "voucher_number": "FV-000126",
+          "template_used": "invoice_sale_co",
+          "journal_entries_created": 3,
+          "processing_time_ms": 185
+        },
+        "changes": {
+          "before": {
+            "status": "PENDING"
+          },
+          "after": {
+            "status": "PROCESSED",
+            "processed_at": "2025-01-24T10:30:15Z"
+          }
+        },
+        "result": "SUCCESS",
+        "duration_ms": 185
+      },
+      {
+        "id": "audit-003",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T10:15:30Z",
+        "level": "INFO",
+        "event_type": "USER_LOGIN",
+        "action": "LOGIN",
+        "resource_type": "USER",
+        "resource_id": "user-001",
+        "user_id": "user-001",
+        "user_email": "juan.perez@empresa.com",
+        "ip_address": "192.168.1.100",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "session_id": "session-abc123",
+        "description": "Inicio de sesión exitoso",
+        "details": {
+          "login_method": "EMAIL_PASSWORD",
+          "two_factor_used": false,
+          "location": "Bogotá, Colombia"
+        },
+        "result": "SUCCESS",
+        "duration_ms": 120
+      },
+      {
+        "id": "audit-004",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T09:45:22Z",
+        "level": "WARNING",
+        "event_type": "DSL_VALIDATION_WARNING",
+        "action": "VALIDATE",
+        "resource_type": "DSL_TEMPLATE",
+        "resource_id": "template-002",
+        "user_id": "user-002",
+        "user_email": "ana.martinez@empresa.com",
+        "ip_address": "192.168.1.105",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "session_id": "session-def456",
+        "description": "Advertencia en validación de plantilla DSL",
+        "details": {
+          "template_code": "purchase_invoice_co",
+          "warning_type": "DEPRECATED_FUNCTION",
+          "warning_message": "La función 'calculateTax()' está marcada como obsoleta",
+          "line_number": 15
+        },
+        "result": "WARNING",
+        "duration_ms": 45
+      },
+      {
+        "id": "audit-005",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T09:30:10Z",
+        "level": "ERROR",
+        "event_type": "VOUCHER_PROCESSING_ERROR",
+        "action": "PROCESS",
+        "resource_type": "VOUCHER",
+        "resource_id": "FV-000125",
+        "user_id": "system",
+        "user_email": "system@empresa.com",
+        "ip_address": "127.0.0.1",
+        "user_agent": "DSL-Engine/1.0",
+        "session_id": "system-process",
+        "description": "Error al procesar factura FV-000125",
+        "details": {
+          "voucher_number": "FV-000125",
+          "error_code": "ACCOUNT_NOT_FOUND",
+          "error_message": "La cuenta '999999' no existe en el plan de cuentas",
+          "template_used": "custom_sale_template",
+          "line_number": 8
+        },
+        "changes": {
+          "before": {
+            "status": "PENDING"
+          },
+          "after": {
+            "status": "ERROR",
+            "error_message": "La cuenta '999999' no existe en el plan de cuentas"
+          }
+        },
+        "result": "ERROR",
+        "duration_ms": 95
+      },
+      {
+        "id": "audit-006",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T09:00:05Z",
+        "level": "INFO",
+        "event_type": "REPORT_GENERATED",
+        "action": "GENERATE",
+        "resource_type": "REPORT",
+        "resource_id": "balance_general_202501",
+        "user_id": "user-003",
+        "user_email": "carlos.rodriguez@empresa.com",
+        "ip_address": "192.168.1.110",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "session_id": "session-ghi789",
+        "description": "Generación de Balance General para enero 2025",
+        "details": {
+          "report_type": "balance_general",
+          "period": "2025-01",
+          "format": "PDF",
+          "accounts_included": 156,
+          "file_size_mb": 2.4
+        },
+        "result": "SUCCESS",
+        "duration_ms": 15420
+      },
+      {
+        "id": "audit-007",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T08:45:30Z",
+        "level": "INFO",
+        "event_type": "THIRD_PARTY_CREATED",
+        "action": "CREATE",
+        "resource_type": "THIRD_PARTY",
+        "resource_id": "third-006",
+        "user_id": "user-001",
+        "user_email": "juan.perez@empresa.com",
+        "ip_address": "192.168.1.100",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "session_id": "session-abc123",
+        "description": "Creación de nuevo tercero (cliente)",
+        "details": {
+          "third_party_name": "Nuevos Clientes S.A.S.",
+          "document_type": "NIT",
+          "document_number": "800555777-4",
+          "relationship_type": "CUSTOMER",
+          "credit_limit": 15000000.00
+        },
+        "result": "SUCCESS",
+        "duration_ms": 180
+      },
+      {
+        "id": "audit-008",
+        "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+        "timestamp": "2025-01-24T08:30:15Z",
+        "level": "INFO",
+        "event_type": "PERIOD_OPENED",
+        "action": "OPEN",
+        "resource_type": "PERIOD",
+        "resource_id": "period-202501",
+        "user_id": "user-supervisor",
+        "user_email": "supervisor@empresa.com",
+        "ip_address": "192.168.1.200",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "session_id": "session-supervisor",
+        "description": "Apertura del período contable enero 2025",
+        "details": {
+          "period_code": "2025-01",
+          "start_date": "2025-01-01",
+          "end_date": "2025-01-31",
+          "fiscal_year": 2025
+        },
+        "result": "SUCCESS",
+        "duration_ms": 50
+      }
+    ],
+    "filters_applied": {
+      "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+      "date_from": "2025-01-24T00:00:00Z",
+      "date_to": "2025-01-24T23:59:59Z",
+      "level": null,
+      "event_type": null,
+      "user_id": null,
+      "resource_type": null
+    },
+    "pagination": {
+      "page": 1,
+      "per_page": 25,
+      "total_pages": 1,
+      "total_records": 8,
+      "has_next": false,
+      "has_previous": false
+    },
+    "summary": {
+      "total_logs_today": 8,
+      "info_logs": 6,
+      "warning_logs": 1,
+      "error_logs": 1,
+      "unique_users": 4,
+      "unique_ip_addresses": 4,
+      "most_common_event": "VOUCHER_CREATED",
+      "average_response_time_ms": 2340.6
+    },
+    "event_types": [
+      {
+        "code": "USER_LOGIN",
+        "name": "Inicio de Sesión",
+        "category": "AUTHENTICATION"
+      },
+      {
+        "code": "USER_LOGOUT",
+        "name": "Cierre de Sesión",
+        "category": "AUTHENTICATION"
+      },
+      {
+        "code": "VOUCHER_CREATED",
+        "name": "Comprobante Creado",
+        "category": "VOUCHER"
+      },
+      {
+        "code": "VOUCHER_PROCESSED",
+        "name": "Comprobante Procesado",
+        "category": "VOUCHER"
+      },
+      {
+        "code": "VOUCHER_PROCESSING_ERROR",
+        "name": "Error al Procesar Comprobante",
+        "category": "VOUCHER"
+      },
+      {
+        "code": "DSL_VALIDATION_WARNING",
+        "name": "Advertencia en Validación DSL",
+        "category": "DSL"
+      },
+      {
+        "code": "REPORT_GENERATED",
+        "name": "Reporte Generado",
+        "category": "REPORTS"
+      },
+      {
+        "code": "THIRD_PARTY_CREATED",
+        "name": "Tercero Creado",
+        "category": "THIRD_PARTIES"
+      },
+      {
+        "code": "PERIOD_OPENED",
+        "name": "Período Abierto",
+        "category": "PERIODS"
+      }
+    ]
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}

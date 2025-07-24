@@ -1,0 +1,108 @@
+{
+  "success": true,
+  "data": {
+    "id": "period-202501",
+    "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+    "year": 2025,
+    "month": 1,
+    "period_code": "2025-01",
+    "period_name": "Enero 2025",
+    "start_date": "2025-01-01",
+    "end_date": "2025-01-31",
+    "status": "OPEN",
+    "is_current": true,
+    "is_adjustable": true,
+    "fiscal_year": 2025,
+    "quarter": 1,
+    "quarter_name": "Q1 2025",
+    "days_in_period": 31,
+    "working_days": 23,
+    "weekends": 8,
+    "holidays": [],
+    "period_statistics": {
+      "total_vouchers": 127,
+      "total_journal_entries": 245,
+      "processed_vouchers": 125,
+      "pending_vouchers": 2,
+      "error_vouchers": 0,
+      "total_amount": 1580450000.00,
+      "balance_status": "BALANCED"
+    },
+    "processing_info": {
+      "auto_processing_enabled": true,
+      "last_process_date": "2025-01-24T10:30:00Z",
+      "next_process_date": "2025-01-24T18:00:00Z",
+      "processing_frequency": "HOURLY",
+      "errors_since_last_process": 0
+    },
+    "closure_info": {
+      "can_close": false,
+      "close_deadline": "2025-02-15",
+      "days_until_deadline": 22,
+      "required_tasks": [
+        {
+          "task": "PROCESS_ALL_VOUCHERS",
+          "status": "PENDING",
+          "description": "Procesar todos los comprobantes pendientes"
+        },
+        {
+          "task": "VALIDATE_BALANCES",
+          "status": "PENDING",
+          "description": "Validar que todos los saldos cuadren"
+        },
+        {
+          "task": "GENERATE_REPORTS",
+          "status": "PENDING",
+          "description": "Generar reportes obligatorios del período"
+        },
+        {
+          "task": "SUPERVISOR_APPROVAL",
+          "status": "PENDING",
+          "description": "Aprobación del supervisor contable"
+        }
+      ]
+    },
+    "validation_status": {
+      "balance_validation": {
+        "status": "PASS",
+        "message": "Todos los asientos están balanceados",
+        "total_debit": 1580450000.00,
+        "total_credit": 1580450000.00,
+        "difference": 0.00
+      },
+      "account_validation": {
+        "status": "PASS",
+        "message": "Todas las cuentas son válidas",
+        "invalid_accounts": []
+      },
+      "business_rules": {
+        "status": "WARNING",
+        "message": "2 comprobantes pendientes de procesar",
+        "warnings": [
+          "Comprobante FV-000126 sin procesar",
+          "Comprobante NC-000045 sin procesar"
+        ]
+      }
+    },
+    "user_permissions": {
+      "can_create_vouchers": true,
+      "can_edit_vouchers": true,
+      "can_delete_vouchers": false,
+      "can_process_vouchers": true,
+      "can_close_period": false,
+      "can_reopen_period": false
+    },
+    "system_info": {
+      "backup_status": "COMPLETED",
+      "last_backup": "2025-01-24T02:00:00Z",
+      "next_backup": "2025-01-25T02:00:00Z",
+      "storage_used_mb": 856,
+      "estimated_close_time": "15 minutos"
+    },
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-24T10:30:00Z",
+    "created_by": "system",
+    "last_updated_by": "user-001"
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}

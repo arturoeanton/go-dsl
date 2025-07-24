@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobantes - Motor Contable</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f0f2f5;
+            color: #262626;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1890ff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #262626;
+        }
+
+        .navigation {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-link {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            color: #1890ff;
+            text-decoration: none;
+            border-radius: 6px;
+            border: 1px solid #d9d9d9;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background: #f0f2f5;
+        }
+
+        .nav-link.active {
+            background: #1890ff;
+            color: white;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: #096dd9;
+        }
+
+        .btn.secondary {
+            background: #f0f0f0;
+            color: #262626;
+        }
+
+        .btn.secondary:hover {
+            background: #d9d9d9;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .table th {
+            background: #fafafa;
+            font-weight: 600;
+        }
+
+        .table tr:hover {
+            background: #f0f2f5;
+        }
+
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status.draft {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
+        .status.posted {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .status.cancelled {
+            background: #fff2f0;
+            color: #cf1322;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #8c8c8c;
+        }
+
+        .error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #cf1322;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .grid.cols-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #8c8c8c;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d9d9d9;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button:hover {
+            background: #f0f2f5;
+        }
+
+        .pagination button.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">🏢 Motor Contable</div>
+        <div>
+            <a href="/" class="btn secondary">← Inicio</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1 class="page-title">Gestión de Comprobantes</h1>
+
+        <div class="navigation">
+            <a href="/dashboard.html" class="nav-link">📊 Dashboard</a>
+            <a href="/vouchers.html" class="nav-link active">📄 Comprobantes</a>
+            <a href="/accounts.html" class="nav-link">🏦 Cuentas</a>
+            <a href="/swagger/" class="nav-link">📚 API Docs</a>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>Lista de Comprobantes</h3>
+                <button onclick="showCreateModal()" class="btn">
+                    ➕ Nuevo Comprobante
+                </button>
+            </div>
+
+            <div id="vouchersTable" class="loading">
+                Cargando comprobantes...
+            </div>
+
+            <div id="pagination" class="pagination" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Modal para crear comprobante -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCreateModal()">&times;</span>
+            <h3 style="margin-bottom: 1rem;">Crear Nuevo Comprobante</h3>
+            
+            <form id="createForm">
+                <div class="grid cols-2">
+                    <div class="form-group">
+                        <label for="voucherType">Tipo de Comprobante *</label>
+                        <select id="voucherType" required>
+                            <option value="">Seleccionar tipo</option>
+                            <option value="JOURNAL">Comprobante Diario</option>
+                            <option value="PURCHASE">Comprobante de Compra</option>
+                            <option value="SALE">Comprobante de Venta</option>
+                            <option value="PAYMENT">Comprobante de Pago</option>
+                            <option value="RECEIPT">Comprobante de Recibo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date">Fecha *</label>
+                        <input type="date" id="date" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Descripción *</label>
+                    <textarea id="description" rows="2" required placeholder="Descripción del comprobante"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="reference">Referencia</label>
+                    <input type="text" id="reference" placeholder="Número de factura, documento, etc.">
+                </div>
+
+                <div style="margin: 1.5rem 0;">
+                    <h4>Líneas del Comprobante</h4>
+                    <div id="voucherLines"></div>
+                    <button type="button" onclick="addVoucherLine()" class="btn secondary">
+                        ➕ Agregar Línea
+                    </button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+                    <div id="balanceInfo" style="font-weight: 500;"></div>
+                    <div>
+                        <button type="button" onclick="closeCreateModal()" class="btn secondary">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn">
+                            Crear Comprobante
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        let currentPage = 1;
+        let lineCounter = 0;
+
+        // Cargar lista de comprobantes
+        async function loadVouchers(page = 1, limit = 10) {
+            try {
+                const response = await fetch(`${API_BASE}/vouchers?page=${page}&limit=${limit}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error?.message || 'Error en la respuesta');
+                
+                const data = result.data;
+                displayVouchers(data.vouchers);
+                displayPagination(data.pagination);
+                
+                currentPage = page;
+            } catch (error) {
+                document.getElementById('vouchersTable').innerHTML = `
+                    <div class="error">Error cargando comprobantes: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Mostrar comprobantes en tabla
+        function displayVouchers(vouchers) {
+            if (!vouchers || vouchers.length === 0) {
+                document.getElementById('vouchersTable').innerHTML = `
+                    <p style="text-align: center; color: #8c8c8c; padding: 2rem;">
+                        No hay comprobantes aún. 
+                        <button onclick="showCreateModal()" class="btn">Crear el primero</button>
+                    </p>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Total Débito</th>
+                            <th>Total Crédito</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            vouchers.forEach(voucher => {
+                const statusClass = voucher.status?.toLowerCase() || 'draft';
+                const statusText = {
+                    'draft': 'Borrador',
+                    'posted': 'Contabilizado',
+                    'cancelled': 'Cancelado'
+                }[voucher.status?.toLowerCase()] || voucher.status;
+
+                html += `
+                    <tr>
+                        <td>${voucher.number || 'N/A'}</td>
+                        <td>${voucher.voucher_type || 'N/A'}</td>
+                        <td>${new Date(voucher.date || new Date()).toLocaleDateString('es-CO')}</td>
+                        <td>${voucher.description || 'Sin descripción'}</td>
+                        <td>$${(voucher.total_debit || 0).toLocaleString('es-CO')}</td>
+                        <td>$${(voucher.total_credit || 0).toLocaleString('es-CO')}</td>
+                        <td><span class="status ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button onclick="viewVoucher('${voucher.id}')" class="btn secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                👁️ Ver
+                            </button>
+                            ${voucher.status === 'DRAFT' ? `
+                                <button onclick="postVoucher('${voucher.id}')" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                    ✓ Contabilizar
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('vouchersTable').innerHTML = html;
+        }
+
+        // Mostrar paginación
+        function displayPagination(pagination) {
+            if (!pagination || pagination.pages <= 1) {
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            
+            // Botón anterior
+            if (pagination.page > 1) {
+                html += `<button onclick="loadVouchers(${pagination.page - 1})">‹ Anterior</button>`;
+            }
+
+            // Números de página
+            for (let i = 1; i <= pagination.pages; i++) {
+                const activeClass = i === pagination.page ? 'active' : '';
+                html += `<button class="${activeClass}" onclick="loadVouchers(${i})">${i}</button>`;
+            }
+
+            // Botón siguiente
+            if (pagination.page < pagination.pages) {
+                html += `<button onclick="loadVouchers(${pagination.page + 1})">Siguiente ›</button>`;
+            }
+
+            document.getElementById('pagination').innerHTML = html;
+            document.getElementById('pagination').style.display = 'flex';
+        }
+
+        // Mostrar modal de creación
+        function showCreateModal() {
+            document.getElementById('createModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Establecer fecha actual
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            // Agregar dos líneas por defecto
+            lineCounter = 0;
+            document.getElementById('voucherLines').innerHTML = '';
+            addVoucherLine();
+            addVoucherLine();
+        }
+
+        // Cerrar modal de creación
+        function closeCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('createForm').reset();
+        }
+
+        // Agregar línea de comprobante
+        function addVoucherLine() {
+            lineCounter++;
+            const linesContainer = document.getElementById('voucherLines');
+            
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'grid cols-3';
+            lineDiv.style.marginBottom = '0.5rem';
+            lineDiv.innerHTML = `
+                <div class="form-group">
+                    <input type="text" placeholder="Cuenta (ej: 1105)" name="account_${lineCounter}" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" step="0.01" placeholder="Débito" name="debit_${lineCounter}">
+                </div>
+                <div class="form-group">
+                    <input type="number" step="0.01" placeholder="Crédito" name="credit_${lineCounter}">
+                </div>
+            `;
+            
+            linesContainer.appendChild(lineDiv);
+            updateBalance();
+            
+            // Agregar listeners para actualizar balance
+            const inputs = lineDiv.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', updateBalance);
+            });
+        }
+
+        // Actualizar balance
+        function updateBalance() {
+            let totalDebit = 0;
+            let totalCredit = 0;
+            
+            for (let i = 1; i <= lineCounter; i++) {
+                const debitInput = document.querySelector(`input[name="debit_${i}"]`);
+                const creditInput = document.querySelector(`input[name="credit_${i}"]`);
+                
+                if (debitInput) totalDebit += parseFloat(debitInput.value) || 0;
+                if (creditInput) totalCredit += parseFloat(creditInput.value) || 0;
+            }
+            
+            const difference = totalDebit - totalCredit;
+            const balanceInfo = document.getElementById('balanceInfo');
+            
+            if (difference === 0 && totalDebit > 0) {
+                balanceInfo.innerHTML = `✅ Balanceado: $${totalDebit.toLocaleString('es-CO')}`;
+                balanceInfo.style.color = '#52c41a';
+            } else if (difference === 0) {
+                balanceInfo.innerHTML = '⚠️ Agregue valores a las líneas';
+                balanceInfo.style.color = '#fa8c16';
+            } else {
+                balanceInfo.innerHTML = `❌ Desbalanceado: Diferencia $${Math.abs(difference).toLocaleString('es-CO')}`;
+                balanceInfo.style.color = '#cf1322';
+            }
+        }
+
+        // Enviar formulario de creación
+        document.getElementById('createForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                // Recopilar datos del formulario
+                const voucherData = {
+                    voucher_type: document.getElementById('voucherType').value,
+                    date: document.getElementById('date').value + 'T00:00:00Z',
+                    description: document.getElementById('description').value,
+                    reference: document.getElementById('reference').value,
+                    voucher_lines: []
+                };
+
+                // Recopilar líneas
+                for (let i = 1; i <= lineCounter; i++) {
+                    const accountInput = document.querySelector(`input[name="account_${i}"]`);
+                    const debitInput = document.querySelector(`input[name="debit_${i}"]`);
+                    const creditInput = document.querySelector(`input[name="credit_${i}"]`);
+                    
+                    if (accountInput && accountInput.value) {
+                        const debitAmount = parseFloat(debitInput.value) || 0;
+                        const creditAmount = parseFloat(creditInput.value) || 0;
+                        
+                        if (debitAmount > 0 || creditAmount > 0) {
+                            voucherData.voucher_lines.push({
+                                account_id: accountInput.value, // En el POC usamos código como ID
+                                description: voucherData.description,
+                                debit_amount: debitAmount,
+                                credit_amount: creditAmount
+                            });
+                        }
+                    }
+                }
+
+                // Validar
+                if (voucherData.voucher_lines.length < 2) {
+                    throw new Error('Debe tener al menos 2 líneas');
+                }
+
+                // Enviar a la API
+                const response = await fetch(`${API_BASE}/vouchers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(voucherData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error?.message || 'Error creando comprobante');
+                }
+
+                // Éxito
+                alert('Comprobante creado exitosamente');
+                closeCreateModal();
+                loadVouchers(currentPage);
+                
+            } catch (error) {
+                alert('Error creando comprobante: ' + error.message);
+            }
+        });
+
+        // Ver detalle de comprobante
+        async function viewVoucher(id) {
+            try {
+                const response = await fetch(`${API_BASE}/vouchers/${id}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error?.message);
+                
+                const voucher = result.data;
+                alert(`Comprobante ${voucher.number}:\n${voucher.description}\nEstado: ${voucher.status}`);
+                
+                // TODO: Aquí se implementaría un modal con el detalle completo
+            } catch (error) {
+                alert('Error cargando comprobante: ' + error.message);
+            }
+        }
+
+        // Contabilizar comprobante
+        async function postVoucher(id) {
+            if (!confirm('¿Está seguro de contabilizar este comprobante? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/vouchers/${id}/post`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error?.message || 'Error contabilizando');
+                }
+                
+                alert('Comprobante contabilizado exitosamente');
+                loadVouchers(currentPage);
+                
+            } catch (error) {
+                alert('Error contabilizando comprobante: ' + error.message);
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVouchers();
+            
+            // TODO: En el futuro, aquí se usaría go-dsl para:
+            // 1. Cargar plantillas de comprobantes dinámicamente
+            // 2. Validar reglas contables en tiempo real
+            // 3. Generar líneas automáticamente según el tipo
+            // 4. Aplicar clasificaciones y distribuciones automáticas
+        });
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('createModal');
+            if (event.target === modal) {
+                closeCreateModal();
+            }
+        }
+    </script>
+</body>
+</html>

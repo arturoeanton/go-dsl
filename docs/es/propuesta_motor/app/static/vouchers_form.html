@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Comprobante - Motor Contable</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="navbar-brand">
+                <h1>Motor Contable</h1>
+            </div>
+            <div class="navbar-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar..." id="searchInput">
+                    <button type="button" class="search-btn">🔍</button>
+                </div>
+                <div class="user-menu">
+                    <img src="../img/avatar.png" alt="Usuario" class="user-avatar">
+                    <span>Juan Pérez</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><span class="menu-icon">📊</span><span class="menu-text">Dashboard</span></a></li>
+                    <li class="active"><a href="vouchers_list.html"><span class="menu-icon">📄</span><span class="menu-text">Comprobantes</span></a></li>
+                    <li><a href="journal_entries.html"><span class="menu-icon">📚</span><span class="menu-text">Asientos</span></a></li>
+                    <li><a href="accounts_chart.html"><span class="menu-icon">🏦</span><span class="menu-text">Plan de Cuentas</span></a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📈</span><span class="menu-text">Reportes</span></a></li>
+                    <li><a href="dsl_editor.html"><span class="menu-icon">⚙️</span><span class="menu-text">Reglas DSL</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2>Crear Comprobante</h2>
+                <button class="btn btn-secondary" onclick="window.location.href='vouchers_list.html'">
+                    ← Volver al Listado
+                </button>
+            </div>
+
+            <!-- Form Content -->
+            <form id="voucherForm">
+                <!-- Basic Info Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📄 Información Básica</h3>
+                    </div>
+                    <div class="card-body">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="voucherType">Tipo de Comprobante *</label>
+                                    <select id="voucherType" name="voucherType" class="form-control" required>
+                                        <option value="">Seleccione...</option>
+                                        <option value="invoice_sale">Factura de Venta</option>
+                                        <option value="invoice_purchase">Factura de Compra</option>
+                                        <option value="receipt">Recibo de Caja</option>
+                                        <option value="payment">Comprobante de Egreso</option>
+                                        <option value="debit_note">Nota Débito</option>
+                                        <option value="credit_note">Nota Crédito</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="reference">Referencia</label>
+                                    <input type="text" id="reference" name="reference" 
+                                           class="form-control" placeholder="REF-001-2024">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="voucherDate">Fecha *</label>
+                                    <input type="date" id="voucherDate" name="voucherDate" 
+                                           class="form-control" value="2024-01-21" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="currency">Moneda</label>
+                                    <select id="currency" name="currency" class="form-control">
+                                        <option value="COP">COP - Peso Colombiano</option>
+                                        <option value="USD">USD - Dólar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label for="description">Descripción *</label>
+                                <textarea id="description" name="description" rows="2" 
+                                          class="form-control" placeholder="Descripción del comprobante..." required></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer/Supplier Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>👥 Tercero</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label for="thirdParty">Tercero Principal</label>
+                                    <select id="thirdParty" name="thirdParty" class="form-control">
+                                        <option value="">Sin tercero</option>
+                                        <option value="TP001">Cliente Ejemplo S.A.S</option>
+                                        <option value="TP002">Proveedor ABC Ltda</option>
+                                        <option value="TP003">Empleado Juan Pérez</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accounting Lines -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📋 Líneas Contables</h3>
+                            <button type="button" class="btn btn-primary btn-sm" id="addLineBtn">
+                                ➕ Agregar Línea
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%">Cuenta</th>
+                                            <th style="width: 30%">Descripción</th>
+                                            <th style="width: 15%">Débito</th>
+                                            <th style="width: 15%">Crédito</th>
+                                            <th style="width: 10%">Tercero</th>
+                                            <th style="width: 5%">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="voucherLines">
+                                        <!-- Lines will be added dynamically -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="table-footer">
+                                            <td colspan="2" class="text-right"><strong>Totales:</strong></td>
+                                            <td class="text-right"><strong id="totalDebit">$ 0</strong></td>
+                                            <td class="text-right"><strong id="totalCredit">$ 0</strong></td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="text-right">Diferencia:</td>
+                                            <td colspan="2" class="text-center">
+                                                <span id="difference">$ 0</span>
+                                                <span id="balanceStatus" class="balance-status">⚖️ Sin movimientos</span>
+                                            </td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                            💾 Guardar Borrador
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            ✅ Crear y Procesar
+                        </button>
+                    </div>
+                </form>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/api_service.js"></script>
+    <script src="js/voucher_form.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+{
+  "success": true,
+  "data": {
+    "document_types": [
+      {
+        "id": "doc-001",
+        "code": "CC",
+        "name": "Cédula de Ciudadanía",
+        "description": "Documento de identidad para ciudadanos colombianos",
+        "category": "PERSONAL",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{8,10}$",
+        "format_example": "12345678",
+        "min_length": 8,
+        "max_length": 10,
+        "is_active": true,
+        "sort_order": 1
+      },
+      {
+        "id": "doc-002",
+        "code": "CE",
+        "name": "Cédula de Extranjería",
+        "description": "Documento de identidad para extranjeros residentes",
+        "category": "PERSONAL",
+        "country_code": "CO",
+        "format_pattern": "^[A-Z]{2}[0-9]{6,9}$",
+        "format_example": "PE123456789",
+        "min_length": 8,
+        "max_length": 11,
+        "is_active": true,
+        "sort_order": 2
+      },
+      {
+        "id": "doc-003",
+        "code": "TI",
+        "name": "Tarjeta de Identidad",
+        "description": "Documento de identidad para menores de edad",
+        "category": "PERSONAL",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{10,11}$",
+        "format_example": "1234567890",
+        "min_length": 10,
+        "max_length": 11,
+        "is_active": true,
+        "sort_order": 3
+      },
+      {
+        "id": "doc-004",
+        "code": "PAS",
+        "name": "Pasaporte",
+        "description": "Documento de identidad internacional",
+        "category": "PERSONAL",
+        "country_code": null,
+        "format_pattern": "^[A-Z]{2}[0-9]{6,9}$",
+        "format_example": "CO12345678",
+        "min_length": 8,
+        "max_length": 12,
+        "is_active": true,
+        "sort_order": 4
+      },
+      {
+        "id": "doc-005",
+        "code": "NIT",
+        "name": "Número de Identificación Tributaria",
+        "description": "Documento de identificación tributaria para empresas",
+        "category": "BUSINESS",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{9}-[0-9]$",
+        "format_example": "900123456-1",
+        "min_length": 11,
+        "max_length": 11,
+        "is_active": true,
+        "sort_order": 5,
+        "verification_digit": true
+      },
+      {
+        "id": "doc-006",
+        "code": "RUT",
+        "name": "Registro Único Tributario",
+        "description": "Registro empresarial ante la DIAN",
+        "category": "BUSINESS",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{9}-[0-9]$",
+        "format_example": "900123456-1",
+        "min_length": 11,
+        "max_length": 11,
+        "is_active": true,
+        "sort_order": 6,
+        "verification_digit": true
+      },
+      {
+        "id": "doc-007",
+        "code": "RC",
+        "name": "Registro Civil",
+        "description": "Registro civil de nacimiento",
+        "category": "PERSONAL",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{11}$",
+        "format_example": "12345678901",
+        "min_length": 11,
+        "max_length": 11,
+        "is_active": true,
+        "sort_order": 7
+      },
+      {
+        "id": "doc-008",
+        "code": "NIUP",
+        "name": "Número de Identificación Único Personal",
+        "description": "Identificación única para personas naturales",
+        "category": "PERSONAL",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{11}$",
+        "format_example": "12345678901",
+        "min_length": 11,
+        "max_length": 11,
+        "is_active": true,
+        "sort_order": 8
+      },
+      {
+        "id": "doc-009",
+        "code": "DIE",
+        "name": "Documento de Identificación de Extranjero",
+        "description": "Documento temporal para extranjeros",
+        "category": "PERSONAL",
+        "country_code": "CO",
+        "format_pattern": "^[0-9]{8,12}$",
+        "format_example": "123456789",
+        "min_length": 8,
+        "max_length": 12,
+        "is_active": true,
+        "sort_order": 9
+      },
+      {
+        "id": "doc-010",
+        "code": "FIDIC",
+        "name": "Formulario de Identificación",
+        "description": "Formulario único de identificación",
+        "category": "SPECIAL",
+        "country_code": "CO",
+        "format_pattern": "^FID[0-9]{8}$",
+        "format_example": "FID12345678",
+        "min_length": 11,
+        "max_length": 11,
+        "is_active": false,
+        "sort_order": 10
+      }
+    ],
+    "categories": [
+      {
+        "code": "PERSONAL",
+        "name": "Documentos Personales",
+        "description": "Documentos de identificación personal"
+      },
+      {
+        "code": "BUSINESS",
+        "name": "Documentos Empresariales",
+        "description": "Documentos de identificación empresarial"
+      },
+      {
+        "code": "SPECIAL",
+        "name": "Documentos Especiales",
+        "description": "Documentos especiales o temporales"
+      }
+    ],
+    "validation_rules": {
+      "required_fields": ["code", "name"],
+      "unique_fields": ["code"],
+      "format_validation": true,
+      "length_validation": true,
+      "verification_digit_check": ["NIT", "RUT"]
+    },
+    "summary": {
+      "total_document_types": 10,
+      "active_document_types": 9,
+      "personal_documents": 6,
+      "business_documents": 2,
+      "special_documents": 2,
+      "with_verification_digit": 2
+    }
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}

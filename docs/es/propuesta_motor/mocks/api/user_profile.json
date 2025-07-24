@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "user-001",
+      "username": "jperez",
+      "email": "juan.perez@empresa.com",
+      "full_name": "Juan Pérez",
+      "avatar_url": "../img/avatar.png",
+      "role": "accountant",
+      "permissions": [
+        "vouchers.create",
+        "vouchers.edit",
+        "vouchers.delete",
+        "vouchers.approve",
+        "journal_entries.create",
+        "journal_entries.edit",
+        "reports.generate",
+        "accounts.view",
+        "dsl.edit"
+      ],
+      "preferences": {
+        "language": "es",
+        "timezone": "America/Bogota",
+        "date_format": "DD/MM/YYYY",
+        "number_format": "1.234,56",
+        "theme": "light",
+        "notifications_enabled": true
+      },
+      "organizations": ["org-001", "org-002"],
+      "default_organization": "org-001"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "success": true,
+  "data": {
+    "currencies": [
+      {
+        "code": "COP",
+        "name": "Peso Colombiano",
+        "symbol": "$",
+        "decimals": 2,
+        "thousands_separator": ".",
+        "decimal_separator": ","
+      },
+      {
+        "code": "USD",
+        "name": "Dólar Estadounidense",
+        "symbol": "US$",
+        "decimals": 2,
+        "thousands_separator": ",",
+        "decimal_separator": "."
+      },
+      {
+        "code": "EUR",
+        "name": "Euro",
+        "symbol": "€",
+        "decimals": 2,
+        "thousands_separator": ".",
+        "decimal_separator": ","
+      },
+      {
+        "code": "MXN",
+        "name": "Peso Mexicano",
+        "symbol": "$",
+        "decimals": 2,
+        "thousands_separator": ",",
+        "decimal_separator": "."
+      },
+      {
+        "code": "CLP",
+        "name": "Peso Chileno",
+        "symbol": "$",
+        "decimals": 0,
+        "thousands_separator": ".",
+        "decimal_separator": ","
+      },
+      {
+        "code": "PEN",
+        "name": "Sol Peruano",
+        "symbol": "S/",
+        "decimals": 2,
+        "thousands_separator": ",",
+        "decimal_separator": "."
+      },
+      {
+        "code": "UYU",
+        "name": "Peso Uruguayo",
+        "symbol": "$",
+        "decimals": 2,
+        "thousands_separator": ".",
+        "decimal_separator": ","
+      }
+    ]
+  }
+}

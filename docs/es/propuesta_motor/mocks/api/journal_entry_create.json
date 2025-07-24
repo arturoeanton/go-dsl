@@ -1,0 +1,49 @@
+{
+  "success": true,
+  "data": {
+    "id": "journal-new-001",
+    "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+    "entry_number": 1250,
+    "entry_date": "2025-01-24",
+    "voucher_id": null,
+    "description": "Asiento manual de ajuste contable",
+    "entry_type": "ADJUSTMENT",
+    "period": "2025-01",
+    "lines": [
+      {
+        "id": "line-001",
+        "line_number": 1,
+        "account_id": "111e4567-e89b-12d3-a456-426614174101",
+        "account_code": "1105",
+        "account_name": "CAJA GENERAL",
+        "debit_amount": 500000.00,
+        "credit_amount": 0.00,
+        "description": "Ajuste por diferencia en caja"
+      },
+      {
+        "id": "line-002",
+        "line_number": 2,
+        "account_id": "111e4567-e89b-12d3-a456-426614174102",
+        "account_code": "5135",
+        "account_name": "GASTOS VARIOS",
+        "debit_amount": 0.00,
+        "credit_amount": 500000.00,
+        "description": "Contrapartida ajuste de caja"
+      }
+    ],
+    "status": "POSTED",
+    "is_reversed": false,
+    "reversal_id": null,
+    "created_at": "2025-01-24T11:00:00Z",
+    "approved_at": "2025-01-24T11:00:00Z",
+    "created_by": "user-001",
+    "approved_by": "user-001"
+  },
+  "validation": {
+    "is_balanced": true,
+    "total_debit": 500000.00,
+    "total_credit": 500000.00,
+    "difference": 0.00
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}

@@ -1,0 +1,861 @@
+{
+  "success": true,
+  "data": {
+    "accounts": [
+      {
+        "id": "acc-001",
+        "account_code": "1",
+        "name": "ACTIVO",
+        "type": "ASSET",
+        "nature": "D",
+        "level": 1,
+        "is_detail": false,
+        "is_active": true,
+        "balance": 125450000,
+        "children": [
+          {
+            "id": "acc-002",
+            "account_code": "11",
+            "name": "ACTIVO CORRIENTE",
+            "type": "ASSET",
+            "nature": "D",
+            "level": 2,
+            "parent_id": "acc-001",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 85450000,
+            "children": [
+              {
+                "id": "acc-003",
+                "account_code": "1105",
+                "name": "CAJA",
+                "type": "ASSET",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-002",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 2560000,
+                "children": [
+                  {
+                    "id": "acc-004",
+                    "account_code": "1105.05",
+                    "name": "Caja General",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-003",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 2000000,
+                    "last_movement": "2024-01-21"
+                  },
+                  {
+                    "id": "acc-005",
+                    "account_code": "1105.10",
+                    "name": "Caja Menor",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-003",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 560000,
+                    "last_movement": "2024-01-21"
+                  }
+                ]
+              },
+              {
+                "id": "acc-006",
+                "account_code": "1110",
+                "name": "BANCOS",
+                "type": "ASSET",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-002",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 45890000,
+                "children": [
+                  {
+                    "id": "acc-007",
+                    "account_code": "1110.05",
+                    "name": "Bancos Nacionales",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-006",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 42890000,
+                    "last_movement": "2024-01-21"
+                  },
+                  {
+                    "id": "acc-008",
+                    "account_code": "1110.10",
+                    "name": "Bancos Extranjeros",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-006",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 3000000,
+                    "last_movement": "2024-01-15"
+                  }
+                ]
+              },
+              {
+                "id": "acc-009",
+                "account_code": "1305",
+                "name": "CLIENTES",
+                "type": "ASSET",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-002",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 35000000,
+                "children": [
+                  {
+                    "id": "acc-010",
+                    "account_code": "1305.05",
+                    "name": "Clientes Nacionales",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-009",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 32000000,
+                    "last_movement": "2024-01-21"
+                  },
+                  {
+                    "id": "acc-011",
+                    "account_code": "1305.10",
+                    "name": "Clientes del Exterior",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-009",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 3000000,
+                    "last_movement": "2024-01-18"
+                  }
+                ]
+              },
+              {
+                "id": "acc-012",
+                "account_code": "1435",
+                "name": "INVENTARIOS",
+                "type": "ASSET",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-002",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 2000000,
+                "children": [
+                  {
+                    "id": "acc-013",
+                    "account_code": "1435.05",
+                    "name": "Inventario de Productos Terminados",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-012",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 2000000,
+                    "last_movement": "2024-01-18"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "acc-014",
+            "account_code": "15",
+            "name": "PROPIEDAD PLANTA Y EQUIPO",
+            "type": "ASSET",
+            "nature": "D",
+            "level": 2,
+            "parent_id": "acc-001",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 40000000,
+            "children": [
+              {
+                "id": "acc-015",
+                "account_code": "1524",
+                "name": "EQUIPO DE OFICINA",
+                "type": "ASSET",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-014",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 15000000,
+                "children": [
+                  {
+                    "id": "acc-016",
+                    "account_code": "1524.05",
+                    "name": "Muebles y Enseres",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-015",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 10000000,
+                    "last_movement": "2024-01-10"
+                  },
+                  {
+                    "id": "acc-017",
+                    "account_code": "1524.10",
+                    "name": "Equipos de Cómputo",
+                    "type": "ASSET",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-015",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 5000000,
+                    "last_movement": "2024-01-05"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "acc-018",
+        "account_code": "2",
+        "name": "PASIVO",
+        "type": "LIABILITY",
+        "nature": "C",
+        "level": 1,
+        "is_detail": false,
+        "is_active": true,
+        "balance": 45000000,
+        "children": [
+          {
+            "id": "acc-019",
+            "account_code": "22",
+            "name": "PASIVO CORRIENTE",
+            "type": "LIABILITY",
+            "nature": "C",
+            "level": 2,
+            "parent_id": "acc-018",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 25000000,
+            "children": [
+              {
+                "id": "acc-020",
+                "account_code": "2205",
+                "name": "PROVEEDORES",
+                "type": "LIABILITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-019",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 12000000,
+                "children": [
+                  {
+                    "id": "acc-021",
+                    "account_code": "2205.01",
+                    "name": "Proveedores Nacionales",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-020",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 12000000,
+                    "last_movement": "2024-01-21"
+                  }
+                ]
+              },
+              {
+                "id": "acc-022",
+                "account_code": "2335",
+                "name": "COSTOS Y GASTOS POR PAGAR",
+                "type": "LIABILITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-019",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 3000000,
+                "children": [
+                  {
+                    "id": "acc-023",
+                    "account_code": "2335.95",
+                    "name": "Servicios Públicos por Pagar",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-022",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 456780,
+                    "last_movement": "2024-01-20"
+                  }
+                ]
+              },
+              {
+                "id": "acc-024",
+                "account_code": "2370",
+                "name": "RETENCIONES Y APORTES DE NÓMINA",
+                "type": "LIABILITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-019",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 5000000,
+                "children": [
+                  {
+                    "id": "acc-025",
+                    "account_code": "2370.05",
+                    "name": "Retenciones y Aportes de Nómina",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-024",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 1800000,
+                    "last_movement": "2024-01-19"
+                  },
+                  {
+                    "id": "acc-026",
+                    "account_code": "2370.25",
+                    "name": "Aportes a Seguridad Social por Pagar",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-024",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 2160000,
+                    "last_movement": "2024-01-19"
+                  },
+                  {
+                    "id": "acc-027",
+                    "account_code": "2370.30",
+                    "name": "Aportes Parafiscales por Pagar",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-024",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 1080000,
+                    "last_movement": "2024-01-19"
+                  }
+                ]
+              },
+              {
+                "id": "acc-028",
+                "account_code": "2408",
+                "name": "IMPUESTOS POR PAGAR",
+                "type": "LIABILITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-019",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 5000000,
+                "children": [
+                  {
+                    "id": "acc-029",
+                    "account_code": "2408.01",
+                    "name": "IVA por Pagar 19%",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-028",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 4785000,
+                    "last_movement": "2024-01-21"
+                  },
+                  {
+                    "id": "acc-030",
+                    "account_code": "2408.05",
+                    "name": "IVA Descontable 19%",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-028",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": -215200,
+                    "last_movement": "2024-01-21"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "acc-031",
+            "account_code": "26",
+            "name": "PASIVO NO CORRIENTE",
+            "type": "LIABILITY",
+            "nature": "C",
+            "level": 2,
+            "parent_id": "acc-018",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 20000000,
+            "children": [
+              {
+                "id": "acc-032",
+                "account_code": "2610",
+                "name": "OBLIGACIONES LABORALES",
+                "type": "LIABILITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-031",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 20000000,
+                "children": [
+                  {
+                    "id": "acc-033",
+                    "account_code": "2610.05",
+                    "name": "Cesantías Consolidadas",
+                    "type": "LIABILITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-032",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 20000000,
+                    "last_movement": "2024-01-19"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "acc-034",
+        "account_code": "3",
+        "name": "PATRIMONIO",
+        "type": "EQUITY",
+        "nature": "C",
+        "level": 1,
+        "is_detail": false,
+        "is_active": true,
+        "balance": 50000000,
+        "children": [
+          {
+            "id": "acc-035",
+            "account_code": "31",
+            "name": "CAPITAL SOCIAL",
+            "type": "EQUITY",
+            "nature": "C",
+            "level": 2,
+            "parent_id": "acc-034",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 30000000,
+            "children": [
+              {
+                "id": "acc-036",
+                "account_code": "3115",
+                "name": "CAPITAL SUSCRITO Y PAGADO",
+                "type": "EQUITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-035",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 30000000,
+                "children": [
+                  {
+                    "id": "acc-037",
+                    "account_code": "3115.05",
+                    "name": "Capital Suscrito y Pagado",
+                    "type": "EQUITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-036",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 30000000,
+                    "last_movement": "2024-01-01"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "acc-038",
+            "account_code": "36",
+            "name": "RESULTADOS DEL EJERCICIO",
+            "type": "EQUITY",
+            "nature": "C",
+            "level": 2,
+            "parent_id": "acc-034",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 20000000,
+            "children": [
+              {
+                "id": "acc-039",
+                "account_code": "3605",
+                "name": "UTILIDAD DEL EJERCICIO",
+                "type": "EQUITY",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-038",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 20000000,
+                "children": [
+                  {
+                    "id": "acc-040",
+                    "account_code": "3605.01",
+                    "name": "Utilidad del Ejercicio",
+                    "type": "EQUITY",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-039",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 20000000,
+                    "last_movement": "2024-01-01"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "acc-041",
+        "account_code": "4",
+        "name": "INGRESOS",
+        "type": "INCOME",
+        "nature": "C",
+        "level": 1,
+        "is_detail": false,
+        "is_active": true,
+        "balance": 85000000,
+        "children": [
+          {
+            "id": "acc-042",
+            "account_code": "41",
+            "name": "INGRESOS OPERACIONALES",
+            "type": "INCOME",
+            "nature": "C",
+            "level": 2,
+            "parent_id": "acc-041",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 85000000,
+            "children": [
+              {
+                "id": "acc-043",
+                "account_code": "4135",
+                "name": "COMERCIO AL POR MAYOR Y AL POR MENOR",
+                "type": "INCOME",
+                "nature": "C",
+                "level": 3,
+                "parent_id": "acc-042",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 85000000,
+                "children": [
+                  {
+                    "id": "acc-044",
+                    "account_code": "4135.05",
+                    "name": "Ingresos por Servicios de Consultoría",
+                    "type": "INCOME",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-043",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 50000000,
+                    "last_movement": "2024-01-21"
+                  },
+                  {
+                    "id": "acc-045",
+                    "account_code": "4135.10",
+                    "name": "Ventas de Productos Línea A",
+                    "type": "INCOME",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-043",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 30000000,
+                    "last_movement": "2024-01-20"
+                  },
+                  {
+                    "id": "acc-046",
+                    "account_code": "4135.15",
+                    "name": "Ventas de Servicios Otros",
+                    "type": "INCOME",
+                    "nature": "C",
+                    "level": 4,
+                    "parent_id": "acc-043",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 5000000,
+                    "last_movement": "2024-01-15"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "acc-047",
+        "account_code": "5",
+        "name": "GASTOS",
+        "type": "EXPENSE",
+        "nature": "D",
+        "level": 1,
+        "is_detail": false,
+        "is_active": true,
+        "balance": 55000000,
+        "children": [
+          {
+            "id": "acc-048",
+            "account_code": "51",
+            "name": "GASTOS OPERACIONALES DE ADMINISTRACIÓN",
+            "type": "EXPENSE",
+            "nature": "D",
+            "level": 2,
+            "parent_id": "acc-047",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 45000000,
+            "children": [
+              {
+                "id": "acc-049",
+                "account_code": "5105",
+                "name": "GASTOS DE PERSONAL",
+                "type": "EXPENSE",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-048",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 40000000,
+                "children": [
+                  {
+                    "id": "acc-050",
+                    "account_code": "5105.06",
+                    "name": "Sueldos y Salarios",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-049",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 30000000,
+                    "last_movement": "2024-01-19"
+                  },
+                  {
+                    "id": "acc-051",
+                    "account_code": "5105.30",
+                    "name": "Aportes a Seguridad Social",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-049",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 5400000,
+                    "last_movement": "2024-01-19"
+                  },
+                  {
+                    "id": "acc-052",
+                    "account_code": "5105.33",
+                    "name": "Aportes Parafiscales",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-049",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 2700000,
+                    "last_movement": "2024-01-19"
+                  },
+                  {
+                    "id": "acc-053",
+                    "account_code": "5105.36",
+                    "name": "Prestaciones Sociales",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-049",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 1900000,
+                    "last_movement": "2024-01-19"
+                  }
+                ]
+              },
+              {
+                "id": "acc-054",
+                "account_code": "5135",
+                "name": "SERVICIOS",
+                "type": "EXPENSE",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-048",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 5000000,
+                "children": [
+                  {
+                    "id": "acc-055",
+                    "account_code": "5135.30",
+                    "name": "Servicios Públicos",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-054",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 5000000,
+                    "last_movement": "2024-01-20"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "acc-056",
+            "account_code": "52",
+            "name": "GASTOS OPERACIONALES DE VENTAS",
+            "type": "EXPENSE",
+            "nature": "D",
+            "level": 2,
+            "parent_id": "acc-047",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 5000000,
+            "children": [
+              {
+                "id": "acc-057",
+                "account_code": "5205",
+                "name": "GASTOS DE VENTAS",
+                "type": "EXPENSE",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-056",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 5000000,
+                "children": [
+                  {
+                    "id": "acc-058",
+                    "account_code": "5205.35",
+                    "name": "Publicidad y Mercadeo",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-057",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 5000000,
+                    "last_movement": "2024-01-10"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "acc-059",
+        "account_code": "6",
+        "name": "COSTO DE VENTAS",
+        "type": "EXPENSE",
+        "nature": "D",
+        "level": 1,
+        "is_detail": false,
+        "is_active": true,
+        "balance": 10000000,
+        "children": [
+          {
+            "id": "acc-060",
+            "account_code": "61",
+            "name": "COSTO DE VENTAS Y DE PRESTACIÓN DE SERVICIOS",
+            "type": "EXPENSE",
+            "nature": "D",
+            "level": 2,
+            "parent_id": "acc-059",
+            "is_detail": false,
+            "is_active": true,
+            "balance": 10000000,
+            "children": [
+              {
+                "id": "acc-061",
+                "account_code": "6135",
+                "name": "COMERCIO AL POR MAYOR Y AL POR MENOR",
+                "type": "EXPENSE",
+                "nature": "D",
+                "level": 3,
+                "parent_id": "acc-060",
+                "is_detail": false,
+                "is_active": true,
+                "balance": 10000000,
+                "children": [
+                  {
+                    "id": "acc-062",
+                    "account_code": "6135.01",
+                    "name": "Costo de Ventas",
+                    "type": "EXPENSE",
+                    "nature": "D",
+                    "level": 4,
+                    "parent_id": "acc-061",
+                    "is_detail": true,
+                    "is_active": true,
+                    "balance": 10000000,
+                    "last_movement": "2024-01-18"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "total_accounts": 62,
+      "major_accounts": 25,
+      "detail_accounts": 37,
+      "active_accounts": 62,
+      "inactive_accounts": 0,
+      "by_type": {
+        "ASSET": 17,
+        "LIABILITY": 16,
+        "EQUITY": 8,
+        "INCOME": 6,
+        "EXPENSE": 15
+      },
+      "by_level": {
+        "1": 6,
+        "2": 10,
+        "3": 15,
+        "4": 31
+      }
+    }
+  },
+  "timestamp": "2024-01-21T13:00:00Z"
+}

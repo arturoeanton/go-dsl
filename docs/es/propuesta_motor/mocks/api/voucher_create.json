@@ -1,0 +1,121 @@
+{
+  "success": true,
+  "data": {
+    "voucher": {
+      "id": "550e8400-e29b-41d4-a716-446655440005",
+      "organization_id": "123e4567-e89b-12d3-a456-426614174000",
+      "voucher_number": "FV-000128",
+      "voucher_type": "invoice_sale",
+      "voucher_date": "2025-01-24",
+      "description": "Venta de productos terminados",
+      "total_amount": 2380000.00,
+      "subtotal": 2000000.00,
+      "tax_amount": 380000.00,
+      "retention_amount": 0.00,
+      "currency_code": "COP",
+      "exchange_rate": 1.0,
+      "status": "PENDING",
+      "source_system": "WEB_APP",
+      "created_at": "2025-01-24T11:00:00Z",
+      "processed_at": null,
+      "third_party": {
+        "id": "third-001",
+        "document_type": "NIT",
+        "document_number": "900123456-1",
+        "name": "ABC Comercializadora S.A.S.",
+        "email": "facturacion@abc.com.co"
+      },
+      "line_items": [
+        {
+          "id": "line-001",
+          "line_number": 1,
+          "description": "Producto A - Unidad",
+          "quantity": 10.00,
+          "unit_price": 120000.00,
+          "discount_rate": 0.00,
+          "discount_amount": 0.00,
+          "subtotal": 1200000.00,
+          "tax_code": "IVA_19",
+          "tax_rate": 0.19,
+          "tax_amount": 228000.00,
+          "total": 1428000.00,
+          "account_code": "4135",
+          "product_code": "PROD-A-001"
+        },
+        {
+          "id": "line-002",
+          "line_number": 2,
+          "description": "Producto B - Unidad",
+          "quantity": 5.00,
+          "unit_price": 160000.00,
+          "discount_rate": 0.00,
+          "discount_amount": 0.00,
+          "subtotal": 800000.00,
+          "tax_code": "IVA_19",
+          "tax_rate": 0.19,
+          "tax_amount": 152000.00,
+          "total": 952000.00,
+          "account_code": "4135",
+          "product_code": "PROD-B-002"
+        }
+      ],
+      "taxes": [
+        {
+          "tax_code": "IVA_19",
+          "tax_name": "IVA 19%",
+          "rate": 0.19,
+          "base_amount": 2000000.00,
+          "tax_amount": 380000.00,
+          "account_code": "2408"
+        }
+      ],
+      "retentions": [],
+      "payment_info": {
+        "payment_terms": 30,
+        "due_date": "2025-02-23",
+        "payment_method": "TRANSFERENCIA"
+      },
+      "metadata": {
+        "sales_person": "Juan Pérez",
+        "branch_office": "Oficina Principal",
+        "notes": "Cliente preferencial - descuento aplicado",
+        "external_reference": "ORD-2025-001"
+      }
+    },
+    "processing_info": {
+      "will_auto_process": true,
+      "estimated_process_time": "15 segundos",
+      "dsl_template": "invoice_sale_co",
+      "validation_passed": true
+    },
+    "next_actions": [
+      {
+        "action": "VIEW_VOUCHER",
+        "url": "/vouchers/550e8400-e29b-41d4-a716-446655440005",
+        "label": "Ver comprobante"
+      },
+      {
+        "action": "EDIT_VOUCHER", 
+        "url": "/vouchers/550e8400-e29b-41d4-a716-446655440005/edit",
+        "label": "Editar comprobante"
+      },
+      {
+        "action": "PROCESS_NOW",
+        "url": "/vouchers/550e8400-e29b-41d4-a716-446655440005/process",
+        "label": "Procesar ahora"
+      },
+      {
+        "action": "CREATE_SIMILAR",
+        "url": "/vouchers/new?template=550e8400-e29b-41d4-a716-446655440005",
+        "label": "Crear similar"
+      }
+    ]
+  },
+  "meta": {
+    "timestamp": "2025-01-24T11:00:00Z",
+    "version": "1.0",
+    "request_id": "req-create-voucher-001",
+    "execution_time_ms": 180
+  },
+  "errors": []
+}

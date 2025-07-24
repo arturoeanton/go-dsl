@@ -1,0 +1,49 @@
+{
+  "success": true,
+  "data": {
+    "organizations": [
+      {
+        "id": "org-001",
+        "code": "DEMO-CO",
+        "name": "Empresa Demo Colombia",
+        "tax_id": "900123456-7",
+        "country": "CO",
+        "currency": "COP",
+        "is_active": true,
+        "settings": {
+          "fiscal_year_start": "01-01",
+          "tax_regime": "common",
+          "accounting_standard": "NIIF_PYMES"
+        }
+      },
+      {
+        "id": "org-002",
+        "code": "EMPRESA-001",
+        "name": "Comercializadora ABC S.A.S",
+        "tax_id": "900789123-4",
+        "country": "CO",
+        "currency": "COP",
+        "is_active": true,
+        "settings": {
+          "fiscal_year_start": "01-01",
+          "tax_regime": "common",
+          "accounting_standard": "NIIF_PLENAS"
+        }
+      },
+      {
+        "id": "org-003",
+        "code": "DEMO-MX",
+        "name": "Empresa Demo México",
+        "tax_id": "ABC123456789",
+        "country": "MX",
+        "currency": "MXN",
+        "is_active": true,
+        "settings": {
+          "fiscal_year_start": "01-01",
+          "tax_regime": "general",
+          "accounting_standard": "NIF"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "success": true,
+  "data": {
+    "test_result": {
+      "execution_successful": true,
+      "execution_time": 18.5,
+      "generated_entries": 3,
+      "is_balanced": true,
+      "total_debit": 2380000.00,
+      "total_credit": 2380000.00
+    },
+    "generated_journal_lines": [
+      {
+        "line_number": 1,
+        "account_code": "130505",
+        "account_name": "CLIENTES NACIONALES",
+        "debit_amount": 2380000.00,
+        "credit_amount": 0.00,
+        "description": "Venta productos terminados - Cliente ABC"
+      },
+      {
+        "line_number": 2,
+        "account_code": "4135", 
+        "account_name": "VENTAS",
+        "debit_amount": 0.00,
+        "credit_amount": 2000000.00,
+        "description": "Venta FV-TEST-001"
+      },
+      {
+        "line_number": 3,
+        "account_code": "2408",
+        "account_name": "IVA POR PAGAR", 
+        "debit_amount": 0.00,
+        "credit_amount": 380000.00,
+        "description": "IVA Factura FV-TEST-001"
+      }
+    ],
+    "test_data_used": {
+      "voucher": {
+        "type": "invoice_sale",
+        "country": "CO",
+        "number": "FV-TEST-001",
+        "total_amount": 2380000,
+        "subtotal": 2000000,
+        "iva_amount": 380000,
+        "retention_amount": 0,
+        "description": "Venta productos terminados - Cliente ABC",
+        "third_party": "ABC Comercializadora S.A.S.",
+        "date": "2025-01-24"
+      }
+    },
+    "validation_checks": {
+      "balance_check": {
+        "status": "PASS",
+        "message": "Débitos = Créditos (2,380,000.00)"
+      },
+      "account_existence": {
+        "status": "PASS", 
+        "message": "Todas las cuentas existen en el plan"
+      },
+      "business_rules": {
+        "status": "PASS",
+        "message": "Todas las reglas de negocio se cumplen"
+      },
+      "data_integrity": {
+        "status": "PASS",
+        "message": "Datos íntegros y consistentes"
+      }
+    },
+    "execution_trace": [
+      {
+        "step": 1,
+        "action": "CONDITION_CHECK",
+        "condition": "voucher.type == 'invoice_sale'",
+        "result": true,
+        "timestamp": "2025-01-24T11:00:00.001Z"
+      },
+      {
+        "step": 2,
+        "action": "CONDITION_CHECK", 
+        "condition": "voucher.country == 'CO'",
+        "result": true,
+        "timestamp": "2025-01-24T11:00:00.002Z"
+      },
+      {
+        "step": 3,
+        "action": "DEBIT_ENTRY",
+        "account": "130505",
+        "amount": 2380000.00,
+        "result": "SUCCESS",
+        "timestamp": "2025-01-24T11:00:00.005Z"
+      },
+      {
+        "step": 4,
+        "action": "CREDIT_ENTRY",
+        "account": "4135", 
+        "amount": 2000000.00,
+        "result": "SUCCESS",
+        "timestamp": "2025-01-24T11:00:00.008Z"
+      },
+      {
+        "step": 5,
+        "action": "CREDIT_ENTRY",
+        "account": "2408",
+        "amount": 380000.00,
+        "result": "SUCCESS", 
+        "timestamp": "2025-01-24T11:00:00.012Z"
+      },
+      {
+        "step": 6,
+        "action": "BALANCE_VALIDATION",
+        "result": "SUCCESS",
+        "timestamp": "2025-01-24T11:00:00.018Z"
+      }
+    ],
+    "performance_metrics": {
+      "parse_time": 2.1,
+      "execution_time": 14.8,
+      "validation_time": 1.6,
+      "total_time": 18.5,
+      "memory_used": 1024,
+      "cpu_cycles": 15420
+    },
+    "template_info": {
+      "template_id": "template-001",
+      "template_code": "invoice_sale_co", 
+      "version": 3
+    }
+  },
+  "timestamp": "2025-01-24T11:00:00Z"
+}
