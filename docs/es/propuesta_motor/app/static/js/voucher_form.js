@@ -12,15 +12,16 @@ const formState = {
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('=== VOUCHER FORM INITIALIZING ===');
     initializeVoucherForm();
 });
 
 /**
  * Initialize voucher form
  */
-function initializeVoucherForm() {
+async function initializeVoucherForm() {
     setupFormEventListeners();
-    loadFormData();
+    await loadFormData();
     addInitialLines();
 }
 
@@ -55,8 +56,9 @@ function setupFormEventListeners() {
 async function loadFormData() {
     try {
         // Load accounts
-        const accountsResult = await motorContableApi.accounts.getAll();
-        formState.accounts = accountsResult.data.accounts || [];
+        const accountsResult = await motorContableApi.accounts.getList();
+        formState.accounts = accountsResult.data?.accounts || [];
+        console.log('Loaded accounts:', formState.accounts);
         
         // Load third parties - simulated for now
         formState.thirdParties = [
@@ -70,7 +72,7 @@ async function loadFormData() {
         
     } catch (error) {
         console.error('Error loading form data:', error);
-        utils.toast.error('Error al cargar datos del formulario');
+        utils.toast.show('Error al cargar datos del formulario', 'error');
     }
 }
 
@@ -78,6 +80,7 @@ async function loadFormData() {
  * Add initial voucher lines
  */
 function addInitialLines() {
+    console.log('Adding initial lines, accounts available:', formState.accounts.length);
     // Add at least 2 lines initially
     addVoucherLine();
     addVoucherLine();
@@ -222,7 +225,7 @@ async function handleFormSubmit(event) {
     const formData = new FormData(event.target);
     const voucherData = {
         voucher_type: formData.get('voucherType'),
-        date: formData.get('voucherDate'),
+        date: formData.get('voucherDate') + 'T00:00:00Z', // Convert to ISO format
         description: formData.get('description'),
         reference: formData.get('reference'),
         third_party_id: formData.get('thirdParty') || null,
@@ -242,8 +245,8 @@ async function handleFormSubmit(event) {
             voucherData.voucher_lines.push({
                 account_id: accountId,
                 description: description,
-                debit_amount: debitAmount,
-                credit_amount: creditAmount,
+                debit_amount: Math.round(debitAmount * 100) / 100, // Redondear a 2 decimales
+                credit_amount: Math.round(creditAmount * 100) / 100, // Redondear a 2 decimales
                 third_party_id: thirdPartyId
             });
         }
@@ -251,11 +254,31 @@ async function handleFormSubmit(event) {
     
     // Submit
     try {
-        utils.toast.loading('Creando comprobante...');
+        // Validate minimum lines
+        if (voucherData.voucher_lines.length < 2) {
+            utils.toast.show('Se requieren al menos 2 líneas contables', 'error');
+            return;
+        }
+        
+        // Validate balance
+        const totalDebit = voucherData.voucher_lines.reduce((sum, line) => sum + line.debit_amount, 0);
+        const totalCredit = voucherData.voucher_lines.reduce((sum, line) => sum + line.credit_amount, 0);
+        
+        console.log('Balance check (main form):', { totalDebit, totalCredit, difference: Math.abs(totalDebit - totalCredit) });
+        
+        if (Math.abs(totalDebit - totalCredit) > 0.01) { // Tolerancia de 1 centavo
+            utils.toast.show(`El comprobante no está balanceado. Débitos: ${totalDebit}, Créditos: ${totalCredit}`, 'error');
+            return;
+        }
+        
+        // Debug: log data before sending
+        console.log('Sending voucher data:', voucherData);
+        
+        utils.toast.show('Creando comprobante...', 'info');
         
         const result = await motorContableApi.vouchers.create(voucherData);
         
-        utils.toast.success('Comprobante creado exitosamente');
+        utils.toast.show('Comprobante creado exitosamente', 'success');
         
         // Redirect to voucher list
         setTimeout(() => {
@@ -264,7 +287,7 @@ async function handleFormSubmit(event) {
         
     } catch (error) {
         console.error('Error creating voucher:', error);
-        utils.toast.error(error.message || 'Error al crear el comprobante');
+        utils.toast.show(error.message || 'Error al crear el comprobante', 'error');
     }
 }
 
@@ -280,6 +303,101 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
+/**
+ * Save voucher as draft
+ */
+async function saveDraft() {
+    console.log('=== SAVE DRAFT CALLED ===');
+    try {
+        // Get form data
+        const formData = new FormData(document.getElementById('voucherForm'));
+        console.log('Form data keys:', Array.from(formData.keys()));
+        console.log('Form values:', Object.fromEntries(formData));
+        
+        // Build voucher object with DRAFT status
+        const voucherData = {
+            voucher_type: formData.get('voucherType'),
+            reference: formData.get('reference'),
+            date: formData.get('voucherDate') + 'T00:00:00Z', // Convert to ISO format
+            description: formData.get('description'),
+            third_party_id: formData.get('thirdParty') || null,
+            voucher_lines: []
+        };
+        
+        // Collect lines from DOM (same as main form)
+        console.log('Looking for voucher lines...');
+        const rows = document.querySelectorAll('#voucherLines tr');
+        console.log('Found rows:', rows.length);
+        
+        rows.forEach(row => {
+            const lineId = row.dataset.lineId;
+            const accountId = formData.get(`account_${lineId}`);
+            const description = formData.get(`description_${lineId}`);
+            const debitAmount = parseFloat(formData.get(`debit_${lineId}`)) || 0;
+            const creditAmount = parseFloat(formData.get(`credit_${lineId}`)) || 0;
+            const thirdPartyId = formData.get(`third_party_${lineId}`) || null;
+            
+            console.log(`Line ${lineId}:`, {
+                accountId, description, debitAmount, creditAmount, thirdPartyId
+            });
+            
+            if (accountId && description && (debitAmount > 0 || creditAmount > 0)) {
+                const lineData = {
+                    account_id: accountId,
+                    description: description || 'Descripción de línea',
+                    debit_amount: Math.round(debitAmount * 100) / 100, // Redondear a 2 decimales
+                    credit_amount: Math.round(creditAmount * 100) / 100, // Redondear a 2 decimales
+                    third_party_id: thirdPartyId
+                };
+                console.log('Adding line to voucher:', lineData);
+                voucherData.voucher_lines.push(lineData);
+            } else {
+                console.log(`Line ${lineId} REJECTED:`, 'accountId:', !!accountId, 'description:', !!description, 'amounts:', debitAmount, creditAmount);
+            }
+        });
+        
+        // Validate minimum lines
+        if (voucherData.voucher_lines.length < 2) {
+            utils.toast.show('Se requieren al menos 2 líneas contables', 'error');
+            return;
+        }
+        
+        // Validate balance
+        const totalDebit = voucherData.voucher_lines.reduce((sum, line) => sum + line.debit_amount, 0);
+        const totalCredit = voucherData.voucher_lines.reduce((sum, line) => sum + line.credit_amount, 0);
+        
+        console.log('Balance check:', { totalDebit, totalCredit, difference: Math.abs(totalDebit - totalCredit) });
+        
+        if (Math.abs(totalDebit - totalCredit) > 0.01) { // Tolerancia de 1 centavo
+            utils.toast.show(`El comprobante no está balanceado. Débitos: ${totalDebit}, Créditos: ${totalCredit}`, 'error');
+            return;
+        }
+        
+        // Debug: log data before sending
+        console.log('Final voucher data (saveDraft):');
+        console.log('- voucher_lines:', voucherData.voucher_lines);
+        console.log('- voucher_lines length:', voucherData.voucher_lines.length);
+        console.log('Complete object:', JSON.stringify(voucherData, null, 2));
+        
+        // Save draft
+        utils.toast.show('Guardando borrador...', 'info');
+        
+        const result = await motorContableApi.vouchers.create(voucherData);
+        
+        utils.toast.show('Borrador guardado exitosamente', 'success');
+        
+        // Redirect to voucher list
+        setTimeout(() => {
+            window.location.href = 'vouchers_list.html';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Error saving draft:', error);
+        utils.toast.show(error.message || 'Error al guardar el borrador', 'error');
+    }
+}
+
 // Export functions to global scope
 window.addVoucherLine = addVoucherLine;
 window.removeLine = removeLine;
+window.saveDraft = saveDraft;

@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crear Comprobante - Motor Contable</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/tables.css">
+    <link rel="stylesheet" href="css/sidebar-collapsed.css">
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
     <!-- Navbar -->
@@ -62,7 +66,7 @@
                         <h3>📄 Información Básica</h3>
                     </div>
                     <div class="card-body">
-                            <div class="form-grid">
+                        <div class="form-grid">
                                 <div class="form-group">
                                     <label for="voucherType">Tipo de Comprobante *</label>
                                     <select id="voucherType" name="voucherType" class="form-control" required>
@@ -96,18 +100,18 @@
                                         <option value="EUR">EUR - Euro</option>
                                     </select>
                                 </div>
-                            </div>
+                        </div>
 
-                            <div class="form-group full-width">
+                        <div class="form-group full-width">
                                 <label for="description">Descripción *</label>
                                 <textarea id="description" name="description" rows="2" 
                                           class="form-control" placeholder="Descripción del comprobante..." required></textarea>
-                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Customer/Supplier Info -->
-                    <div class="card">
+                <!-- Customer/Supplier Info -->
+                <div class="card">
                         <div class="card-header">
                             <h3>👥 Tercero</h3>
                         </div>
@@ -126,8 +130,8 @@
                         </div>
                     </div>
 
-                    <!-- Accounting Lines -->
-                    <div class="card">
+                <!-- Accounting Lines -->
+                <div class="card">
                         <div class="card-header">
                             <h3>📋 Líneas Contables</h3>
                             <button type="button" class="btn btn-primary btn-sm" id="addLineBtn">
@@ -168,6 +172,7 @@
                                     </tfoot>
                                 </table>
                             </div>
+                        </div>
                     </div>
 
                     <!-- Actions -->
@@ -179,13 +184,14 @@
                             ✅ Crear y Procesar
                         </button>
                     </div>
-                </form>
+            </form>
         </main>
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api_service.js"></script>
-    <script src="js/voucher_form.js"></script>
+    <script src="js/voucher_form.js?v=1.8"></script>
 </body>
 </html>

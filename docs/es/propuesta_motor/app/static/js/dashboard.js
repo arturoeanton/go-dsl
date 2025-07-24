@@ -123,10 +123,10 @@ async function loadDashboardData() {
 function updateKPICards(kpis) {
     // Update each KPI card
     const kpiData = [
-        { selector: '.kpi-card:nth-child(1) .kpi-value', value: kpis.vouchers_today },
-        { selector: '.kpi-card:nth-child(2) .kpi-value', value: kpis.vouchers_month },
-        { selector: '.kpi-card:nth-child(3) .kpi-value', value: kpis.pending_vouchers },
-        { selector: '.kpi-card:nth-child(4) .kpi-value', value: Math.round(kpis.processing_rate) + '%' }
+        { selector: '.stat-card:nth-child(1) .stat-value', value: kpis.vouchers_today },
+        { selector: '.stat-card:nth-child(2) .stat-value', value: kpis.vouchers_month },
+        { selector: '.stat-card:nth-child(3) .stat-value', value: kpis.pending_vouchers },
+        { selector: '.stat-card:nth-child(4) .stat-value', value: Math.round(kpis.processing_rate) + '%' }
     ];
     
     kpiData.forEach(kpi => {
@@ -593,7 +593,7 @@ function updateChartPeriod(event) {
  */
 function showLoadingState() {
     // Add loading class to KPI cards
-    document.querySelectorAll('.kpi-card').forEach(card => {
+    document.querySelectorAll('.stat-card').forEach(card => {
         card.classList.add('loading');
     });
 }
@@ -603,7 +603,7 @@ function showLoadingState() {
  */
 function hideLoadingState() {
     // Remove loading class from KPI cards
-    document.querySelectorAll('.kpi-card').forEach(card => {
+    document.querySelectorAll('.stat-card').forEach(card => {
         card.classList.remove('loading');
     });
 }

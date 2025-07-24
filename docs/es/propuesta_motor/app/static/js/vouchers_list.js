@@ -12,6 +12,8 @@ const state = {
     selectedVouchers: new Set(),
     sortColumn: 'voucher_date',
     sortDirection: 'desc',
+    sortBy: 'date',
+    sortOrder: 'desc',
     filters: {
         dateFrom: null,
         dateTo: null,
@@ -25,6 +27,7 @@ const state = {
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('=== VOUCHERS LIST INITIALIZING ===');
     initializeVouchersList();
 });
 
@@ -70,9 +73,17 @@ function setupEventListeners() {
  * Load vouchers data
  */
 async function loadVouchersData() {
+    console.log('=== LOADING VOUCHERS DATA ===');
     showLoading();
     
     try {
+        console.log('Calling API with params:', {
+            page: state.currentPage,
+            per_page: state.pageSize,
+            sort: state.sortBy,
+            order: state.sortOrder
+        });
+        
         // Fetch data using API service
         const result = await motorContableApi.vouchers.getList({
             page: state.currentPage,
@@ -81,8 +92,13 @@ async function loadVouchersData() {
             order: state.sortOrder
         });
         
+        console.log('API Response:', result);
+        console.log('Vouchers data:', result.data);
+        
         state.vouchers = result.data.vouchers;
         state.filteredVouchers = [...state.vouchers];
+        
+        console.log('Loaded vouchers:', state.vouchers.length);
         
         updateStats(result.data.stats);
         applyFiltersAndSort();
@@ -101,13 +117,23 @@ async function loadVouchersData() {
  * Render vouchers table
  */
 function renderVouchersTable() {
+    console.log('=== RENDERING VOUCHERS TABLE ===');
+    console.log('Filtered vouchers:', state.filteredVouchers.length);
+    
     const tbody = document.getElementById('vouchersTableBody');
+    if (!tbody) {
+        console.error('Table body not found!');
+        return;
+    }
+    
     tbody.innerHTML = '';
     
     // Calculate pagination
     const startIdx = (state.currentPage - 1) * state.pageSize;
     const endIdx = startIdx + state.pageSize;
     const pageVouchers = state.filteredVouchers.slice(startIdx, endIdx);
+    
+    console.log('Rendering vouchers for page:', pageVouchers.length);
     
     // Render rows
     pageVouchers.forEach(voucher => {
