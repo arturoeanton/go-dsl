@@ -14,6 +14,7 @@ type VoucherService struct {
 	voucherRepo         *data.VoucherRepository
 	accountRepo         *data.AccountRepository
 	journalEntryService *JournalEntryService
+	dslRulesEngine      *DSLRulesEngine
 	db                  *gorm.DB
 }
 
@@ -23,6 +24,7 @@ func NewVoucherService(db *gorm.DB) *VoucherService {
 		voucherRepo:         data.NewVoucherRepository(db),
 		accountRepo:         data.NewAccountRepository(db),
 		journalEntryService: NewJournalEntryService(db),
+		dslRulesEngine:      NewDSLRulesEngine(db),
 		db:                  db,
 	}
 }
@@ -106,12 +108,7 @@ func (s *VoucherService) Create(orgID string, request models.VoucherCreateReques
 		return nil, err
 	}
 	
-	// TODO: Aquí se ejecutarían reglas DSL para:
-	// 1. Aplicar plantillas de comprobantes según el tipo
-	// 2. Generar automáticamente líneas de impuestos y retenciones
-	// 3. Validar reglas contables específicas (ej: cuentas de terceros)
-	// 4. Aplicar clasificaciones automáticas según configuraciones
-	
+	// Crear el comprobante inicial
 	// Crear el comprobante
 	voucher := &models.Voucher{
 		OrganizationID: orgID,
@@ -146,6 +143,26 @@ func (s *VoucherService) Create(orgID string, request models.VoucherCreateReques
 	
 	// Calcular totales
 	voucher.CalculateTotals()
+	
+	// Aplicar reglas DSL para generar líneas automáticas (impuestos, retenciones)
+	additionalLines, err := s.dslRulesEngine.GenerateAutomaticLines(voucher)
+	if err != nil {
+		return nil, fmt.Errorf("error generando líneas automáticas: %v", err)
+	}
+	
+	// Agregar líneas automáticas generadas
+	for _, line := range additionalLines {
+		voucher.VoucherLines = append(voucher.VoucherLines, line)
+	}
+	
+	// Recalcular totales con las nuevas líneas
+	voucher.CalculateTotals()
+	
+	// Aplicar clasificaciones automáticas con DSL
+	err = s.dslRulesEngine.ApplyAutomaticClassifications(voucher)
+	if err != nil {
+		return nil, fmt.Errorf("error aplicando clasificaciones: %v", err)
+	}
 	
 	// Establecer datos adicionales si se proporcionan
 	if request.AdditionalData != nil {
@@ -190,11 +207,24 @@ func (s *VoucherService) Post(voucherID, userID string) error {
 		return errors.New("el comprobante debe estar balanceado para ser contabilizado")
 	}
 	
-	// TODO: En el futuro, aquí se ejecutarían reglas DSL para:
-	// 1. Validar restricciones contables específicas del tipo de comprobante
-	// 2. Aplicar clasificaciones y distribuciones automáticas
-	// 3. Calcular y generar impuestos y retenciones automáticamente
-	// 4. Ejecutar workflows de aprobación si son requeridos
+	// Ejecutar validaciones DSL específicas del tipo de comprobante
+	err = s.dslRulesEngine.ValidateVoucherPrePost(voucher)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("validación DSL falló: %v", err)
+	}
+	
+	// Verificar si se requieren workflows de aprobación
+	requiresWorkflow, workflowType, err := s.dslRulesEngine.CheckWorkflowRequirements(voucher)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error verificando workflows: %v", err)
+	}
+	
+	if requiresWorkflow {
+		tx.Rollback()
+		return fmt.Errorf("este comprobante requiere aprobación mediante el workflow: %s", workflowType)
+	}
 	
 	// Crear el asiento contable desde el comprobante
 	_, err = s.journalEntryService.CreateFromVoucher(voucher, userID)
@@ -218,6 +248,14 @@ func (s *VoucherService) Post(voucherID, userID string) error {
 	// Commit de la transacción
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("error confirmando transacción: %v", err)
+	}
+	
+	// Ejecutar post-procesamiento con DSL (notificaciones, integraciones, etc.)
+	err = s.dslRulesEngine.ExecutePostProcessing(voucher)
+	if err != nil {
+		// No revertimos la transacción porque el comprobante ya fue procesado
+		// Solo logueamos el error
+		fmt.Printf("Error en post-procesamiento DSL: %v\n", err)
 	}
 	
 	return nil
