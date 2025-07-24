@@ -602,6 +602,142 @@ match bank_transaction
 - 99.9% de precisión en matches automáticos
 - ROI de 300% en el primer año
 
+## Implementación en el Código Actual
+
+### Dónde Implementar
+
+1. **Crear nuevo paquete**: `/internal/dsl/reconciliation/`
+   ```go
+   // /internal/dsl/reconciliation/engine.go
+   type ReconciliationEngine struct {
+       dsl *dslbuilder.DSL
+       bankRepo *repository.BankTransactionRepository
+       matchingService *MatchingService
+   }
+   ```
+
+2. **Nuevos modelos**: `/internal/models/bank_transaction.go`
+   ```go
+   type BankTransaction struct {
+       ID              string    `json:"id"`
+       BankAccountID   string    `json:"bank_account_id"`
+       Date            time.Time `json:"date"`
+       Amount          float64   `json:"amount"`
+       Description     string    `json:"description"`
+       Status          string    `json:"status"` // PENDING, MATCHED
+       MatchedVoucherID *string  `json:"matched_voucher_id"`
+   }
+   ```
+
+3. **Nuevo handler**: `/internal/handlers/reconciliation_handler.go`
+   ```go
+   type ReconciliationHandler struct {
+       reconciliationService *ReconciliationService
+       bankService          *BankService
+   }
+   ```
+
+### Dónde se Llamaría
+
+1. **Importación de Extractos**:
+   - `POST /api/v1/bank-statements/import`
+   - Procesa archivo y ejecuta matching automático
+
+2. **Proceso Diario**:
+   - Cron job que reconcilia transacciones pendientes
+   - Se ejecuta a las 6 AM antes del inicio de operaciones
+
+3. **Vista Interactiva**:
+   - Dashboard de conciliación para matches manuales
+   - Sugerencias ML para transacciones no matcheadas
+
+### Ventajas Específicas
+
+1. **Ahorro Masivo**: 16 horas/mes → 30 minutos
+2. **Detección de Fraude**: Identifica transacciones anómalas
+3. **Cash Flow Real**: Visibilidad instantánea de fondos
+4. **Reducción de Errores**: 0% vs 3% manual
+5. **Cierre Rápido**: Conciliación lista para auditoría
+
+### Integración con Sistema Actual
+
+**Modificar** `voucher.go`:
+```go
+type Voucher struct {
+    // Campos existentes...
+    
+    // NUEVO: Para conciliación
+    BankReconciled    bool    `json:"bank_reconciled"`
+    BankTransactionID *string `json:"bank_transaction_id"`
+    ReconciliationDate *time.Time `json:"reconciliation_date"`
+}
+```
+
+**Nuevo servicio** `/internal/services/bank_service.go`:
+```go
+type BankService struct {
+    repository       repository.BankRepository
+    reconciliationEngine *reconciliation.ReconciliationEngine
+    voucherService   *VoucherService
+}
+
+func (s *BankService) ImportStatement(file io.Reader, bankAccountID string) error {
+    // Parser de extractos (MT940, CSV, etc)
+    transactions := s.parseStatement(file)
+    
+    // Guardar transacciones
+    s.repository.CreateBatch(transactions)
+    
+    // Ejecutar reconciliación automática
+    results := s.reconciliationEngine.ReconcileTransactions(transactions)
+    
+    // Aplicar matches de alta confianza
+    for _, match := range results.HighConfidenceMatches {
+        s.applyMatch(match)
+    }
+    
+    return nil
+}
+```
+
+### Ejemplo Real: E-commerce
+
+**Transacción bancaria**:
+```json
+{
+  "date": "2024-01-15",
+  "amount": 1547300,
+  "description": "MERCADOPAGO *VENTAS"
+}
+```
+
+**DSL Ejecuta**:
+```dsl
+match bank_transaction
+  when description contains "MERCADOPAGO"
+  action match_batch
+    with online_sales(date_range: -2 days)
+    tolerance 2%  # Por comisiones
+```
+
+**Resultado**: 
+- Encuentra 15 ventas del 13-15 enero
+- Total: $1,580,000
+- Comisión 2%: $31,600
+- Match automático confirmado
+
+### UI Propuesta
+
+```javascript
+// Nueva página: bank_reconciliation.html
+// Características:
+// - Drag & drop de extractos
+// - Vista split: Banco vs Contabilidad
+// - Sugerencias ML con % confianza
+// - Confirmar/rechazar con 1 click
+// - Crear ajustes automáticos
+```
+
 ## Conclusión
 
 La conciliación bancaria inteligente con go-dsl elimina una de las tareas más tediosas de la contabilidad, proporcionando precisión, velocidad y aprendizaje continuo.

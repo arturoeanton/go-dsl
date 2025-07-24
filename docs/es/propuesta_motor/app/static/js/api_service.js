@@ -2,6 +2,142 @@
 // Version: 1.0
 // Centralizado para facilitar la migración a API real
 
+// Para compatibilidad con templates.js - Definir globalmente de inmediato
+window.apiService = {
+    async getTemplates() {
+        try {
+            // Direct API call to match the backend structure
+            const response = await fetch('/api/v1/templates');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            // The backend returns { success: true, templates: [...], total: n }
+            if (data.success && Array.isArray(data.templates)) {
+                return { 
+                    success: true, 
+                    data: data.templates,
+                    templates: data.templates,
+                    total: data.total 
+                };
+            }
+            
+            // Handle other formats
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('Error in getTemplates:', error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    async getTemplate(id) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return await service.get(`templates/${id}`);
+        }
+        return await fetch(`/api/v1/templates/${id}`).then(r => r.json());
+    },
+    
+    async createTemplate(data) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return { success: true, data: await service.post('templates', data) };
+        }
+        const response = await fetch('/api/v1/templates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return { success: response.ok, data: await response.json() };
+    },
+    
+    async updateTemplate(id, data) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return { success: true, data: await service.put(`templates/${id}`, data) };
+        }
+        const response = await fetch(`/api/v1/templates/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return { success: response.ok, data: await response.json() };
+    },
+    
+    async deleteTemplate(id) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return { success: true, data: await service.delete(`templates/${id}`) };
+        }
+        const response = await fetch(`/api/v1/templates/${id}`, {
+            method: 'DELETE'
+        });
+        return { success: response.ok, data: await response.json() };
+    },
+    
+    async testTemplate(id, params) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return { success: true, data: await service.post(`templates/${id}/test`, params) };
+        }
+        const response = await fetch(`/api/v1/templates/${id}/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params)
+        });
+        return { success: response.ok, data: await response.json() };
+    },
+    
+    async get(path) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return await service.get(path);
+        }
+        return await fetch(`/api/v1/${path}`).then(r => r.json());
+    },
+    
+    async post(path, data) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return await service.post(path, data);
+        }
+        const response = await fetch(`/api/v1/${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    },
+    
+    async put(path, data) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return await service.put(path, data);
+        }
+        const response = await fetch(`/api/v1/${path}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    },
+    
+    async delete(path) {
+        if (typeof getApiService !== 'undefined') {
+            const service = await getApiService();
+            return await service.delete(path);
+        }
+        const response = await fetch(`/api/v1/${path}`, {
+            method: 'DELETE'
+        });
+        return await response.json();
+    }
+};
+
+// También mantener la referencia local
+const apiService = window.apiService;
+
 // Configuración global
 const API_CONFIG = {
     USE_MOCK: false, // Usando backend real del POC
@@ -43,7 +179,9 @@ const REAL_ENDPOINTS = {
     'lookups.tax_types': '/lookups/tax-types',
     'lookups.document_types': '/lookups/document-types',
     'third_parties.search': '/third-parties/search',
-    'third_parties.detail': '/third-parties/:id'
+    'third_parties.detail': '/third-parties/:id',
+    'templates': '/templates',
+    'templates.detail': '/templates/:id'
 };
 
 /**
@@ -209,6 +347,60 @@ class ApiService {
             return await response.json();
         } catch (error) {
             console.error(`Error en POST ${endpointPath}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Realizar petición PUT
+     */
+    async put(endpointPath, body = {}, params = {}) {
+        const endpoint = this.getEndpoint(endpointPath);
+        const url = this.buildUrl(endpoint, params);
+        
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.getAuthToken()}`
+                },
+                body: JSON.stringify(body)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error(`Error en PUT ${endpointPath}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Realizar petición DELETE
+     */
+    async delete(endpointPath, params = {}) {
+        const endpoint = this.getEndpoint(endpointPath);
+        const url = this.buildUrl(endpoint, params);
+        
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${this.getAuthToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error(`Error en DELETE ${endpointPath}:`, error);
             throw error;
         }
     }

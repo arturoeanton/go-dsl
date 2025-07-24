@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Templates - Motor Contable</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/sidebar-collapsed.css">
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="navbar-brand">
+                <h1>Motor Contable</h1>
+            </div>
+            <div class="navbar-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar templates..." id="searchInput">
+                    <button type="button" class="search-btn">🔍</button>
+                </div>
+                <div class="user-menu">
+                    <img src="../img/avatar.png" alt="Usuario" class="user-avatar">
+                    <span>Juan Pérez</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><span class="menu-icon">📊</span><span class="menu-text">Dashboard</span></a></li>
+                    <li><a href="vouchers_list.html"><span class="menu-icon">📄</span><span class="menu-text">Comprobantes</span></a></li>
+                    <li><a href="journal_entries.html"><span class="menu-icon">📚</span><span class="menu-text">Asientos</span></a></li>
+                    <li><a href="accounts_chart.html"><span class="menu-icon">🏦</span><span class="menu-text">Plan de Cuentas</span></a></li>
+                    <li class="active"><a href="templates.html"><span class="menu-icon">📋</span><span class="menu-text">Templates</span></a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📈</span><span class="menu-text">Reportes</span></a></li>
+                    <li><a href="dsl_editor.html"><span class="menu-icon">⚙️</span><span class="menu-text">Reglas DSL</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h2>Templates de Asientos</h2>
+                <button class="btn btn-primary" onclick="showNewTemplateModal()">
+                    ➕ Nuevo Template
+                </button>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>Buscar:</label>
+                            <input type="text" class="form-control" id="templateSearch" placeholder="Nombre o descripción...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Estado:</label>
+                            <div class="btn-group">
+                                <button class="filter-btn active" data-filter="all">Todos</button>
+                                <button class="filter-btn" data-filter="active">Activos</button>
+                                <button class="filter-btn" data-filter="inactive">Inactivos</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-content">
+                        <h4>Total Templates</h4>
+                        <p class="stat-value" id="totalTemplates">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h4>Templates Activos</h4>
+                        <p class="stat-value" id="activeTemplates">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <h4>Ejecuciones Hoy</h4>
+                        <p class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-content">
+                        <h4>Última Ejecución</h4>
+                        <p class="stat-value">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Templates Grid -->
+            <div class="templates-grid" id="templatesContainer">
+                <!-- Templates will be loaded here -->
+                <div class="loading">
+                    <p>Cargando templates...</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <i style="font-size: 3rem; opacity: 0.5;">📋</i>
+                <p>No se encontraron templates</p>
+                <button class="btn btn-primary" onclick="showNewTemplateModal()">
+                    Crear primer template
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Template Modal -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nuevo Template</h3>
+                <span class="close" onclick="closeTemplateModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="templateForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre del Template</label>
+                            <input type="text" class="form-control" id="templateName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select class="form-control" id="templateType">
+                                <option value="invoice_sale">Factura de Venta</option>
+                                <option value="invoice_purchase">Factura de Compra</option>
+                                <option value="payroll">Nómina</option>
+                                <option value="payment">Pago</option>
+                                <option value="receipt">Recibo</option>
+                                <option value="adjustment">Ajuste</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Descripción</label>
+                            <textarea class="form-control" id="templateDescription" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <h4>Parámetros del Template</h4>
+                    <div id="parametersContainer">
+                        <!-- Parameters will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addParameter()">
+                        ➕ Agregar Parámetro
+                    </button>
+
+                    <h4 style="margin-top: 20px;">Código DSL</h4>
+                    <div id="dslEditor" style="height: 400px; border: 1px solid #ddd;">
+                        <!-- Editor will be initialized here -->
+                    </div>
+                    
+                    <div class="editor-toolbar">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="formatDSL()">
+                            🎨 Formatear
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="validateDSL()">
+                            ✅ Validar
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTemplateModal()">Cancelar</button>
+                <button class="btn btn-primary" id="saveTemplateBtn" onclick="saveTemplate()">Guardar Template</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Modal -->
+    <div class="modal" id="testModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Probar Template</h3>
+                <span class="close" onclick="closeTestModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h4>Parámetros de Prueba</h4>
+                <div id="testParams">
+                    <!-- Test parameters will be loaded here -->
+                </div>
+                
+                <button class="btn btn-primary" onclick="runTest()">
+                    ▶️ Ejecutar Prueba
+                </button>
+                
+                <div id="previewResult" style="margin-top: 20px;">
+                    <!-- Preview result will be shown here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTestModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/api_service.js"></script>
+    <script src="js/sidebar.js"></script>
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="js/templates.js"></script>
+</body>
+</html>

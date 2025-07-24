@@ -67,6 +67,10 @@ func runMigrations() error {
 		&models.DSLTemplate{},
 		&models.DSLExecution{},
 		
+		// Modelos de Templates
+		&models.JournalTemplate{},
+		&models.TemplateExecution{},
+		
 		// Modelos de auditoría y preferencias
 		&models.AuditLog{},
 		&models.UserPreferences{},

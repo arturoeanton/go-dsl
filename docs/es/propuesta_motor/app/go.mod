@@ -1,12 +1,13 @@
 module motor-contable-poc
 
-go 1.21
+go 1.24.5
 
 require (
+	github.com/arturoeanton/go-dsl v0.0.0-20250724115400-4c57439caaab
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/swagger v1.0.0
 	github.com/google/uuid v1.5.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.3
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.5

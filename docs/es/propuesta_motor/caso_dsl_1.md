@@ -279,6 +279,74 @@ func (h *RulesHandler) CreateRule(c *fiber.Ctx) error {
 - Detección temprana del 95% de errores contables
 - Satisfacción del usuario por personalización
 
+## Implementación en el Código Actual
+
+### Dónde Implementar
+
+1. **Crear nuevo paquete**: `/internal/dsl/validation/`
+   ```go
+   // /internal/dsl/validation/engine.go
+   type ValidationEngine struct {
+       dsl *dslbuilder.DSL
+       rulesRepo *repository.RulesRepository
+   }
+   ```
+
+2. **Integrar en VoucherService**: `/internal/services/voucher_service.go`
+   ```go
+   type VoucherService struct {
+       repository    repository.VoucherRepository
+       journalService *JournalEntryService
+       validationEngine *validation.ValidationEngine // NUEVO
+   }
+   ```
+
+3. **Modificar método Post**: Línea ~85 en `voucher_service.go`
+   ```go
+   func (s *VoucherService) Post(voucher *models.Voucher, userID string) error {
+       // NUEVO: Ejecutar validaciones DSL antes de procesar
+       validationResults := s.validationEngine.ValidateVoucher(voucher, nil)
+       if hasErrors(validationResults) {
+           return NewValidationError(validationResults)
+       }
+       
+       // Código existente continúa...
+       return s.repository.WithTransaction(func(repo repository.VoucherRepository) error {
+   ```
+
+### Dónde se Llamaría
+
+1. **En el Handler**: `/internal/handlers/voucher_handler.go`
+   - Método `CreateVoucher` (línea ~45)
+   - Método `UpdateVoucher` (línea ~85)
+   - Método `PostVoucher` (línea ~125)
+
+2. **En Procesos Batch**: Para validar importaciones masivas
+
+### Ventajas Específicas
+
+1. **Reducción de Código**: Elimina ~500 líneas de validaciones hardcodeadas
+2. **Tiempo de Respuesta**: Las reglas cambian en caliente sin reiniciar
+3. **Multi-tenant**: Cada organización con sus propias reglas
+4. **Auditoría**: Log automático de qué regla falló y por qué
+5. **Testing**: Validaciones probables sin compilar
+
+### Ejemplo de Migración
+
+**Antes** (código actual hardcodeado):
+```go
+// En voucher_service.go
+if voucher.Amount > 1000000 && user.Role == "JUNIOR" {
+    return errors.New("Monto excede límite")
+}
+```
+
+**Después** (con DSL):
+```dsl
+if user_role() == "JUNIOR" AND voucher_total() > 1000000 
+then error "Monto excede límite autorizado para su perfil"
+```
+
 ## Conclusión
 
 La validación inteligente con go-dsl transforma las reglas de negocio de código duro a configuración dinámica, permitiendo que el sistema se adapte a cualquier organización sin modificar el código fuente.

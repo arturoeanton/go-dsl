@@ -470,6 +470,126 @@ distribute logistics_costs()
 - Mejora del 40% en precisión de costeo
 - Identificación de oportunidades de ahorro por $2M/año
 
+## Implementación en el Código Actual
+
+### Dónde Implementar
+
+1. **Crear nuevo paquete**: `/internal/dsl/distribution/`
+   ```go
+   // /internal/dsl/distribution/engine.go
+   type DistributionEngine struct {
+       dsl *dslbuilder.DSL
+       metricsRepo *repository.MetricsRepository
+       costRepo *repository.CostRepository
+   }
+   ```
+
+2. **Nuevo servicio**: `/internal/services/cost_distribution_service.go`
+   ```go
+   type CostDistributionService struct {
+       repository repository.DistributionRepository
+       engine     *distribution.DistributionEngine
+       journalService *JournalEntryService
+   }
+   ```
+
+3. **Proceso programado**: En `main.go` o scheduler
+   ```go
+   // Ejecutar distribuciones al cierre de cada período
+   scheduler.AddJob("0 0 L * *", func() {
+       costDistService.ExecuteMonthlyDistributions()
+   })
+   ```
+
+### Dónde se Llamaría
+
+1. **Proceso de Cierre Mensual**:
+   - Automáticamente después de cerrar costos directos
+   - Antes de generar estados financieros
+
+2. **API Manual**:
+   - `POST /api/v1/cost-distributions/execute`
+   - Para redistribuciones o ajustes
+
+3. **Dashboard de Costos**:
+   - Vista previa de distribuciones antes de aplicar
+
+### Ventajas Específicas
+
+1. **Precisión ABC**: Costeo real por actividad vs prorrateo simple
+2. **Tiempo de Cierre**: 2 horas → 10 minutos
+3. **Trazabilidad**: Saber origen de cada $ en cada producto
+4. **Flexibilidad**: Cambiar drivers sin reprogramar
+5. **Análisis**: Identificar productos/centros no rentables
+
+### Integración con Modelos Existentes
+
+**Nuevo modelo** `models/cost_center.go`:
+```go
+type CostCenter struct {
+    ID          string  `json:"id"`
+    Code        string  `json:"code"`
+    Name        string  `json:"name"`
+    Type        string  `json:"type"` // PRODUCTION, SUPPORT, ADMIN
+    ParentID    *string `json:"parent_id"`
+    Metrics     []CostCenterMetric `json:"metrics"`
+}
+
+type CostCenterMetric struct {
+    CenterID    string  `json:"center_id"`
+    MetricType  string  `json:"metric_type"` // area, headcount, etc
+    Value       float64 `json:"value"`
+    Unit        string  `json:"unit"`
+    Period      string  `json:"period"`
+}
+```
+
+**Modificar** `journal_line.go`:
+```go
+type JournalLine struct {
+    // Campos existentes...
+    
+    // NUEVO: Para tracking de distribuciones
+    CostCenterID     *string `json:"cost_center_id"`
+    DistributionID   *string `json:"distribution_id"`
+    AllocationFactor float64 `json:"allocation_factor"`
+}
+```
+
+### Ejemplo Real: Distribución de IT
+
+**Métrica de usuarios**:
+```json
+{
+  "VENTAS": 50,
+  "PRODUCCION": 30,
+  "ADMIN": 20
+}
+```
+
+**DSL Ejecuta**:
+```dsl
+distribute cost_center("IT")
+  to departments(exclude: "IT")
+  using driver("active_users") weighted
+```
+
+**Resultado**:
+- VENTAS: 50% del costo IT
+- PRODUCCION: 30% del costo IT
+- ADMIN: 20% del costo IT
+
+### Dashboard Propuesto
+
+```javascript
+// Nueva página: cost_distribution.html
+// Mostrar:
+// - Árbol de centros de costo
+// - Drivers y métricas actuales
+// - Preview de distribuciones
+// - Histórico de distribuciones aplicadas
+```
+
 ## Conclusión
 
 La distribución automática de costos con go-dsl transforma un proceso manual y propenso a errores en un sistema preciso, auditable y flexible que se adapta a los cambios organizacionales.

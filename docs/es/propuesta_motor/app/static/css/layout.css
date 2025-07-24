@@ -78,23 +78,26 @@ body {
 /* App Container */
 .app-container {
     display: flex;
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
     position: relative;
+    padding-top: 60px;
 }
 
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--dark);
-    color: var(--white);
+    background: white;
+    color: var(--text-primary);
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
     overflow-y: auto;
     transition: width var(--transition-normal);
-    z-index: 1000;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    z-index: 999;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+    border-right: 1px solid var(--gray);
+    padding-top: 60px;
 }
 
 .sidebar.collapsed {
@@ -143,24 +146,34 @@ body {
     padding: 1rem 0;
 }
 
-.nav-item {
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.25rem;
+}
+
+.nav-item, .sidebar-nav a {
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-primary);
     text-decoration: none;
     transition: all var(--transition-fast);
     position: relative;
 }
 
-.nav-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--white);
+.nav-item:hover, .sidebar-nav a:hover {
+    background: var(--gray-light);
+    color: var(--text-primary);
 }
 
-.nav-item.active {
+.nav-item.active, .sidebar-nav a.active, .sidebar-nav li.active a {
     background: var(--primary);
-    color: var(--white);
+    color: white;
 }
 
 .nav-item.active::before {
@@ -170,7 +183,24 @@ body {
     top: 0;
     bottom: 0;
     width: 3px;
-    background: var(--white);
+    background: white;
+}
+
+/* Menu icons and text */
+.menu-icon {
+    font-size: 1.25rem;
+    width: 2rem;
+    text-align: center;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.menu-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-item .icon {
@@ -192,6 +222,51 @@ body {
     margin-right: 0;
 }
 
+/* Collapsed sidebar menu styles */
+.sidebar.collapsed .menu-text {
+    display: none !important;
+}
+
+.sidebar.collapsed .menu-icon {
+    margin-right: 0 !important;
+    font-size: 1.5rem;
+}
+
+.sidebar.collapsed .sidebar-nav a {
+    justify-content: center !important;
+    padding: 1rem !important;
+}
+
+.sidebar.collapsed .sidebar-nav li {
+    margin-bottom: 0.5rem;
+}
+
+/* Ensure sidebar header is hidden when collapsed */
+.sidebar.collapsed .sidebar-header {
+    display: none;
+}
+
+/* Tooltip styles for collapsed sidebar */
+.sidebar.collapsed .sidebar-nav a {
+    position: relative;
+}
+
+.sidebar.collapsed .sidebar-nav a:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+    z-index: 1000;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -199,11 +274,23 @@ body {
     transition: margin-left var(--transition-normal);
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
+    background-color: var(--gray-light);
+    padding: 2rem;
 }
 
-.sidebar.collapsed + .main-content {
+.sidebar.collapsed ~ .main-content {
     margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Alternative selectors for main content adjustment when sidebar is collapsed */
+.app-container:has(.sidebar.collapsed) .main-content {
+    margin-left: var(--sidebar-collapsed-width) !important;
+}
+
+/* For older browsers without :has() support */
+body:has(.sidebar.collapsed) .main-content {
+    margin-left: var(--sidebar-collapsed-width) !important;
 }
 
 /* Main Header */

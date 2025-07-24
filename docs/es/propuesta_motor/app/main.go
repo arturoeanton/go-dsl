@@ -129,9 +129,17 @@ func main() {
 	dslHandler := handlers.NewDSLHandler(db)
 	dslHandler.RegisterRoutes(api)
 
+	// Template handler para templates de asientos
+	// Use simple handler for SQLite
+	templateHandler := handlers.NewTemplateSimpleHandler(db)
+	templateHandler.RegisterRoutes(api)
+	
+	// Debug handler for templates
+	debugHandler := handlers.NewTemplateDebugHandler()
+	debugHandler.RegisterRoutes(api)
+
 	// TODO: Registrar handlers adicionales para:
 	// - Terceros (third-parties)
-	// - Plantillas DSL (dsl-templates)
 	// - Períodos contables (periods)
 	// - Reportes (reports)
 	// - Auditoría (audit)

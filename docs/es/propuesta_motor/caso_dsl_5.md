@@ -852,6 +852,121 @@ template production_cost_allocation
 - 80% menos errores en procesos contables
 - ROI de 400% en el primer año
 
+## Implementación en el Código Actual
+
+### Dónde Implementar
+
+1. **Crear nuevo paquete**: `/internal/dsl/templates/`
+   ```go
+   // /internal/dsl/templates/engine.go
+   type TemplateEngine struct {
+       dsl *dslbuilder.DSL
+       repository *repository.TemplateRepository
+       dataService *TemplateDataService
+   }
+   ```
+
+2. **Nuevos modelos**: `/internal/models/template.go`
+   ```go
+   type JournalTemplate struct {
+       ID          string              `json:"id" gorm:"primaryKey"`
+       Name        string              `json:"name"`
+       Description string              `json:"description"`
+       DSLCode     string              `json:"dsl_code"`
+       Parameters  []TemplateParameter `json:"parameters" gorm:"serializer:json"`
+       IsActive    bool                `json:"is_active"`
+       CreatedAt   time.Time           `json:"created_at"`
+   }
+   ```
+
+3. **Handler dedicado**: `/internal/handlers/template_handler.go`
+   ```go
+   type TemplateHandler struct {
+       templateService *services.TemplateService
+       engine         *templates.TemplateEngine
+   }
+   ```
+
+### Dónde se Llamaría
+
+1. **Desde UI - Ejecución Manual**:
+   - Nuevo menú "Templates" en la navegación
+   - Botón "Ejecutar Template" con formulario de parámetros
+
+2. **Procesos Programados**:
+   - Cron jobs para templates recurrentes (nómina, depreciación)
+   - Se ejecutan automáticamente según calendario
+
+3. **API Pública**:
+   - `POST /api/v1/templates/:id/execute`
+   - Permite integración con sistemas externos
+
+### Ventajas Específicas
+
+1. **Productividad**: 30 min → 30 seg para asiento de nómina
+2. **Consistencia**: 0% errores vs 5% manual
+3. **Compliance**: Siempre cumple políticas contables
+4. **Escalabilidad**: Mismo tiempo para 10 o 1000 empleados
+5. **Auditoría**: Trazabilidad de qué template generó cada asiento
+
+### Integración Inmediata
+
+**Paso 1**: Agregar tabla templates
+```sql
+CREATE TABLE journal_templates (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    dsl_code TEXT NOT NULL,
+    parameters JSON,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    organization_id VARCHAR(36)
+);
+```
+
+**Paso 2**: Agregar rutas en `routes.go`:
+```go
+// Templates
+v1.Get("/templates", templateHandler.GetTemplates)
+v1.Get("/templates/:id", templateHandler.GetTemplate)
+v1.Post("/templates", templateHandler.CreateTemplate)
+v1.Put("/templates/:id", templateHandler.UpdateTemplate)
+v1.Post("/templates/:id/execute", templateHandler.ExecuteTemplate)
+v1.Post("/templates/:id/preview", templateHandler.PreviewTemplate)
+```
+
+**Paso 3**: Modificar `journal_entry.go`:
+```go
+type JournalEntry struct {
+    // Campos existentes...
+    
+    // NUEVO: Tracking de templates
+    TemplateID      *string                `json:"template_id"`
+    TemplateVersion *string                `json:"template_version"`
+    TemplateParams  map[string]interface{} `json:"template_params" gorm:"serializer:json"`
+}
+```
+
+### Templates Iniciales para la POC
+
+1. **Nómina Simplificada**
+2. **Depreciación Mensual**
+3. **Factura de Venta Recurrente**
+4. **Cierre de Caja Diario**
+5. **Provisión de Servicios**
+
+### UI Nueva: Templates
+
+```html
+<!-- /static/templates.html -->
+<!-- Lista de templates disponibles -->
+<!-- Editor DSL con syntax highlighting -->
+<!-- Formulario dinámico de parámetros -->
+<!-- Preview antes de ejecutar -->
+<!-- Historial de ejecuciones -->
+```
+
 ## Conclusión
 
 Los templates de asientos con go-dsl transforman procesos contables repetitivos en operaciones automatizadas, parametrizables y auditables, liberando al equipo contable para tareas de mayor valor.
