@@ -8,17 +8,74 @@
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
     <style>
+        /* Override global styles for POS */
+        body {
+            background: #f8f9fa !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* POS Navbar - Fixed position */
+        .navbar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 70px !important;
+            background: #28a745 !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 20px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+            z-index: 1000 !important;
+        }
+        
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .navbar-brand h1 {
+            margin: 0 !important;
+            font-size: 24px !important;
+            color: white !important;
+        }
+        
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        /* POS Main Container - Add top margin for fixed navbar */
         .pos-container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            margin-top: 90px !important; /* Space for fixed navbar */
         }
         
         .pos-grid {
             display: grid;
             grid-template-columns: 1fr 400px;
             gap: 20px;
-            height: calc(100vh - 120px);
+            height: calc(100vh - 130px); /* Height minus navbar + margin */
+        }
+        
+        /* Override any sidebar/main-content styles that might interfere */
+        .main-content {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .app-container {
+            padding-top: 0 !important;
+        }
+        
+        /* Make sure no sidebar styles are applied */
+        .sidebar {
+            display: none !important;
         }
         
         .products-section {

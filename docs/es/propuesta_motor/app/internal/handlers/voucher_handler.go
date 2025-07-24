@@ -26,6 +26,14 @@ func NewVoucherHandler(db *gorm.DB) *VoucherHandler {
 	}
 }
 
+// NewVoucherHandlerWithService crea una nueva instancia del handler usando un servicio compartido
+func NewVoucherHandlerWithService(voucherService *services.VoucherService) *VoucherHandler {
+	return &VoucherHandler{
+		voucherService: voucherService,
+		orgService:     services.NewOrganizationService(voucherService.GetDB()),
+	}
+}
+
 // CalculateIVA calcula el IVA dinámicamente para el POS
 // @Summary Calcular IVA
 // @Description Calcula el IVA dinámicamente basado en el subtotal usando las reglas DSL

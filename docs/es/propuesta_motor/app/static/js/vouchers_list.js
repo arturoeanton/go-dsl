@@ -444,10 +444,32 @@ async function processVoucher(voucherId) {
         }
         
         const result = await response.json();
+        console.log('Comprobante procesado exitosamente:', result);
+        
+        // Mostrar mensaje de éxito primero
+        showSuccess('Comprobante contabilizado exitosamente. Asiento contable generado.');
+        
+        // Pequeño delay para asegurar que el backend haya actualizado
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Limpiar cache para forzar nueva consulta
+        console.log('Limpiando cache de API...');
+        if (window.motorContableApi && window.motorContableApi.clearCache) {
+            await window.motorContableApi.clearCache();
+        }
         
         // Recargar la lista de comprobantes para reflejar el cambio
+        console.log('Recargando lista de comprobantes...');
         await loadVouchersData();
-        showSuccess('Comprobante contabilizado exitosamente. Asiento contable generado.');
+        console.log('Lista de comprobantes recargada');
+        
+        // Verificar el estado del voucher específico que procesamos
+        const processedVoucher = state.vouchers.find(v => v.id === voucherId);
+        if (processedVoucher) {
+            console.log(`Estado del voucher ${voucherId} después de recargar:`, processedVoucher.status);
+        } else {
+            console.log(`Voucher ${voucherId} no encontrado en la lista recargada`);
+        }
         
     } catch (error) {
         console.error('Error procesando comprobante:', error);
@@ -520,9 +542,19 @@ async function recalculateVoucher(voucherId) {
         const result = await response.json();
         console.log('Comprobante recalculado:', result);
         
-        // Recargar la lista de comprobantes para reflejar los cambios
-        await loadVouchersData();
+        // Mostrar mensaje de éxito primero
         showSuccess('Comprobante recalculado exitosamente con reglas DSL.');
+        
+        // Limpiar cache para forzar nueva consulta
+        console.log('Limpiando cache de API...');
+        if (window.motorContableApi && window.motorContableApi.clearCache) {
+            await window.motorContableApi.clearCache();
+        }
+        
+        // Recargar la lista de comprobantes para reflejar los cambios
+        console.log('Recargando lista después del recálculo...');
+        await loadVouchersData();
+        console.log('Lista recargada después del recálculo');
         
     } catch (error) {
         console.error('Error recalculando comprobante:', error);
@@ -895,14 +927,124 @@ function hideLoading() {
 }
 
 function showSuccess(message) {
-    // In real implementation, show toast notification
     console.log('Success:', message);
+    showToast(message, 'success');
 }
 
 function showError(message) {
-    // In real implementation, show toast notification
     console.error('Error:', message);
-    alert(message);
+    showToast(message, 'error');
+}
+
+function showToast(message, type = 'info') {
+    // Remove any existing toast
+    const existingToast = document.getElementById('toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = `toast toast-${type}`;
+    
+    const colors = {
+        success: '#48bb78',
+        error: '#f56565',
+        info: '#667eea',
+        warning: '#ed8936'
+    };
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️',
+        warning: '⚠️'
+    };
+    
+    toast.innerHTML = `
+        <div class="toast-content">
+            <span class="toast-icon">${icons[type]}</span>
+            <span class="toast-message">${message}</span>
+            <button class="toast-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    // Add styles
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[type]};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 10000;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    `;
+    
+    // Add CSS animation if not already added
+    if (!document.getElementById('toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-styles';
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .toast-content {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .toast-icon {
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+            .toast-message {
+                flex: 1;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            .toast-close {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 20px;
+                cursor: pointer;
+                padding: 0;
+                margin-left: 8px;
+                opacity: 0.8;
+                flex-shrink: 0;
+            }
+            .toast-close:hover {
+                opacity: 1;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Add to page
+    document.body.appendChild(toast);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 300);
+        }
+    }, 4000);
 }
 
 function debounce(func, wait) {

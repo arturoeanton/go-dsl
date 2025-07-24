@@ -115,7 +115,8 @@ func main() {
 	voucherService := services.NewVoucherService(db)
 	dslEngine := voucherService.GetDSLEngine()
 	
-	voucherHandler := handlers.NewVoucherHandler(db)
+	// Crear voucher handler usando el servicio compartido
+	voucherHandler := handlers.NewVoucherHandlerWithService(voucherService)
 	voucherHandler.RegisterRoutes(api)
 
 	// Dashboard handler para estadísticas y actividad

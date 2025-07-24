@@ -43,6 +43,11 @@ func (s *VoucherService) GetDSLEngine() *DSLRulesEngine {
 	return s.dslRulesEngine
 }
 
+// GetDB retorna la instancia de la base de datos
+func (s *VoucherService) GetDB() *gorm.DB {
+	return s.db
+}
+
 // GetList obtiene una lista paginada de comprobantes
 func (s *VoucherService) GetList(orgID string, page, limit int) (*models.VouchersListResponse, error) {
 	vouchers, total, err := s.voucherRepo.GetByOrganization(orgID, page, limit)

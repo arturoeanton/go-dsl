@@ -356,11 +356,33 @@ test.describe('🎯 Demo Completa DSL - Motor Contable', () => {
     await showBanner(page, '🔧 Cambiando Regla DSL', 'Modificando IVA de 19% a 16%', 'warning');
     await page.waitForTimeout(DELAY.SHORT);
     
-    // Simular cambio sin ir al editor (evitar bloqueo)
-    await showBanner(page, '🎭 Simulando Cambio DSL', 'IVA: 19% → 16%', 'warning');
-    await page.waitForTimeout(DELAY.MEDIUM);
+    // HACER CAMBIO REAL DE DSL VIA API
+    await showBanner(page, '🎭 Ejecutando Cambio DSL', 'Llamada real a la API', 'warning');
+    console.log('🔧 Cambiando tasa de IVA a 16% via API...');
     
-    await showBanner(page, '✅ Regla DSL Actualizada', 'IVA ahora es 16%', 'success');
+    try {
+      const changeResponse = await request.post('http://localhost:3000/api/v1/dsl/iva-rate', {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data: {
+          rate: 0.16
+        }
+      });
+      
+      if (changeResponse.ok()) {
+        const changeData = await changeResponse.json();
+        console.log('✅ Tasa de IVA cambiada exitosamente:', changeData);
+        await showBanner(page, '✅ DSL Actualizado Realmente', `IVA ahora es ${changeData.data.percentage}%`, 'success');
+      } else {
+        console.error('❌ Error cambiando tasa de IVA:', await changeResponse.text());
+        await showBanner(page, '❌ Error en DSL', 'Continuando con simulación', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Error en llamada API:', error);
+      await showBanner(page, '❌ Error de Conexión', 'Continuando con simulación', 'error');
+    }
+    
     await page.waitForTimeout(DELAY.SHORT);
 
     // ========== PARTE 5: REPETIR PROCESO CON NUEVO IVA ==========
@@ -390,13 +412,22 @@ test.describe('🎯 Demo Completa DSL - Motor Contable', () => {
     const consultoriaCard2 = await page.$('.product-card:has-text("Consultoría")');
     if (consultoriaCard2) await consultoriaCard2.click();
     
-    // Capturar nuevo total (simulado con 16%)
+    // Capturar nuevo total REAL (calculado dinámicamente por DSL)
     await page.waitForTimeout(DELAY.SHORT);
-    const subtotal2 = await page.textContent('#subtotal');
-    // Simular cálculo con 16%
-    totalConIva16 = `$ ${(157000 * 1.16).toLocaleString('es-CO')}`;
     
-    await showBanner(page, '💰 Nuevo Cálculo', `Total con IVA 16%: ${totalConIva16}`, 'info');
+    // Esperar a que se actualicen los totales dinámicamente
+    await page.waitForTimeout(2000);
+    
+    const subtotal2 = await page.textContent('#subtotal');
+    const iva2 = await page.textContent('#iva');
+    totalConIva16 = await page.textContent('#total');
+    
+    console.log('📊 Totales con nueva tasa DSL:');
+    console.log(`   Subtotal: ${subtotal2}`);
+    console.log(`   IVA: ${iva2}`);
+    console.log(`   Total: ${totalConIva16}`);
+    
+    await showBanner(page, '💰 Nuevo Cálculo REAL', `Total con IVA 16%: ${totalConIva16}`, 'info');
     await page.waitForTimeout(DELAY.MEDIUM);
     
     // Procesar segunda venta
@@ -414,8 +445,31 @@ test.describe('🎯 Demo Completa DSL - Motor Contable', () => {
 
     // ========== PARTE 7: RESTAURAR DSL ==========
     await showBanner(page, '🔄 Restaurando DSL', 'Volviendo a IVA 19%', 'info');
-    await page.waitForTimeout(DELAY.MEDIUM);
-    await showBanner(page, '✅ DSL Restaurado', 'Sistema vuelve a configuración original', 'success');
+    console.log('🔄 Restaurando tasa de IVA a 19% via API...');
+    
+    try {
+      const restoreResponse = await request.post('http://localhost:3000/api/v1/dsl/iva-rate', {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data: {
+          rate: 0.19
+        }
+      });
+      
+      if (restoreResponse.ok()) {
+        const restoreData = await restoreResponse.json();
+        console.log('✅ Tasa de IVA restaurada exitosamente:', restoreData);
+        await showBanner(page, '✅ DSL Restaurado', `Sistema vuelve a IVA ${restoreData.data.percentage}%`, 'success');
+      } else {
+        console.error('❌ Error restaurando tasa de IVA:', await restoreResponse.text());
+        await showBanner(page, '❌ Error Restaurando', 'Revisar manualmente', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Error en restauración:', error);
+      await showBanner(page, '❌ Error de Conexión', 'Revisar configuración', 'error');
+    }
+    
     await page.waitForTimeout(DELAY.SHORT);
 
     // ========== PARTE 8: DESPEDIDA Y AGRADECIMIENTO ==========
