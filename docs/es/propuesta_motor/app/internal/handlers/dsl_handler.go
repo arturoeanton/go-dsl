@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"log"
 	"motor-contable-poc/internal/models"
+	"motor-contable-poc/internal/services"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,12 +13,14 @@ import (
 // DSLHandler maneja las peticiones HTTP para plantillas DSL
 type DSLHandler struct {
 	db *gorm.DB
+	dslEngine *services.DSLRulesEngine
 }
 
 // NewDSLHandler crea una nueva instancia del handler
-func NewDSLHandler(db *gorm.DB) *DSLHandler {
+func NewDSLHandler(db *gorm.DB, dslEngine *services.DSLRulesEngine) *DSLHandler {
 	return &DSLHandler{
 		db: db,
+		dslEngine: dslEngine,
 	}
 }
 
@@ -30,6 +34,7 @@ func NewDSLHandler(db *gorm.DB) *DSLHandler {
 // @Failure 500 {object} models.StandardResponse "Error interno del servidor"
 // @Router /api/v1/dsl/templates [get]
 func (h *DSLHandler) GetTemplates(c *fiber.Ctx) error {
+	log.Printf("[INFO] DSLHandler.GetTemplates: Iniciando obtención de plantillas DSL")
 	// TODO: En el futuro, aquí se integraría go-dsl para gestionar plantillas
 	// Por ahora retornamos plantillas de ejemplo
 	templates := []models.DSLTemplate{
@@ -62,6 +67,7 @@ func (h *DSLHandler) GetTemplates(c *fiber.Ctx) error {
 		},
 	}
 
+	log.Printf("[INFO] DSLHandler.GetTemplates: Retornando %d plantillas", len(templates))
 	return c.JSON(models.NewSuccessResponse(templates))
 }
 
@@ -78,7 +84,9 @@ func (h *DSLHandler) GetTemplates(c *fiber.Ctx) error {
 // @Router /api/v1/dsl/templates/{id} [get]
 func (h *DSLHandler) GetTemplateByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	log.Printf("[INFO] DSLHandler.GetTemplateByID: Obteniendo plantilla %s", id)
 	if id == "" {
+		log.Printf("[ERROR] DSLHandler.GetTemplateByID: ID faltante")
 		return c.Status(http.StatusBadRequest).JSON(
 			models.NewErrorResponse("MISSING_ID", "ID de plantilla requerido"))
 	}
@@ -125,6 +133,7 @@ voucher {
     }
 }`
 
+	log.Printf("[INFO] DSLHandler.GetTemplateByID: Plantilla %s encontrada", id)
 	return c.JSON(models.NewSuccessResponse(template))
 }
 
@@ -140,11 +149,13 @@ voucher {
 // @Failure 500 {object} models.StandardResponse "Error interno del servidor"
 // @Router /api/v1/dsl/validate [post]
 func (h *DSLHandler) ValidateDSL(c *fiber.Ctx) error {
+	log.Printf("[INFO] DSLHandler.ValidateDSL: Iniciando validación de código DSL")
 	var request struct {
 		Code string `json:"code" binding:"required"`
 	}
 
 	if err := c.BodyParser(&request); err != nil {
+		log.Printf("[ERROR] DSLHandler.ValidateDSL: Error parseando request - %v", err)
 		return c.Status(http.StatusBadRequest).JSON(
 			models.NewErrorResponse("INVALID_JSON", "Formato JSON inválido"))
 	}
@@ -157,6 +168,7 @@ func (h *DSLHandler) ValidateDSL(c *fiber.Ctx) error {
 		"errors":  []string{},
 	}
 
+	log.Printf("[INFO] DSLHandler.ValidateDSL: Validación completada exitosamente")
 	return c.JSON(models.NewSuccessResponse(response))
 }
 
@@ -172,12 +184,14 @@ func (h *DSLHandler) ValidateDSL(c *fiber.Ctx) error {
 // @Failure 500 {object} models.StandardResponse "Error interno del servidor"
 // @Router /api/v1/dsl/test [post]
 func (h *DSLHandler) TestDSL(c *fiber.Ctx) error {
+	log.Printf("[INFO] DSLHandler.TestDSL: Iniciando prueba de plantilla DSL")
 	var request struct {
 		TemplateID string                 `json:"templateId" binding:"required"`
 		TestData   map[string]interface{} `json:"testData" binding:"required"`
 	}
 
 	if err := c.BodyParser(&request); err != nil {
+		log.Printf("[ERROR] DSLHandler.TestDSL: Error parseando request - %v", err)
 		return c.Status(http.StatusBadRequest).JSON(
 			models.NewErrorResponse("INVALID_JSON", "Formato JSON inválido"))
 	}
@@ -218,7 +232,74 @@ func (h *DSLHandler) TestDSL(c *fiber.Ctx) error {
 		},
 	}
 
+	log.Printf("[INFO] DSLHandler.TestDSL: Prueba de plantilla %s completada exitosamente", request.TemplateID)
 	return c.JSON(models.NewSuccessResponse(response))
+}
+
+// GetIVARate obtiene la tasa de IVA actual
+// @Summary Obtener tasa de IVA
+// @Description Retorna la tasa de IVA configurada en el DSL
+// @Tags DSL
+// @Accept json
+// @Produce json
+// @Success 200 {object} models.StandardResponse
+// @Router /api/v1/dsl/iva-rate [get]
+func (h *DSLHandler) GetIVARate(c *fiber.Ctx) error {
+	log.Printf("[INFO] DSLHandler.GetIVARate: Obteniendo tasa de IVA actual")
+	if h.dslEngine == nil {
+		log.Printf("[ERROR] DSLHandler.GetIVARate: Motor DSL no inicializado")
+		return c.Status(http.StatusInternalServerError).JSON(
+			models.NewErrorResponse("DSL_ENGINE_ERROR", "Motor DSL no inicializado"))
+	}
+	
+	rate := h.dslEngine.GetIVARate()
+	log.Printf("[INFO] DSLHandler.GetIVARate: Tasa actual: %.2f%%", rate*100)
+	
+	return c.JSON(models.NewSuccessResponse(map[string]interface{}{
+		"rate": rate,
+		"percentage": rate * 100,
+	}))
+}
+
+// SetIVARate establece una nueva tasa de IVA
+// @Summary Cambiar tasa de IVA
+// @Description Actualiza la tasa de IVA en el motor DSL
+// @Tags DSL
+// @Accept json
+// @Produce json
+// @Param body body models.IVARateRequest true "Nueva tasa de IVA"
+// @Success 200 {object} models.StandardResponse
+// @Failure 400 {object} models.StandardResponse
+// @Router /api/v1/dsl/iva-rate [post]
+func (h *DSLHandler) SetIVARate(c *fiber.Ctx) error {
+	log.Printf("[INFO] DSLHandler.SetIVARate: Iniciando actualización de tasa de IVA")
+	if h.dslEngine == nil {
+		log.Printf("[ERROR] DSLHandler.SetIVARate: Motor DSL no inicializado")
+		return c.Status(http.StatusInternalServerError).JSON(
+			models.NewErrorResponse("DSL_ENGINE_ERROR", "Motor DSL no inicializado"))
+	}
+	
+	type Request struct {
+		Rate float64 `json:"rate" validate:"required,min=0,max=1"`
+	}
+	
+	var req Request
+	if err := c.BodyParser(&req); err != nil {
+		log.Printf("[ERROR] DSLHandler.SetIVARate: Error parseando request - %v", err)
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("INVALID_BODY", "Error al procesar la solicitud"))
+	}
+	
+	// Actualizar la tasa en el motor DSL
+	old_rate := h.dslEngine.GetIVARate()
+	h.dslEngine.SetIVARate(req.Rate)
+	log.Printf("[INFO] DSLHandler.SetIVARate: Tasa actualizada de %.2f%% a %.2f%%", old_rate*100, req.Rate*100)
+	
+	return c.JSON(models.NewSuccessResponse(map[string]interface{}{
+		"message": "Tasa de IVA actualizada exitosamente",
+		"rate": req.Rate,
+		"percentage": req.Rate * 100,
+	}))
 }
 
 // RegisterRoutes registra las rutas del handler de DSL
@@ -229,5 +310,9 @@ func (h *DSLHandler) RegisterRoutes(router fiber.Router) {
 		dsl.Get("/templates/:id", h.GetTemplateByID)
 		dsl.Post("/validate", h.ValidateDSL)
 		dsl.Post("/test", h.TestDSL)
+		
+		// Rutas de configuración
+		dsl.Get("/iva-rate", h.GetIVARate)
+		dsl.Post("/iva-rate", h.SetIVARate)
 	}
 }

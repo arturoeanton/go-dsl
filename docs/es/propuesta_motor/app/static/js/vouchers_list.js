@@ -168,13 +168,24 @@ function createVoucherRow(voucher) {
             `${voucher.third_party.company_name || (voucher.third_party.first_name + ' ' + voucher.third_party.last_name)}<br><small class="text-muted">${voucher.third_party.document_number || ''}</small>` : 
             '<span class="text-muted">Sin tercero</span>'}</td>
         <td class="description-cell">${voucher.description}</td>
-        <td class="text-right">$${formatCurrency(voucher.total_debit || voucher.total_amount || 0)}</td>
+        <td class="text-right">
+            $${formatCurrency(voucher.total_debit || voucher.total_amount || 0)}
+            ${voucher.status === 'DRAFT' && voucher.is_balanced === false ? 
+                '<br><small class="text-danger">⚠️ Desbalanceado</small>' : 
+                voucher.status === 'DRAFT' ? '<br><small class="text-success">✅ Balanceado</small>' : ''}
+        </td>
         <td><span class="status-badge status-${voucher.status.toLowerCase()}">${getStatusLabel(voucher.status)}</span></td>
         <td class="actions-cell">
             <button class="btn btn-sm btn-icon" title="Ver" onclick="showQuickView('${voucher.id}')">👁️</button>
             <button class="btn btn-sm btn-icon" title="Editar" onclick="editVoucher('${voucher.id}')">✏️</button>
-            <button class="btn btn-sm btn-icon" title="Procesar" onclick="processVoucher('${voucher.id}')"
-                ${voucher.status !== 'DRAFT' ? 'disabled' : ''}>⚡</button>
+            ${voucher.status === 'DRAFT' && (!voucher.is_balanced || voucher.is_balanced === false) ? 
+                `<button class="btn btn-sm btn-warning" title="Recalcular con reglas DSL" onclick="recalculateVoucher('${voucher.id}')">🔄 Recalcular</button>` : ''}
+            <button class="btn btn-sm ${voucher.status === 'DRAFT' ? 'btn-primary' : 'btn-secondary'}" 
+                    title="${voucher.status === 'DRAFT' ? 'Procesar y generar asiento contable' : 'Ya procesado'}" 
+                    onclick="processVoucher('${voucher.id}')"
+                    ${voucher.status !== 'DRAFT' ? 'disabled' : ''}>
+                ${voucher.status === 'DRAFT' ? '⚡ Procesar' : '✅ Procesado'}
+            </button>
             <button class="btn btn-sm btn-icon btn-danger" title="Eliminar" onclick="deleteVoucher('${voucher.id}')">🗑️</button>
         </td>
     `;
@@ -419,19 +430,28 @@ async function processVoucher(voucherId) {
     showLoading();
     
     try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Llamada real a la API para contabilizar
+        const response = await fetch(`/api/v1/vouchers/${voucherId}/post`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         
-        // Update voucher status
-        const voucher = state.vouchers.find(v => v.id === voucherId);
-        if (voucher) {
-            voucher.status = 'PROCESSING';
-            renderVouchersTable();
-            showSuccess('Comprobante enviado a procesar');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al procesar el comprobante');
         }
         
+        const result = await response.json();
+        
+        // Recargar la lista de comprobantes para reflejar el cambio
+        await loadVouchersData();
+        showSuccess('Comprobante contabilizado exitosamente. Asiento contable generado.');
+        
     } catch (error) {
-        showError('Error al procesar el comprobante');
+        console.error('Error procesando comprobante:', error);
+        showError('Error al procesar el comprobante: ' + error.message);
     } finally {
         hideLoading();
     }
@@ -468,6 +488,45 @@ async function deleteVoucher(voucherId) {
         
     } catch (error) {
         showError('Error al eliminar el comprobante');
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * Recalculate voucher with DSL
+ */
+async function recalculateVoucher(voucherId) {
+    if (!confirm('¿Desea recalcular este comprobante aplicando las reglas DSL actuales?\n\nEsto actualizará automáticamente los impuestos y líneas contables.')) return;
+    
+    showLoading();
+    
+    try {
+        console.log(`Recalculando comprobante ${voucherId} con DSL...`);
+        
+        // Llamada real a la API para recalcular
+        const response = await fetch(`/api/v1/vouchers/${voucherId}/recalculate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al recalcular el comprobante');
+        }
+        
+        const result = await response.json();
+        console.log('Comprobante recalculado:', result);
+        
+        // Recargar la lista de comprobantes para reflejar los cambios
+        await loadVouchersData();
+        showSuccess('Comprobante recalculado exitosamente con reglas DSL.');
+        
+    } catch (error) {
+        console.error('Error recalculando comprobante:', error);
+        showError('Error al recalcular el comprobante: ' + error.message);
     } finally {
         hideLoading();
     }

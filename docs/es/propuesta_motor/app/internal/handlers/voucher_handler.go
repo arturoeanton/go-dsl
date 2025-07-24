@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"motor-contable-poc/internal/models"
 	"motor-contable-poc/internal/services"
 	"net/http"
@@ -25,6 +26,100 @@ func NewVoucherHandler(db *gorm.DB) *VoucherHandler {
 	}
 }
 
+// CalculateIVA calcula el IVA dinámicamente para el POS
+// @Summary Calcular IVA
+// @Description Calcula el IVA dinámicamente basado en el subtotal usando las reglas DSL
+// @Tags Comprobantes
+// @Accept json
+// @Produce json
+// @Param request body object{subtotal=float64,voucher_type=string} true "Datos para calcular IVA"
+// @Success 200 {object} models.StandardResponse{data=object{subtotal=float64,iva_rate=float64,iva_amount=float64,total=float64}} "Cálculo de IVA"
+// @Failure 400 {object} models.StandardResponse "Parámetros inválidos"
+// @Failure 500 {object} models.StandardResponse "Error interno del servidor"
+// @Router /api/v1/vouchers/calculate-iva [post]
+func (h *VoucherHandler) CalculateIVA(c *fiber.Ctx) error {
+	log.Printf("[INFO] VoucherHandler.CalculateIVA: Iniciando cálculo de IVA")
+	
+	// Verificar que el DSL engine existe
+	if h.voucherService == nil {
+		log.Printf("[ERROR] VoucherHandler.CalculateIVA: voucherService es nil")
+		return c.Status(http.StatusInternalServerError).JSON(
+			models.NewErrorResponse("INTERNAL_ERROR", "Servicio no disponible"))
+	}
+	
+	var request struct {
+		Subtotal    float64 `json:"subtotal" validate:"required,min=0"`
+		VoucherType string  `json:"voucher_type" validate:"required"`
+	}
+
+	if err := c.BodyParser(&request); err != nil {
+		log.Printf("[ERROR] VoucherHandler.CalculateIVA: Error parseando request - %v", err)
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("INVALID_REQUEST", "Datos de entrada inválidos"))
+	}
+
+	if request.Subtotal <= 0 {
+		log.Printf("[ERROR] VoucherHandler.CalculateIVA: Subtotal inválido - %f", request.Subtotal)
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("INVALID_SUBTOTAL", "El subtotal debe ser mayor a 0"))
+	}
+
+	// Obtener la tasa de IVA actual del DSL
+	dslEngine := h.voucherService.GetDSLEngine()
+	ivaRate := dslEngine.GetIVARate()
+	
+	// Calcular IVA
+	ivaAmount := request.Subtotal * ivaRate
+	total := request.Subtotal + ivaAmount
+
+	log.Printf("[INFO] VoucherHandler.CalculateIVA: Subtotal=%.2f, Tasa=%.2f%%, IVA=%.2f, Total=%.2f", 
+		request.Subtotal, ivaRate*100, ivaAmount, total)
+
+	response := map[string]interface{}{
+		"subtotal":   request.Subtotal,
+		"iva_rate":   ivaRate,
+		"iva_amount": ivaAmount,
+		"total":      total,
+		"currency":   "COP",
+		"calculated_at": time.Now().Format(time.RFC3339),
+	}
+
+	return c.JSON(models.NewSuccessResponse(response))
+}
+
+// RecalculateWithDSL recalcula un comprobante aplicando reglas DSL
+// @Summary Recalcular comprobante con DSL
+// @Description Recalcula un comprobante aplicando las reglas DSL actuales
+// @Tags Comprobantes
+// @Accept json
+// @Produce json
+// @Param id path string true "ID del comprobante"
+// @Success 200 {object} models.StandardResponse{data=models.Voucher} "Comprobante recalculado"
+// @Failure 400 {object} models.StandardResponse "Parámetros inválidos"
+// @Failure 404 {object} models.StandardResponse "Comprobante no encontrado"
+// @Failure 500 {object} models.StandardResponse "Error interno del servidor"
+// @Router /api/v1/vouchers/{id}/recalculate [post]
+func (h *VoucherHandler) RecalculateWithDSL(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		log.Printf("[ERROR] VoucherHandler.RecalculateWithDSL: ID faltante")
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("MISSING_ID", "ID del comprobante requerido"))
+	}
+
+	log.Printf("[INFO] VoucherHandler.RecalculateWithDSL: Recalculando comprobante %s", id)
+
+	voucher, err := h.voucherService.RecalculateWithDSL(id)
+	if err != nil {
+		log.Printf("[ERROR] VoucherHandler.RecalculateWithDSL: Error recalculando comprobante %s - %v", id, err)
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("RECALCULATE_ERROR", err.Error()))
+	}
+
+	log.Printf("[INFO] VoucherHandler.RecalculateWithDSL: Comprobante %s recalculado exitosamente", id)
+	return c.JSON(models.NewSuccessResponse(voucher))
+}
+
 // GetList obtiene una lista paginada de comprobantes
 // @Summary Lista de comprobantes
 // @Description Retorna una lista paginada de comprobantes de la organización
@@ -42,9 +137,11 @@ func (h *VoucherHandler) GetList(c *fiber.Ctx) error {
 	org, err := h.orgService.GetCurrent()
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			log.Printf("[ERROR] VoucherHandler.GetList: Organización no encontrada - %v", err)
 			return c.Status(http.StatusNotFound).JSON(
 				models.NewErrorResponse("ORG_NOT_FOUND", "Organización no encontrada"))
 		}
+		log.Printf("[ERROR] VoucherHandler.GetList: Error obteniendo organización - %v", err)
 		return c.Status(http.StatusInternalServerError).JSON(
 			models.NewErrorResponse("INTERNAL_ERROR", "Error obteniendo organización"))
 	}
@@ -443,12 +540,14 @@ func (h *VoucherHandler) RegisterRoutes(router fiber.Router) {
 	{
 		vouchers.Get("/", h.GetList)
 		vouchers.Post("/", h.Create)
+		vouchers.Post("/calculate-iva", h.CalculateIVA)
 		vouchers.Get("/by-date-range", h.GetByDateRange)
 		vouchers.Post("/generate", h.GenerateFromTemplate)
 		vouchers.Post("/from-template", h.CreateFromTemplate)
 		vouchers.Get("/:id", h.GetByID)
 		vouchers.Post("/:id/post", h.Post)
 		vouchers.Post("/:id/cancel", h.Cancel)
+		vouchers.Post("/:id/recalculate", h.RecalculateWithDSL)
 		vouchers.Post("/:id/apply-template", h.ApplyTemplate)
 	}
 }

@@ -1,0 +1,118 @@
+=== Test de creación y procesamiento de comprobante ===
+
+1. Creando comprobante de venta...
+{
+  "success": true,
+  "data": {
+    "id": "b14f6931-cfce-45a9-bdfc-5e4fd5eef06e",
+    "created_at": "2025-07-24T16:09:07.915576-03:00",
+    "updated_at": "2025-07-24T16:09:07.915576-03:00",
+    "organization_id": "85557c86-2a49-4f2e-80e4-8c8924ad6bfe",
+    "number": "invoice_sale-032",
+    "voucher_type": "invoice_sale",
+    "date": "2025-07-24T19:09:07Z",
+    "description": "Test venta con IVA",
+    "reference": "",
+    "period_id": "current-period-id",
+    "status": "DRAFT",
+    "total_debit": 100000,
+    "total_credit": 119000,
+    "is_balanced": false,
+    "created_by_user_id": "system",
+    "posted_by_user_id": null,
+    "posted_at": null,
+    "third_party_id": "TP001",
+    "cost_center_id": null,
+    "voucher_lines": [
+      {
+        "id": "8e6e5f5a-f92f-4d7e-ba29-cc4a4befddf1",
+        "created_at": "2025-07-24T16:09:07.915933-03:00",
+        "updated_at": "2025-07-24T16:09:07.915933-03:00",
+        "voucher_id": "b14f6931-cfce-45a9-bdfc-5e4fd5eef06e",
+        "account_id": "68fe4ecbf2d26e205185e0a7a2beb0f0",
+        "description": "Venta de servicios",
+        "debit_amount": 0,
+        "credit_amount": 100000,
+        "third_party_id": "TP001",
+        "cost_center_id": null,
+        "tax_amount": 0,
+        "tax_rate": 0,
+        "base_amount": 0,
+        "line_number": 1
+      },
+      {
+        "id": "dd03954d-d2c5-4116-b8f7-40d62bf6d05b",
+        "created_at": "2025-07-24T16:09:07.915933-03:00",
+        "updated_at": "2025-07-24T16:09:07.915933-03:00",
+        "voucher_id": "b14f6931-cfce-45a9-bdfc-5e4fd5eef06e",
+        "account_id": "d1e05613ceab0efab7d3e0b6ad290345",
+        "description": "Pago en efectivo",
+        "debit_amount": 100000,
+        "credit_amount": 0,
+        "third_party_id": null,
+        "cost_center_id": null,
+        "tax_amount": 0,
+        "tax_rate": 0,
+        "base_amount": 0,
+        "line_number": 2
+      },
+      {
+        "id": "d84d878d-44e9-4e89-a25c-e03f0d99da18",
+        "created_at": "2025-07-24T16:09:07.915933-03:00",
+        "updated_at": "2025-07-24T16:09:07.915933-03:00",
+        "voucher_id": "b14f6931-cfce-45a9-bdfc-5e4fd5eef06e",
+        "account_id": "d34b750ba305132c7196b47c4c528d6f",
+        "description": "IVA 19% sobre ventas",
+        "debit_amount": 0,
+        "credit_amount": 19000,
+        "third_party_id": null,
+        "cost_center_id": null,
+        "tax_amount": 0,
+        "tax_rate": 19,
+        "base_amount": 100000,
+        "line_number": 3
+      }
+    ]
+  },
+  "timestamp": "2025-07-24T16:09:07.916811-03:00"
+}
+
+2. Detalle del comprobante creado:
+{
+  "id": "b14f6931-cfce-45a9-bdfc-5e4fd5eef06e",
+  "total_debit": 100000,
+  "total_credit": 119000,
+  "is_balanced": false,
+  "lines": [
+    {
+      "account_id": "68fe4ecbf2d26e205185e0a7a2beb0f0",
+      "debit_amount": 0,
+      "credit_amount": 100000,
+      "description": "Venta de servicios"
+    },
+    {
+      "account_id": "d1e05613ceab0efab7d3e0b6ad290345",
+      "debit_amount": 100000,
+      "credit_amount": 0,
+      "description": "Pago en efectivo"
+    },
+    {
+      "account_id": "d34b750ba305132c7196b47c4c528d6f",
+      "debit_amount": 0,
+      "credit_amount": 19000,
+      "description": "IVA 19% sobre ventas"
+    }
+  ]
+}
+
+3. Procesando comprobante...
+{
+  "success": false,
+  "error": {
+    "code": "POST_ERROR",
+    "message": "el comprobante debe estar balanceado para ser contabilizado"
+  },
+  "timestamp": "2025-07-24T16:09:07.941335-03:00"
+}
+
+❌ Error al procesar: null

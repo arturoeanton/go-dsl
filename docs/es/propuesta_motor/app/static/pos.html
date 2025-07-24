@@ -293,7 +293,7 @@
                         <span id="subtotal">$0</span>
                     </div>
                     <div class="total-line">
-                        <span>IVA (19%):</span>
+                        <span>IVA:</span>
                         <span id="iva">$0</span>
                     </div>
                     <div class="total-line total">
@@ -488,15 +488,63 @@
             }
         }
 
-        // Actualizar totales
-        function updateTotals() {
+        // Actualizar totales usando la API DSL
+        async function updateTotals() {
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const iva = subtotal * 0.19;
-            const total = subtotal + iva;
             
-            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
-            document.getElementById('iva').textContent = formatCurrency(iva);
-            document.getElementById('total').textContent = formatCurrency(total);
+            if (subtotal === 0) {
+                document.getElementById('subtotal').textContent = formatCurrency(0);
+                document.getElementById('iva').textContent = formatCurrency(0);
+                document.getElementById('total').textContent = formatCurrency(0);
+                return;
+            }
+            
+            try {
+                // Calcular IVA dinámicamente usando DSL
+                const response = await fetch('/api/v1/vouchers/calculate-iva', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        subtotal: subtotal,
+                        voucher_type: 'invoice_sale'
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const data = result.data;
+                    
+                    document.getElementById('subtotal').textContent = formatCurrency(data.subtotal);
+                    document.getElementById('iva').textContent = formatCurrency(data.iva_amount);
+                    document.getElementById('total').textContent = formatCurrency(data.total);
+                    
+                    // Mostrar la tasa actual
+                    const ivaLabel = document.querySelector('div.total-line:nth-child(2) span:first-child');
+                    if (ivaLabel) {
+                        ivaLabel.textContent = `IVA (${(data.iva_rate * 100).toFixed(0)}%):`;
+                    }
+                } else {
+                    console.error('Error calculando IVA:', response.statusText);
+                    // Fallback al cálculo estático
+                    const iva = subtotal * 0.19;
+                    const total = subtotal + iva;
+                    
+                    document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+                    document.getElementById('iva').textContent = formatCurrency(iva);
+                    document.getElementById('total').textContent = formatCurrency(total);
+                }
+            } catch (error) {
+                console.error('Error en API de cálculo IVA:', error);
+                // Fallback al cálculo estático
+                const iva = subtotal * 0.19;
+                const total = subtotal + iva;
+                
+                document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+                document.getElementById('iva').textContent = formatCurrency(iva);
+                document.getElementById('total').textContent = formatCurrency(total);
+            }
         }
 
         // Procesar venta
@@ -534,9 +582,9 @@
                             third_party_id: customerId || "TP001"
                         },
                         {
-                            account_id: "d1e05613ceab0efab7d3e0b6ad290345", // Caja
+                            account_id: "d1e05613ceab0efab7d3e0b6ad290345", // Caja (la arreglaremos en DSL)
                             description: `Pago en efectivo - ${customerName}`,
-                            debit_amount: subtotal, // Solo el subtotal, el DSL agregará el IVA
+                            debit_amount: subtotal, // Solo el subtotal, el DSL calculará el IVA
                             credit_amount: 0,
                             third_party_id: null
                         }

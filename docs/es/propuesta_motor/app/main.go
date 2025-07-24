@@ -4,6 +4,7 @@ import (
 	"log"
 	"motor-contable-poc/internal/database"
 	"motor-contable-poc/internal/handlers"
+	"motor-contable-poc/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -110,6 +111,10 @@ func main() {
 	orgHandler := handlers.NewOrganizationHandler(db)
 	orgHandler.RegisterRoutes(api)
 	
+	// Crear el servicio de voucher primero para poder obtener el dslEngine
+	voucherService := services.NewVoucherService(db)
+	dslEngine := voucherService.GetDSLEngine()
+	
 	voucherHandler := handlers.NewVoucherHandler(db)
 	voucherHandler.RegisterRoutes(api)
 
@@ -126,7 +131,7 @@ func main() {
 	journalEntriesHandler.RegisterRoutes(api)
 
 	// DSL handler para plantillas DSL
-	dslHandler := handlers.NewDSLHandler(db)
+	dslHandler := handlers.NewDSLHandler(db, dslEngine)
 	dslHandler.RegisterRoutes(api)
 
 	// Template handler para templates de asientos
