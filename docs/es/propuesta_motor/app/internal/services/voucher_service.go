@@ -541,3 +541,19 @@ func (s *VoucherService) CreateFromTemplate(orgID string, templateID string, par
 	// Crear el comprobante
 	return s.Create(orgID, request)
 }
+
+// GetJournalEntryByVoucherID obtiene el asiento contable asociado a un comprobante
+func (s *VoucherService) GetJournalEntryByVoucherID(voucherID string) (*models.JournalEntry, error) {
+	log.Printf("[INFO] VoucherService.GetJournalEntryByVoucherID: Buscando asiento para voucher %s", voucherID)
+	
+	// Usar el repositorio de journal entry para buscar por voucher_id
+	journalEntryRepo := data.NewJournalEntryRepository(s.db)
+	journalEntry, err := journalEntryRepo.GetByVoucherID(voucherID)
+	if err != nil {
+		log.Printf("[ERROR] VoucherService.GetJournalEntryByVoucherID: Error obteniendo asiento: %v", err)
+		return nil, err
+	}
+	
+	log.Printf("[INFO] VoucherService.GetJournalEntryByVoucherID: Asiento encontrado: %s", journalEntry.ID)
+	return journalEntry, nil
+}

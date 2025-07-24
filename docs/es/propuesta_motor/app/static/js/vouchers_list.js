@@ -186,6 +186,8 @@ function createVoucherRow(voucher) {
                     ${voucher.status !== 'DRAFT' ? 'disabled' : ''}>
                 ${voucher.status === 'DRAFT' ? '⚡ Procesar' : '✅ Procesado'}
             </button>
+            ${voucher.status === 'POSTED' ? 
+                `<button class="btn btn-sm btn-info" title="Ver asiento contable" onclick="showJournalEntry('${voucher.id}')">📊 Asiento</button>` : ''}
             <button class="btn btn-sm btn-icon btn-danger" title="Eliminar" onclick="deleteVoucher('${voucher.id}')">🗑️</button>
         </td>
     `;
@@ -1057,4 +1059,427 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+/**
+ * Show journal entry modal
+ */
+async function showJournalEntry(voucherId) {
+    console.log('=== SHOWING JOURNAL ENTRY ===');
+    console.log('Voucher ID:', voucherId);
+    
+    showLoading();
+    
+    try {
+        console.log('Calling journal entry API...');
+        const response = await fetch(`/api/v1/vouchers/${voucherId}/journal-entry`);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (response.status === 404) {
+                showError('Este comprobante no tiene un asiento contable asociado.');
+                return;
+            }
+            throw new Error(errorData.message || 'Error obteniendo asiento contable');
+        }
+        
+        const result = await response.json();
+        console.log('Journal entry data:', result.data);
+        
+        const { voucher, journal_entry } = result.data;
+        
+        // Create and show modal
+        showJournalEntryModal(voucher, journal_entry);
+        
+    } catch (error) {
+        console.error('Error loading journal entry:', error);
+        showError('Error al cargar el asiento contable: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * Show journal entry modal with data
+ */
+function showJournalEntryModal(voucher, journalEntry) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('journalEntryModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Calculate totals
+    const totalDebit = journalEntry.lines.reduce((sum, line) => sum + line.debit, 0);
+    const totalCredit = journalEntry.lines.reduce((sum, line) => sum + line.credit, 0);
+    
+    // Create modal HTML
+    const modalHTML = `
+        <div id="journalEntryModal" class="modal-overlay" onclick="closeJournalEntryModal()">
+            <div class="modal-content journal-entry-modal" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3>📊 Asiento Contable</h3>
+                    <button class="modal-close" onclick="closeJournalEntryModal()">✕</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Voucher Info -->
+                    <div class="voucher-info-section">
+                        <h4>Información del Comprobante</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Número:</label>
+                                <span>${voucher.number || voucher.id}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Tipo:</label>
+                                <span>${getVoucherTypeLabel(voucher.voucher_type)}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Fecha:</label>
+                                <span>${formatDate(voucher.date)}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Estado:</label>
+                                <span class="status-badge status-${voucher.status.toLowerCase()}">${getStatusLabel(voucher.status)}</span>
+                            </div>
+                        </div>
+                        <div class="description">
+                            <label>Descripción:</label>
+                            <p>${voucher.description}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Journal Entry Info -->
+                    <div class="journal-entry-section">
+                        <h4>Información del Asiento</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Número de Asiento:</label>
+                                <span>${journalEntry.entry_number}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Fecha:</label>
+                                <span>${formatDate(journalEntry.entry_date)}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Estado:</label>
+                                <span class="status-badge status-posted">Contabilizado</span>
+                            </div>
+                        </div>
+                        <div class="description">
+                            <label>Descripción:</label>
+                            <p>${journalEntry.description}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Journal Lines Table -->
+                    <div class="journal-lines-section">
+                        <h4>Partidas del Asiento</h4>
+                        <div class="table-responsive">
+                            <table class="journal-lines-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cuenta</th>
+                                        <th>Nombre de la Cuenta</th>
+                                        <th>Descripción</th>
+                                        <th class="text-right">Débito</th>
+                                        <th class="text-right">Crédito</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${journalEntry.lines.map(line => `
+                                        <tr>
+                                            <td class="account-code">${line.account_code}</td>
+                                            <td class="account-name">${line.account_name}</td>
+                                            <td class="line-description">${line.description}</td>
+                                            <td class="text-right debit-amount">
+                                                ${line.debit ? '$' + formatCurrency(line.debit) : ''}
+                                            </td>
+                                            <td class="text-right credit-amount">
+                                                ${line.credit ? '$' + formatCurrency(line.credit) : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="totals-row">
+                                        <td colspan="3"><strong>TOTALES:</strong></td>
+                                        <td class="text-right"><strong>$${formatCurrency(totalDebit)}</strong></td>
+                                        <td class="text-right"><strong>$${formatCurrency(totalCredit)}</strong></td>
+                                    </tr>
+                                    <tr class="balance-check">
+                                        <td colspan="3"><strong>Balance:</strong></td>
+                                        <td colspan="2" class="text-center ${totalDebit === totalCredit ? 'balanced' : 'unbalanced'}">
+                                            <strong>${totalDebit === totalCredit ? '✅ Balanceado' : '❌ Desbalanceado'}</strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Timestamps -->
+                    <div class="timestamps-section">
+                        <small class="text-muted">
+                            Creado: ${formatDateTime(journalEntry.created_at)} | 
+                            Actualizado: ${formatDateTime(journalEntry.updated_at)}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeJournalEntryModal()">Cerrar</button>
+                    <button class="btn btn-primary" onclick="printJournalEntry()">🖨️ Imprimir</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Add CSS if not already added
+    if (!document.getElementById('journal-entry-modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'journal-entry-modal-styles';
+        style.textContent = `
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            }
+            
+            .journal-entry-modal {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                max-width: 900px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+                animation: slideIn 0.3s ease;
+            }
+            
+            .modal-header {
+                padding: 20px 30px;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 12px 12px 0 0;
+            }
+            
+            .modal-header h3 {
+                margin: 0;
+                font-size: 24px;
+            }
+            
+            .modal-close {
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: white;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 5px 10px;
+                border-radius: 50%;
+                transition: background 0.3s;
+            }
+            
+            .modal-close:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+            
+            .modal-body {
+                padding: 30px;
+            }
+            
+            .voucher-info-section, .journal-entry-section {
+                margin-bottom: 30px;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+            }
+            
+            .journal-lines-section {
+                margin-bottom: 20px;
+            }
+            
+            .voucher-info-section h4, .journal-entry-section h4, .journal-lines-section h4 {
+                margin: 0 0 15px 0;
+                color: #333;
+                border-bottom: 2px solid #667eea;
+                padding-bottom: 5px;
+            }
+            
+            .info-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .info-item {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .info-item label {
+                font-weight: 600;
+                color: #555;
+                margin-bottom: 5px;
+                font-size: 14px;
+            }
+            
+            .info-item span, .description p {
+                font-size: 16px;
+                color: #333;
+            }
+            
+            .description {
+                margin-top: 15px;
+            }
+            
+            .description label {
+                font-weight: 600;
+                color: #555;
+                margin-bottom: 5px;
+                display: block;
+            }
+            
+            .journal-lines-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+            }
+            
+            .journal-lines-table th,
+            .journal-lines-table td {
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            
+            .journal-lines-table th {
+                background: #f8f9fa;
+                font-weight: 600;
+                color: #333;
+                border-bottom: 2px solid #667eea;
+            }
+            
+            .journal-lines-table tbody tr:hover {
+                background: #f8f9fa;
+            }
+            
+            .account-code {
+                font-family: monospace;
+                font-weight: 600;
+                color: #2c5aa0;
+            }
+            
+            .account-name {
+                font-weight: 500;
+                color: #333;
+            }
+            
+            .debit-amount, .credit-amount {
+                font-family: monospace;
+                font-weight: 600;
+            }
+            
+            .debit-amount {
+                color: #d32f2f;
+            }
+            
+            .credit-amount {
+                color: #388e3c;
+            }
+            
+            .totals-row {
+                background: #e3f2fd !important;
+                border-top: 2px solid #667eea;
+            }
+            
+            .balance-check {
+                background: #f1f8e9 !important;
+            }
+            
+            .balanced {
+                color: #388e3c;
+            }
+            
+            .unbalanced {
+                color: #d32f2f;
+            }
+            
+            .timestamps-section {
+                text-align: center;
+                padding-top: 20px;
+                border-top: 1px solid #e0e0e0;
+            }
+            
+            .modal-footer {
+                padding: 20px 30px;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                background: #f8f9fa;
+                border-radius: 0 0 12px 12px;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes slideIn {
+                from { transform: scale(0.8); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+            
+            .btn-info {
+                background: #17a2b8;
+                color: white;
+                border: 1px solid #17a2b8;
+            }
+            
+            .btn-info:hover {
+                background: #138496;
+                border-color: #117a8b;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+/**
+ * Close journal entry modal
+ */
+function closeJournalEntryModal() {
+    const modal = document.getElementById('journalEntryModal');
+    if (modal) {
+        modal.style.animation = 'fadeIn 0.3s ease reverse';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+/**
+ * Print journal entry (placeholder)
+ */
+function printJournalEntry() {
+    // For now, just show a message
+    showToast('Funcionalidad de impresión en desarrollo', 'info');
 }

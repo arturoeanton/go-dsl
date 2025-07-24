@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"motor-contable-poc/internal/models"
 	"motor-contable-poc/internal/services"
@@ -542,6 +543,98 @@ func (h *VoucherHandler) GenerateFromTemplate(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(models.NewSuccessResponse(voucher))
 }
 
+// GetJournalEntry obtiene el asiento contable asociado a un comprobante
+// @Summary Obtener asiento contable asociado
+// @Description Obtiene el asiento contable generado a partir de un comprobante específico
+// @Tags Comprobantes
+// @Accept json
+// @Produce json
+// @Param id path string true "ID del comprobante"
+// @Success 200 {object} models.StandardResponse{data=object} "Asiento contable encontrado"
+// @Failure 404 {object} models.StandardResponse "Comprobante o asiento no encontrado"
+// @Failure 500 {object} models.StandardResponse "Error interno del servidor"
+// @Router /api/v1/vouchers/{id}/journal-entry [get]
+func (h *VoucherHandler) GetJournalEntry(c *fiber.Ctx) error {
+	log.Printf("[INFO] VoucherHandler.GetJournalEntry: Iniciando búsqueda de asiento para comprobante")
+	
+	voucherID := c.Params("id")
+	if voucherID == "" {
+		log.Printf("[ERROR] VoucherHandler.GetJournalEntry: ID de comprobante vacío")
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("INVALID_ID", "ID de comprobante requerido"))
+	}
+	
+	log.Printf("[INFO] VoucherHandler.GetJournalEntry: Buscando asiento para voucher ID: %s", voucherID)
+	
+	// Primero verificar que el comprobante existe
+	voucher, err := h.voucherService.GetByID(voucherID)
+	if err != nil {
+		log.Printf("[ERROR] VoucherHandler.GetJournalEntry: Error obteniendo comprobante %s: %v", voucherID, err)
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(http.StatusNotFound).JSON(
+				models.NewErrorResponse("VOUCHER_NOT_FOUND", "Comprobante no encontrado"))
+		}
+		return c.Status(http.StatusInternalServerError).JSON(
+			models.NewErrorResponse("INTERNAL_ERROR", "Error obteniendo comprobante"))
+	}
+	
+	// Obtener el asiento asociado
+	journalEntry, err := h.voucherService.GetJournalEntryByVoucherID(voucherID)
+	if err != nil {
+		log.Printf("[ERROR] VoucherHandler.GetJournalEntry: Error obteniendo asiento para voucher %s: %v", voucherID, err)
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(http.StatusNotFound).JSON(
+				models.NewErrorResponse("JOURNAL_ENTRY_NOT_FOUND", "Asiento contable no encontrado para este comprobante"))
+		}
+		return c.Status(http.StatusInternalServerError).JSON(
+			models.NewErrorResponse("INTERNAL_ERROR", fmt.Sprintf("Error obteniendo asiento contable: %v", err)))
+	}
+	
+	log.Printf("[INFO] VoucherHandler.GetJournalEntry: Asiento encontrado: %s", journalEntry.ID)
+	
+	// Formatear la respuesta
+	response := map[string]interface{}{
+		"voucher": map[string]interface{}{
+			"id":             voucher.ID,
+			"number":         voucher.Number,
+			"voucher_type":   voucher.VoucherType,
+			"date":           voucher.Date,
+			"description":    voucher.Description,
+			"status":         voucher.Status,
+		},
+		"journal_entry": map[string]interface{}{
+			"id":           journalEntry.ID,
+			"entry_number": journalEntry.EntryNumber,
+			"entry_date":   journalEntry.Date,
+			"description":  journalEntry.Description,
+			"status":       journalEntry.Status,
+			"lines":        formatJournalLines(journalEntry.JournalLines),
+			"created_at":   journalEntry.CreatedAt,
+			"updated_at":   journalEntry.UpdatedAt,
+		},
+	}
+	
+	return c.Status(http.StatusOK).JSON(models.NewSuccessResponse(response))
+}
+
+// Helper function to format journal lines
+func formatJournalLines(lines []models.JournalLine) []map[string]interface{} {
+	var formattedLines []map[string]interface{}
+	
+	for _, line := range lines {
+		formattedLine := map[string]interface{}{
+			"account_code": line.Account.Code,
+			"account_name": line.Account.Name,
+			"description":  line.Description,
+			"debit":        line.DebitAmount,
+			"credit":       line.CreditAmount,
+		}
+		formattedLines = append(formattedLines, formattedLine)
+	}
+	
+	return formattedLines
+}
+
 // RegisterRoutes registra las rutas del handler de comprobantes
 func (h *VoucherHandler) RegisterRoutes(router fiber.Router) {
 	vouchers := router.Group("/vouchers")
@@ -553,6 +646,7 @@ func (h *VoucherHandler) RegisterRoutes(router fiber.Router) {
 		vouchers.Post("/generate", h.GenerateFromTemplate)
 		vouchers.Post("/from-template", h.CreateFromTemplate)
 		vouchers.Get("/:id", h.GetByID)
+		vouchers.Get("/:id/journal-entry", h.GetJournalEntry)
 		vouchers.Post("/:id/post", h.Post)
 		vouchers.Post("/:id/cancel", h.Cancel)
 		vouchers.Post("/:id/recalculate", h.RecalculateWithDSL)
