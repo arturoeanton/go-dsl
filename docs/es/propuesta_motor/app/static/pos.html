@@ -527,7 +527,7 @@
                     third_party_id: customerId || "TP001", // Cliente por defecto
                     voucher_lines: [
                         {
-                            account_id: "02d0cc5b7214aa0a543fe2c5224c86d7", // Ingresos
+                            account_id: "68fe4ecbf2d26e205185e0a7a2beb0f0", // 413510 - VENTA DE SERVICIOS
                             description: "Venta de productos/servicios",
                             debit_amount: 0,
                             credit_amount: subtotal,
@@ -536,7 +536,7 @@
                         {
                             account_id: "d1e05613ceab0efab7d3e0b6ad290345", // Caja
                             description: `Pago en efectivo - ${customerName}`,
-                            debit_amount: total,
+                            debit_amount: subtotal, // Solo el subtotal, el DSL agregará el IVA
                             credit_amount: 0,
                             third_party_id: null
                         }

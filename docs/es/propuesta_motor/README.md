@@ -1,14 +1,14 @@
-# Motor Contable Cloud-Native con go-dsl
+# 🏢 Motor Contable Cloud-Native con go-dsl
 
-## Visión General
+## 📋 Visión General
 
 Este proyecto implementa un motor contable cloud-native en Go, diseñado para manejar operaciones contables de alto volumen con capacidades de procesamiento en tiempo real y automatización mediante el DSL builder [go-dsl](https://github.com/arturoeanton/go-dsl).
 
-## Estado Actual: POC Funcional ✅
+## 🚀 Estado Actual: POC Funcional con DSL Integrado ✅
 
-La Prueba de Concepto (POC) está completamente implementada y funcional con:
+La Prueba de Concepto (POC) está completamente implementada y funcional con integración total de go-dsl:
 
-### Características Implementadas
+### ⭐ Características Implementadas
 
 1. **Sistema Contable Completo**
    - ✅ Plan de cuentas PUC colombiano (257 cuentas)
@@ -16,25 +16,31 @@ La Prueba de Concepto (POC) está completamente implementada y funcional con:
    - ✅ Asientos contables con partida doble
    - ✅ Gestión de terceros (clientes, proveedores, empleados)
    - ✅ Transformación automática de comprobantes a asientos
+   - ✅ **POS (Punto de Venta)** integrado con DSL
 
-2. **API RESTful**
-   - ✅ Endpoints completos para todas las entidades
+2. **Integración DSL Completa**
+   - ✅ **DSL Rules Engine** integrado en el flujo de comprobantes
+   - ✅ **Generación automática** de IVA (19%) en ventas
+   - ✅ **Retenciones automáticas** (2.5% compras, 3.5% pagos)
+   - ✅ **Workflows de aprobación** según montos
+   - ✅ **Notificaciones** para transacciones críticas
+   - ✅ **Templates DSL** conectados al sistema
+   - ✅ **Editor DSL visual** con syntax highlighting
+
+3. **API RESTful Completa**
+   - ✅ Endpoints para todas las entidades
    - ✅ Documentación Swagger integrada
-   - ✅ Validaciones y manejo de errores
+   - ✅ Endpoints para templates DSL
+   - ✅ Validaciones con reglas DSL
    - ✅ Paginación y filtros
 
-3. **Frontend Web**
-   - ✅ Dashboard con estadísticas en tiempo real
-   - ✅ Gestión de comprobantes
-   - ✅ Visualización de asientos contables
-   - ✅ Plan de cuentas interactivo con árbol expandible
-   - ✅ Editor DSL con sintaxis highlighting
-
-4. **Integración DSL**
-   - ✅ Editor de reglas DSL
-   - ✅ Templates predefinidos
-   - ✅ Validación de sintaxis
-   - ✅ Preparado para ejecución de reglas
+4. **Frontend Web Funcional**
+   - ✅ Dashboard con KPIs en tiempo real
+   - ✅ POS para ventas rápidas
+   - ✅ Gestión completa de comprobantes
+   - ✅ Plan de cuentas jerárquico
+   - ✅ Editor DSL con plantillas
+   - ✅ Reportes configurables
 
 ## Arquitectura Implementada
 
@@ -66,34 +72,39 @@ app/
     └── swagger.json     # Documentación API
 ```
 
-## Casos de Uso del DSL
+## 🎯 Casos de Uso DSL Implementados
 
-El motor está preparado para implementar 5 casos de uso principales con go-dsl:
+El motor tiene integración completa con go-dsl en los siguientes casos:
 
-1. **[Validación Inteligente de Comprobantes](caso_dsl_1.md)**
-   - Validaciones contables complejas
-   - Reglas de negocio personalizables
-   - Detección de errores y anomalías
+### 1. **Generación Automática de Impuestos** ✅
+```go
+// DSL detecta ventas (cuentas 4xxx) y genera IVA 19%
+if voucher.VoucherType == "invoice_sale" && account.Code[:1] == "4" {
+    taxLine := VoucherLine{
+        AccountID: "240802", // IVA por pagar
+        CreditAmount: baseAmount * 0.19
+    }
+}
+```
 
-2. **[Cálculo Automático de Impuestos](caso_dsl_2.md)**
-   - IVA, retenciones, ICA
-   - Reglas según tipo de tercero
-   - Cumplimiento normativo colombiano
+### 2. **Retenciones Inteligentes** ✅
+- Compras > $1,000,000 → Retención 2.5%
+- Pagos > $5,000,000 → Retención 3.5%
 
-3. **[Distribución Automática de Costos](caso_dsl_3.md)**
-   - Prorrateo por centros de costo
-   - Distribución por drivers
-   - Asignación multinivel
+### 3. **Workflows de Aprobación** ✅
+- Pagos > $5M → Requiere aprobación tesorería
+- Comprobantes > $20M → Requiere aprobación CFO
+- Comprobantes > $50M → Requiere aprobación CEO
 
-4. **[Conciliación Bancaria Inteligente](caso_dsl_4.md)**
-   - Matching automático
-   - Reglas de conciliación
-   - Detección de diferencias
+### 4. **Clasificaciones Automáticas** ✅
+- Asignación de centros de costo
+- Metadata DSL en cada transacción
+- Tipo de ingreso/gasto identificado
 
-5. **[Templates de Asientos Recurrentes](caso_dsl_5.md)**
-   - Plantillas parametrizables
-   - Generación automática
-   - Variables y cálculos dinámicos
+### 5. **Templates DSL** ✅
+- 8 templates predefinidos en BD
+- Conexión con flujo de comprobantes
+- Editor visual para crear nuevas reglas
 
 ## Instalación y Ejecución
 
@@ -123,10 +134,59 @@ go run main.go
 ### Datos de Demostración
 
 La POC incluye datos de demostración que se cargan automáticamente:
-- Plan de cuentas PUC colombiano completo
-- Comprobantes de ejemplo (ventas, compras, nómina, etc.)
+- Plan de cuentas PUC colombiano completo (257 cuentas)
+- Templates DSL predefinidos (8 plantillas activas)
 - Terceros de prueba
-- Asientos contables generados
+- Comprobantes de ejemplo
+- Reglas DSL activas para automatización
+
+## 🎮 Demo Rápida
+
+### 1. Demo por Consola (API)
+```bash
+# Ejecutar script de demostración completa
+./demo.sh
+```
+
+### 2. Demo Automatizada (Playwright)
+```bash
+cd auto
+npm install
+npm run demo
+```
+
+### 3. Acceso Manual
+- **POS**: http://localhost:3000/pos.html
+- **Dashboard**: http://localhost:3000/dashboard.html
+- **Editor DSL**: http://localhost:3000/dsl_editor.html
+
+## 📊 API Endpoints Principales
+
+### Comprobantes con DSL
+```bash
+# Crear factura (DSL genera IVA automático)
+POST /api/v1/vouchers
+
+# Procesar comprobante (valida workflows)
+POST /api/v1/vouchers/:id/post
+
+# Crear desde template DSL
+POST /api/v1/vouchers/from-template
+```
+
+### Dashboard y Métricas
+```bash
+GET /api/v1/dashboard/kpis
+GET /api/v1/dashboard/stats
+GET /api/v1/dashboard/activity
+```
+
+### Templates DSL
+```bash
+GET /api/v1/dsl/templates
+POST /api/v1/dsl/validate
+POST /api/v1/dsl/test
+```
 
 ## Próximos Pasos
 

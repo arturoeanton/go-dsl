@@ -228,6 +228,94 @@ func (h *VoucherHandler) Cancel(c *fiber.Ctx) error {
 	}))
 }
 
+// ApplyTemplate aplica un template DSL a un comprobante existente
+// @Summary Aplicar template DSL a comprobante
+// @Description Aplica un template DSL para generar líneas automáticas o asientos contables
+// @Tags Comprobantes
+// @Accept json
+// @Produce json
+// @Param id path string true "ID del comprobante"
+// @Param body body models.ApplyTemplateRequest true "Template y parámetros"
+// @Success 200 {object} models.StandardResponse "Template aplicado exitosamente"
+// @Failure 400 {object} models.StandardResponse "Parámetros inválidos"
+// @Failure 404 {object} models.StandardResponse "Comprobante o template no encontrado"
+// @Failure 500 {object} models.StandardResponse "Error interno del servidor"
+// @Router /api/v1/vouchers/{id}/apply-template [post]
+func (h *VoucherHandler) ApplyTemplate(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("MISSING_ID", "ID del comprobante requerido"))
+	}
+	
+	var request struct {
+		TemplateID string                 `json:"template_id" validate:"required"`
+		Parameters map[string]interface{} `json:"parameters"`
+	}
+	
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("INVALID_BODY", "Error al procesar la solicitud"))
+	}
+	
+	if request.TemplateID == "" {
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("MISSING_TEMPLATE", "ID del template requerido"))
+	}
+	
+	err := h.voucherService.ApplyTemplate(id, request.TemplateID, request.Parameters)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("APPLY_ERROR", err.Error()))
+	}
+	
+	return c.JSON(models.NewSuccessResponse(map[string]interface{}{
+		"message": "Template aplicado exitosamente",
+		"voucher_id": id,
+		"template_id": request.TemplateID,
+		"applied_at": time.Now(),
+	}))
+}
+
+// CreateFromTemplate crea un nuevo comprobante usando un template DSL
+// @Summary Crear comprobante desde template
+// @Description Crea un nuevo comprobante usando un template DSL predefinido
+// @Tags Comprobantes
+// @Accept json
+// @Produce json
+// @Param body body models.CreateFromTemplateRequest true "Template y parámetros"
+// @Success 201 {object} models.StandardResponse{data=models.Voucher} "Comprobante creado"
+// @Failure 400 {object} models.StandardResponse "Parámetros inválidos"
+// @Failure 404 {object} models.StandardResponse "Template no encontrado"
+// @Failure 500 {object} models.StandardResponse "Error interno del servidor"
+// @Router /api/v1/vouchers/from-template [post]
+func (h *VoucherHandler) CreateFromTemplate(c *fiber.Ctx) error {
+	var request struct {
+		TemplateID string                 `json:"template_id" validate:"required"`
+		Parameters map[string]interface{} `json:"parameters"`
+	}
+	
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("INVALID_BODY", "Error al procesar la solicitud"))
+	}
+	
+	// Obtener la organización actual
+	org, err := h.orgService.GetCurrent()
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(
+			models.NewErrorResponse("ORG_ERROR", "Error obteniendo organización"))
+	}
+	
+	voucher, err := h.voucherService.CreateFromTemplate(org.ID, request.TemplateID, request.Parameters)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			models.NewErrorResponse("CREATE_ERROR", err.Error()))
+	}
+	
+	return c.Status(http.StatusCreated).JSON(models.NewSuccessResponse(voucher))
+}
+
 // GetByDateRange obtiene comprobantes por rango de fechas
 // @Summary Comprobantes por fechas
 // @Description Retorna comprobantes filtrados por rango de fechas
@@ -357,8 +445,10 @@ func (h *VoucherHandler) RegisterRoutes(router fiber.Router) {
 		vouchers.Post("/", h.Create)
 		vouchers.Get("/by-date-range", h.GetByDateRange)
 		vouchers.Post("/generate", h.GenerateFromTemplate)
+		vouchers.Post("/from-template", h.CreateFromTemplate)
 		vouchers.Get("/:id", h.GetByID)
 		vouchers.Post("/:id/post", h.Post)
 		vouchers.Post("/:id/cancel", h.Cancel)
+		vouchers.Post("/:id/apply-template", h.ApplyTemplate)
 	}
 }

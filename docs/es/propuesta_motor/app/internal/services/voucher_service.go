@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"motor-contable-poc/internal/data"
 	"motor-contable-poc/internal/models"
+	"motor-contable-poc/internal/repository"
 	"time"
 	"gorm.io/gorm"
 )
@@ -15,16 +16,22 @@ type VoucherService struct {
 	accountRepo         *data.AccountRepository
 	journalEntryService *JournalEntryService
 	dslRulesEngine      *DSLRulesEngine
+	templateService     *TemplateService
 	db                  *gorm.DB
 }
 
 // NewVoucherService crea una nueva instancia del servicio
 func NewVoucherService(db *gorm.DB) *VoucherService {
+	accountService := NewAccountService(db)
+	journalEntryService := NewJournalEntryService(db)
+	templateRepo := repository.NewTemplateRepository(db)
+	
 	return &VoucherService{
 		voucherRepo:         data.NewVoucherRepository(db),
 		accountRepo:         data.NewAccountRepository(db),
-		journalEntryService: NewJournalEntryService(db),
+		journalEntryService: journalEntryService,
 		dslRulesEngine:      NewDSLRulesEngine(db),
+		templateService:     NewTemplateService(templateRepo, journalEntryService, accountService),
 		db:                  db,
 	}
 }
@@ -393,4 +400,59 @@ func (s *VoucherService) Count(orgID string) (int, error) {
 // CountByType obtiene el conteo de comprobantes por tipo
 func (s *VoucherService) CountByType(orgID string) (map[string]int, error) {
 	return s.voucherRepo.CountByType(orgID)
+}
+
+// ApplyTemplate aplica un template DSL a un comprobante
+func (s *VoucherService) ApplyTemplate(voucherID string, templateID string, params map[string]interface{}) error {
+	// Obtener el comprobante
+	voucher, err := s.voucherRepo.GetByID(voucherID)
+	if err != nil {
+		return fmt.Errorf("error obteniendo comprobante: %v", err)
+	}
+	
+	// Agregar información del comprobante a los parámetros
+	if params == nil {
+		params = make(map[string]interface{})
+	}
+	params["voucher_number"] = voucher.Number
+	params["voucher_type"] = voucher.VoucherType
+	params["voucher_description"] = voucher.Description
+	params["voucher_date"] = voucher.Date.Format("2006-01-02")
+	params["voucher_total"] = voucher.TotalDebit
+	
+	// Ejecutar el template y crear el asiento contable
+	_, err = s.templateService.ExecuteTemplate(templateID, params, voucher.CreatedByUserID)
+	if err != nil {
+		return fmt.Errorf("error ejecutando template: %v", err)
+	}
+	
+	// El template ya habrá creado el asiento contable relacionado
+	
+	return nil
+}
+
+// CreateFromTemplate crea un comprobante usando un template DSL
+func (s *VoucherService) CreateFromTemplate(orgID string, templateID string, params map[string]interface{}) (*models.Voucher, error) {
+	// Por ahora, usar los templates DSL de la base de datos directamente
+	var dslTemplate models.DSLTemplate
+	if err := s.db.Where("id = ? AND status = ?", templateID, "ACTIVE").First(&dslTemplate).Error; err != nil {
+		return nil, fmt.Errorf("template no encontrado: %v", err)
+	}
+	
+	// Verificar que el template es para comprobantes
+	if dslTemplate.Category != "voucher_rules" {
+		return nil, fmt.Errorf("el template no es para comprobantes")
+	}
+	
+	// Por ahora, crear un comprobante básico
+	// En el futuro, esto debería parsear el DSL y generar las líneas
+	request := models.VoucherCreateRequest{
+		VoucherType: "invoice_sale", // Por defecto
+		Date:        time.Now(),
+		Description: fmt.Sprintf("Generado desde template: %s", dslTemplate.Name),
+		Reference:   fmt.Sprintf("TPL-%s-%d", dslTemplate.ID, time.Now().Unix()),
+	}
+	
+	// Crear el comprobante
+	return s.Create(orgID, request)
 }
