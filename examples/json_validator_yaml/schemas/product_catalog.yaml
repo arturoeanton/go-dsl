@@ -1,0 +1,99 @@
+name: ProductCatalog
+description: Schema for product catalog validation
+rules:
+  - field: id
+    type: string
+    required: true
+    pattern: "^PROD-[0-9]{4,}$"
+    description: Product ID with format PROD-XXXX
+
+  - field: sku
+    type: string
+    required: true
+    pattern: "^[A-Z]{2,4}-[0-9]{4,8}$"
+    description: Stock keeping unit
+
+  - field: name
+    type: string
+    required: true
+    minLength: 1
+    maxLength: 100
+    description: Product name
+
+  - field: description
+    type: string
+    required: false
+    maxLength: 500
+    description: Product description
+
+  - field: price
+    type: number
+    required: true
+    min: 0.01
+    max: 999999.99
+    description: Product price
+
+  - field: cost
+    type: number
+    required: false
+    min: 0
+    max: 999999.99
+    description: Product cost
+
+  - field: stock
+    type: integer
+    required: true
+    min: 0
+    max: 999999
+    description: Stock quantity
+
+  - field: category
+    type: string
+    required: true
+    enum: ["Electronics", "Clothing", "Food", "Books", "Sports", "Home", "Toys", "Health", "Beauty"]
+    description: Product category
+
+  - field: subcategory
+    type: string
+    required: false
+    maxLength: 50
+    description: Product subcategory
+
+  - field: tags
+    type: array
+    required: false
+    description: Product tags for search
+
+  - field: images
+    type: array
+    required: false
+    description: Product image URLs
+
+  - field: weight
+    type: number
+    required: false
+    min: 0
+    max: 10000
+    description: Product weight in grams
+
+  - field: dimensions
+    type: object
+    required: false
+    description: Product dimensions
+
+  - field: discount
+    type: number
+    required: false
+    min: 0
+    max: 100
+    description: Discount percentage
+
+  - field: active
+    type: boolean
+    required: true
+    description: Whether the product is active
+
+  - field: featured
+    type: boolean
+    required: false
+    description: Whether the product is featured

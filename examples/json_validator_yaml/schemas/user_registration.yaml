@@ -1,0 +1,52 @@
+name: UserRegistration
+description: Schema for user registration validation
+rules:
+  - field: username
+    type: string
+    required: true
+    minLength: 3
+    maxLength: 20
+    pattern: "^[a-zA-Z0-9_]+$"
+    description: Username for the account
+  
+  - field: email
+    type: string
+    required: true
+    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    description: User email address
+  
+  - field: age
+    type: integer
+    required: true
+    min: 18
+    max: 120
+    description: User age
+  
+  - field: password
+    type: string
+    required: true
+    minLength: 8
+    maxLength: 100
+    description: Account password
+  
+  - field: country
+    type: string
+    required: false
+    enum: ["USA", "Canada", "Mexico", "UK", "Germany", "France", "Spain", "Italy"]
+    description: Country of residence
+  
+  - field: phone
+    type: string
+    required: false
+    pattern: "^\\+?[1-9]\\d{1,14}$"
+    description: Phone number in international format
+  
+  - field: newsletter
+    type: boolean
+    required: false
+    description: Newsletter subscription
+  
+  - field: terms_accepted
+    type: boolean
+    required: true
+    description: Terms and conditions acceptance

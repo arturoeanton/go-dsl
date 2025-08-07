@@ -1,0 +1,86 @@
+name: APIConfiguration
+description: Schema for API configuration validation
+rules:
+  - field: endpoint
+    type: string
+    required: true
+    pattern: "^https?://[a-zA-Z0-9.-]+(?:\\.[a-zA-Z]{2,})+(?:/.*)?$"
+    description: API endpoint URL
+
+  - field: version
+    type: string
+    required: false
+    pattern: "^v?[0-9]+(?:\\.[0-9]+)*$"
+    description: API version
+
+  - field: timeout
+    type: integer
+    required: false
+    min: 1
+    max: 300
+    description: Request timeout in seconds
+
+  - field: retries
+    type: integer
+    required: false
+    min: 0
+    max: 10
+    description: Number of retry attempts
+
+  - field: retryDelay
+    type: integer
+    required: false
+    min: 100
+    max: 60000
+    description: Delay between retries in milliseconds
+
+  - field: methods
+    type: array
+    required: true
+    description: Allowed HTTP methods
+
+  - field: headers
+    type: object
+    required: false
+    description: Custom headers
+
+  - field: authentication
+    type: object
+    required: false
+    description: Authentication configuration
+
+  - field: rateLimit
+    type: integer
+    required: false
+    min: 1
+    max: 10000
+    description: Requests per minute
+
+  - field: cache
+    type: boolean
+    required: false
+    description: Enable response caching
+
+  - field: cacheTTL
+    type: integer
+    required: false
+    min: 1
+    max: 86400
+    description: Cache time to live in seconds
+
+  - field: compression
+    type: boolean
+    required: false
+    description: Enable request/response compression
+
+  - field: logLevel
+    type: string
+    required: false
+    enum: ["debug", "info", "warning", "error", "critical"]
+    description: Logging level
+
+  - field: environment
+    type: string
+    required: true
+    enum: ["development", "staging", "production"]
+    description: Environment configuration
