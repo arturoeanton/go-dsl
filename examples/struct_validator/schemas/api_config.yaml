@@ -1,0 +1,179 @@
+name: APIConfiguration
+description: Schema for API configuration validation
+rules:
+  - field: endpoint
+    type: string
+    required: true
+    pattern: "^https?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$"
+    description: API endpoint URL
+
+  - field: apiKey
+    type: string
+    required: false
+    minLength: 32
+    maxLength: 128
+    pattern: "^[a-zA-Z0-9-_]+$"
+    description: API authentication key
+
+  - field: timeout
+    type: integer
+    required: false
+    min: 1
+    max: 300
+    description: Request timeout in seconds
+
+  - field: retries
+    type: integer
+    required: false
+    min: 0
+    max: 10
+    description: Number of retry attempts
+
+  - field: retryDelay
+    type: integer
+    required: false
+    min: 100
+    max: 60000
+    description: Delay between retries in milliseconds
+
+  - field: methods
+    type: array
+    required: true
+    description: Allowed HTTP methods
+    items:
+      field: method
+      type: string
+      enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+      description: HTTP method
+
+  - field: headers
+    type: object
+    required: false
+    description: Custom HTTP headers
+
+  - field: rateLimit
+    type: object
+    required: false
+    description: Rate limiting configuration
+    nested:
+      name: RateLimitConfig
+      description: Rate limit settings
+      rules:
+        - field: requests
+          type: integer
+          required: true
+          min: 1
+          max: 10000
+          description: Number of requests allowed
+
+        - field: window
+          type: integer
+          required: true
+          min: 1
+          max: 3600
+          description: Time window in seconds
+
+        - field: burst
+          type: integer
+          required: false
+          min: 1
+          max: 100
+          description: Burst capacity
+
+  - field: proxy
+    type: object
+    required: false
+    description: Proxy configuration
+    nested:
+      name: ProxyConfig
+      description: Proxy settings
+      rules:
+        - field: host
+          type: string
+          required: true
+          pattern: "^[a-zA-Z0-9.-]+$"
+          description: Proxy hostname
+
+        - field: port
+          type: integer
+          required: true
+          min: 1
+          max: 65535
+          description: Proxy port
+
+        - field: username
+          type: string
+          required: false
+          minLength: 1
+          maxLength: 100
+          description: Proxy username
+
+        - field: password
+          type: string
+          required: false
+          minLength: 1
+          maxLength: 100
+          description: Proxy password
+
+  - field: ssl
+    type: object
+    required: false
+    description: SSL/TLS configuration
+    nested:
+      name: SSLConfig
+      description: SSL/TLS settings
+      rules:
+        - field: verify
+          type: boolean
+          required: false
+          description: Verify SSL certificates
+
+        - field: certFile
+          type: string
+          required: false
+          pattern: "^.+\\.(pem|crt|cer)$"
+          description: Path to certificate file
+
+        - field: keyFile
+          type: string
+          required: false
+          pattern: "^.+\\.(pem|key)$"
+          description: Path to private key file
+
+        - field: caFile
+          type: string
+          required: false
+          pattern: "^.+\\.(pem|crt|cer)$"
+          description: Path to CA certificate file
+
+  - field: logging
+    type: object
+    required: false
+    description: Logging configuration
+    nested:
+      name: LoggingConfig
+      description: Logging settings
+      rules:
+        - field: level
+          type: string
+          required: false
+          enum: ["debug", "info", "warning", "error", "critical"]
+          description: Log level
+
+        - field: format
+          type: string
+          required: false
+          enum: ["json", "text", "structured"]
+          description: Log format
+
+        - field: output
+          type: string
+          required: false
+          enum: ["stdout", "stderr", "file", "syslog"]
+          description: Log output destination
+
+        - field: filePath
+          type: string
+          required: false
+          pattern: "^.+\\.log$"
+          description: Log file path (when output is file)

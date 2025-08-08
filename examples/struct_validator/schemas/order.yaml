@@ -1,0 +1,176 @@
+name: OrderValidation
+description: Schema for order validation with nested structures
+rules:
+  - field: orderId
+    type: string
+    required: true
+    pattern: "^ORD-[0-9]{6,}$"
+    description: Unique order identifier
+    
+  - field: customer
+    type: object
+    required: true
+    description: Customer information
+    nested:
+      name: CustomerInfo
+      description: Customer details validation
+      rules:
+        - field: id
+          type: string
+          required: true
+          pattern: "^CUST-[0-9]{3,}$"
+          description: Customer ID
+          
+        - field: name
+          type: string
+          required: true
+          minLength: 1
+          maxLength: 100
+          description: Customer full name
+          
+        - field: email
+          type: string
+          required: true
+          pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          description: Customer email address
+          
+        - field: phone
+          type: string
+          required: false
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          description: Customer phone number (E.164 format)
+          
+        - field: address
+          type: object
+          required: true
+          description: Customer address
+          nested:
+            name: Address
+            description: Address validation
+            rules:
+              - field: street
+                type: string
+                required: true
+                minLength: 1
+                maxLength: 200
+                description: Street address
+                
+              - field: city
+                type: string
+                required: true
+                minLength: 1
+                maxLength: 100
+                description: City name
+                
+              - field: state
+                type: string
+                required: false
+                minLength: 2
+                maxLength: 50
+                description: State or province
+                
+              - field: zipCode
+                type: string
+                required: true
+                pattern: "^[0-9]{5}(-[0-9]{4})?$"
+                description: ZIP code (US format)
+                
+              - field: country
+                type: string
+                required: true
+                minLength: 2
+                maxLength: 2
+                description: Country code (ISO 3166-1 alpha-2)
+  
+  - field: items
+    type: array
+    required: true
+    description: Order items
+    items:
+      field: item
+      type: object
+      nested:
+        name: OrderItem
+        description: Individual order item validation
+        rules:
+          - field: productId
+            type: string
+            required: true
+            pattern: "^PROD-[0-9]{4,}$"
+            description: Product identifier
+            
+          - field: productName
+            type: string
+            required: true
+            minLength: 1
+            maxLength: 100
+            description: Product name
+            
+          - field: quantity
+            type: integer
+            required: true
+            min: 1
+            max: 999
+            description: Quantity ordered
+            
+          - field: unitPrice
+            type: number
+            required: true
+            min: 0.01
+            max: 999999.99
+            description: Price per unit
+            
+          - field: discount
+            type: number
+            required: false
+            min: 0
+            max: 100
+            description: Item discount percentage
+  
+  - field: subtotal
+    type: number
+    required: true
+    min: 0.01
+    description: Order subtotal before tax and shipping
+    
+  - field: tax
+    type: number
+    required: true
+    min: 0
+    description: Tax amount
+    
+  - field: shipping
+    type: number
+    required: true
+    min: 0
+    description: Shipping cost
+    
+  - field: totalAmount
+    type: number
+    required: true
+    min: 0.01
+    description: Total order amount
+    
+  - field: status
+    type: string
+    required: true
+    enum: ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"]
+    description: Order status
+    
+  - field: paymentMethod
+    type: string
+    required: true
+    enum: ["credit_card", "debit_card", "paypal", "bank_transfer", "cash_on_delivery"]
+    description: Payment method used
+    
+  - field: notes
+    type: string
+    required: false
+    maxLength: 500
+    description: Additional order notes
+    
+  - field: createdAt
+    type: string
+    required: true
+    pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$"
+    description: Order creation timestamp (ISO 8601)

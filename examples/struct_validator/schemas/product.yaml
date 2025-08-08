@@ -1,0 +1,52 @@
+name: ProductCatalog
+description: Schema for product catalog validation
+rules:
+  - field: id
+    type: string
+    required: true
+    pattern: "^PROD-[0-9]{4,}$"
+    description: Unique product identifier
+
+  - field: name
+    type: string
+    required: true
+    minLength: 1
+    maxLength: 100
+    description: Product name
+
+  - field: price
+    type: number
+    required: true
+    min: 0.01
+    max: 999999.99
+    description: Product price in USD
+
+  - field: stock
+    type: integer
+    required: true
+    min: 0
+    description: Available stock quantity
+
+  - field: category
+    type: string
+    required: true
+    enum: ["Electronics", "Clothing", "Food", "Books", "Sports", "Home", "Toys", "Health", "Beauty", "Automotive"]
+    description: Product category
+
+  - field: tags
+    type: array
+    required: false
+    description: Product tags for search and filtering
+    items:
+      field: tag
+      type: string
+      minLength: 1
+      maxLength: 30
+      description: Individual product tag
+
+  - field: discount
+    type: number
+    required: false
+    min: 0
+    max: 100
+    description: Discount percentage (0-100)

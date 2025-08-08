@@ -1,0 +1,67 @@
+name: UserRegistration
+description: Schema for user registration validation
+rules:
+  - field: username
+    type: string
+    required: true
+    minLength: 3
+    maxLength: 20
+    pattern: "^[a-zA-Z0-9_]+$"
+    description: Username for the account
+  
+  - field: email
+    type: string
+    required: true
+    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    description: User email address
+  
+  - field: age
+    type: integer
+    required: true
+    min: 18
+    max: 120
+    description: User age
+  
+  - field: isActive
+    type: boolean
+    required: true
+    description: Account status
+  
+  - field: profile
+    type: object
+    required: true
+    description: User profile information
+    nested:
+      name: UserProfile
+      description: Nested profile validation
+      rules:
+        - field: firstName
+          type: string
+          required: true
+          minLength: 1
+          maxLength: 50
+          description: User's first name
+        
+        - field: lastName
+          type: string
+          required: true
+          minLength: 1
+          maxLength: 50
+          description: User's last name
+        
+        - field: country
+          type: string
+          required: false
+          enum: ["USA", "Canada", "Mexico", "UK", "Germany", "France", "Spain", "Italy", "Brazil", "Argentina"]
+          description: Country of residence
+  
+  - field: tags
+    type: array
+    required: false
+    description: User tags and interests
+    items:
+      field: tag
+      type: string
+      minLength: 1
+      maxLength: 20
+      description: Individual tag
