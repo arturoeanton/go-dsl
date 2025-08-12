@@ -1,0 +1,157 @@
+# =============================================================================
+# Test Script for Fixed HTTP DSL
+# =============================================================================
+# This script tests all the fixed features
+# =============================================================================
+
+PRINT "🧪 Testing Fixed HTTP DSL Features"
+PRINT "==================================="
+
+# -----------------------------------------------------------------------------
+# Test 1: Basic Variables and Expansion in PRINT
+# -----------------------------------------------------------------------------
+
+PRINT "Test 1: Variable Expansion in PRINT"
+
+set $test_name "HTTP DSL Fixed"
+set $version 2.0
+set $status "Working"
+
+PRINT "System: $test_name v$version - Status: $status"
+
+# -----------------------------------------------------------------------------
+# Test 2: Multiple Headers in Single Request
+# -----------------------------------------------------------------------------
+
+PRINT "Test 2: Multiple Headers"
+
+GET "https://httpbin.org/headers" header "X-Test-1" "Value1" header "X-Test-2" "Value2" header "X-Test-3" "Value3"
+assert status 200
+PRINT "✅ Multiple headers work!"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# Test 3: JSON with Special Characters
+# -----------------------------------------------------------------------------
+
+PRINT "Test 3: JSON with Special Characters"
+
+POST "https://httpbin.org/post" json {"name":"Test User","email":"test@example.com","age":25}
+assert status 200
+PRINT "✅ JSON with @ character works!"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# Test 4: Print Variable Values
+# -----------------------------------------------------------------------------
+
+PRINT "Test 4: Print Variable Command"
+
+GET "https://jsonplaceholder.typicode.com/users/1"
+assert status 200
+extract jsonpath "$.name" as $user_name
+extract jsonpath "$.email" as $user_email
+
+print $user_name
+print $user_email
+PRINT "User: $user_name ($user_email)"
+
+# -----------------------------------------------------------------------------
+# Test 5: Conditionals on Single Line
+# -----------------------------------------------------------------------------
+
+PRINT "Test 5: Single Line Conditionals"
+
+set $test_value 100
+if $test_value == 100 then set $result "SUCCESS"
+print $result
+
+set $api_status 200
+if $api_status == 200 then set $health "OK" else set $health "ERROR"
+print $health
+
+# -----------------------------------------------------------------------------
+# Test 6: Loops with Block Content
+# -----------------------------------------------------------------------------
+
+PRINT "Test 6: Loop with Multiple Commands"
+
+repeat 3 times do
+  GET "https://httpbin.org/uuid"
+  assert status 200
+  extract jsonpath "$.uuid" as $current_uuid
+  print $current_uuid
+endloop
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# Test 7: Response Assertions
+# -----------------------------------------------------------------------------
+
+PRINT "Test 7: Response Assertions"
+
+GET "https://httpbin.org/user-agent"
+assert status 200
+assert response contains "HTTPDSLFixed"
+assert time less 2000 ms
+PRINT "✅ All assertions pass!"
+
+# -----------------------------------------------------------------------------
+# Test 8: Complex Variable Usage
+# -----------------------------------------------------------------------------
+
+PRINT "Test 8: Complex Variable Usage"
+
+set $base_url "https://jsonplaceholder.typicode.com"
+set $resource "posts"
+set $id 1
+
+GET "$base_url/$resource/$id"
+assert status 200
+extract jsonpath "$.title" as $title
+PRINT "Post title: $title"
+
+# -----------------------------------------------------------------------------
+# Test 9: Authentication Options
+# -----------------------------------------------------------------------------
+
+PRINT "Test 9: Authentication"
+
+GET "https://httpbin.org/basic-auth/user/pass" auth basic "user" "pass"
+assert status 200
+PRINT "✅ Basic auth works!"
+
+GET "https://httpbin.org/bearer" auth bearer "test-token-123"
+assert status 200
+PRINT "✅ Bearer auth works!"
+
+# -----------------------------------------------------------------------------
+# Test 10: Mixed Options
+# -----------------------------------------------------------------------------
+
+PRINT "Test 10: Mixed Request Options"
+
+POST "https://httpbin.org/post" header "X-Custom" "Value" json {"test":true} timeout 5000 ms
+assert status 200
+PRINT "✅ Mixed options work!"
+
+# -----------------------------------------------------------------------------
+# Summary
+# -----------------------------------------------------------------------------
+
+PRINT "==================================="
+PRINT "✨ All Fixed Features Tested!"
+PRINT "✅ Variable expansion in PRINT"
+PRINT "✅ Multiple headers"
+PRINT "✅ JSON with special chars"
+PRINT "✅ Print variable command"
+PRINT "✅ Single-line conditionals"
+PRINT "✅ Loops with blocks"
+PRINT "✅ Response assertions"
+PRINT "✅ Complex variables"
+PRINT "✅ Authentication"
+PRINT "✅ Mixed options"
+PRINT "==================================="

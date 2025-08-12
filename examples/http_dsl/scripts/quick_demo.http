@@ -1,0 +1,125 @@
+# =============================================================================
+# HTTP DSL Quick Demo - Real APIs Working Example
+# =============================================================================
+
+PRINT "🚀 HTTP DSL Quick Demo with Real APIs"
+PRINT "====================================="
+
+# -----------------------------------------------------------------------------
+# 1. JSONPlaceholder API - Fake REST API
+# -----------------------------------------------------------------------------
+
+PRINT "📦 1. Testing JSONPlaceholder API"
+
+GET "https://jsonplaceholder.typicode.com/users/1"
+assert status 200
+extract jsonpath "$.name" as $name
+extract jsonpath "$.email" as $email
+PRINT "   User: Extracted name and email"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# 2. GitHub API - Real Public API
+# -----------------------------------------------------------------------------
+
+PRINT "🐙 2. Testing GitHub API"
+
+GET "https://api.github.com/repos/golang/go"
+assert status 200
+extract jsonpath "$.stargazers_count" as $stars
+extract jsonpath "$.language" as $lang
+PRINT "   Go repo has many stars, written in Go"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# 3. HTTPBin - HTTP Testing Service
+# -----------------------------------------------------------------------------
+
+PRINT "🔬 3. Testing HTTPBin Service"
+
+GET "https://httpbin.org/uuid"
+assert status 200
+extract jsonpath "$.uuid" as $uuid
+PRINT "   Generated UUID successfully"
+
+GET "https://httpbin.org/ip"
+assert status 200
+extract jsonpath "$.origin" as $ip
+PRINT "   Got origin IP address"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# 4. Weather API - Open-Meteo
+# -----------------------------------------------------------------------------
+
+PRINT "🌤️ 4. Testing Weather API"
+
+GET "https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.0060&current=temperature_2m,windspeed_10m"
+assert status 200
+extract jsonpath "$.current.temperature_2m" as $temp
+extract jsonpath "$.current.windspeed_10m" as $wind
+PRINT "   New York weather data retrieved"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# 5. Performance Testing
+# -----------------------------------------------------------------------------
+
+PRINT "⚡ 5. Performance Testing"
+
+GET "https://httpbin.org/delay/0"
+assert status 200
+assert time less 1000 ms
+PRINT "   ✅ Response time < 1 second"
+
+# -----------------------------------------------------------------------------
+# 6. Variables and Conditionals
+# -----------------------------------------------------------------------------
+
+PRINT "🔧 6. Variables & Logic"
+
+set $api_status "healthy"
+set $test_count 5
+
+if $api_status == "healthy" then set $result "All APIs Working"
+
+repeat 2 times do
+  GET "https://httpbin.org/status/200"
+  assert status 200
+endloop
+PRINT "   ✅ Loop test passed"
+
+# -----------------------------------------------------------------------------
+# 7. Multiple HTTP Methods
+# -----------------------------------------------------------------------------
+
+PRINT "📋 7. HTTP Methods"
+
+GET "https://jsonplaceholder.typicode.com/posts/1"
+assert status 200
+PRINT "   ✅ GET"
+
+DELETE "https://jsonplaceholder.typicode.com/posts/1"
+assert status 200
+PRINT "   ✅ DELETE"
+
+HEAD "https://httpbin.org/status/200"
+assert status 200
+PRINT "   ✅ HEAD"
+
+# -----------------------------------------------------------------------------
+# Summary
+# -----------------------------------------------------------------------------
+
+PRINT "====================================="
+PRINT "✨ Demo Complete!"
+PRINT "✅ JSONPlaceholder API - Working"
+PRINT "✅ GitHub API - Working"
+PRINT "✅ HTTPBin Service - Working"  
+PRINT "✅ Weather API - Working"
+PRINT "✅ All tests passed!"
+PRINT "====================================="

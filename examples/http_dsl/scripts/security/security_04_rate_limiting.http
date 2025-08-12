@@ -1,0 +1,241 @@
+# Security Demo 4: Rate Limiting and DoS Protection Testing
+# Learn to test rate limiting, throttling, and DoS protection mechanisms
+
+print "⚡ === Security Demo 4: Rate Limiting and DoS Protection Testing ==="
+print "Testing rate limiting, throttling, and denial-of-service protection"
+
+set $api_base "https://httpbin.org"
+set $test_endpoint "https://jsonplaceholder.typicode.com"
+
+# Test 1: Normal rate testing baseline
+print ""
+print "📊 Test 1: Establishing baseline rate testing..."
+
+set $normal_requests 3
+set $request_counter 0
+set $successful_requests 0
+
+print "Making $normal_requests normal-rate requests..."
+
+repeat $normal_requests times do
+    set $request_counter $request_counter + 1
+    print "Normal request #$request_counter..."
+    
+    GET "$test_endpoint/posts/1"
+        header "X-Rate-Test" "baseline"
+        header "X-Request-Number" "$request_counter"
+        header "X-Client-ID" "security-tester-001"
+    
+    assert status 200
+    set $successful_requests $successful_requests + 1
+    
+    # Normal delay between requests
+    wait 1000 ms
+endloop
+
+print "✅ Baseline test completed: $successful_requests/$normal_requests successful"
+
+# Test 2: Burst request testing
+print ""
+print "💥 Test 2: Burst request pattern testing..."
+
+set $burst_requests 5
+set $burst_counter 0
+set $burst_successful 0
+
+print "Testing burst pattern with $burst_requests rapid requests..."
+
+repeat $burst_requests times do
+    set $burst_counter $burst_counter + 1
+    print "Burst request #$burst_counter..."
+    
+    GET "$api_base/delay/0"
+        header "X-Rate-Test" "burst-pattern"
+        header "X-Request-Number" "$burst_counter"
+        header "X-Pattern" "rapid-fire"
+    
+    # Note: We expect these to succeed with httpbin, but we're testing the pattern
+    assert status 200
+    set $burst_successful $burst_successful + 1
+    
+    # Minimal delay for burst testing
+    wait 100 ms
+endloop
+
+print "✅ Burst pattern tested: $burst_successful/$burst_requests completed"
+print "⚠️ Note: Production APIs should implement rate limiting for this pattern"
+
+# Test 3: Rate limit header detection
+print ""
+print "📋 Test 3: Rate limit header detection and monitoring..."
+
+GET "$api_base/response-headers"
+    header "X-Rate-Limit-Test" "header-detection"
+    header "X-Monitor" "rate-limit-headers"
+
+assert status 200
+print "✅ Rate limit header detection test completed"
+
+# Simulate rate limit header analysis
+set $rate_limit_remaining 100
+set $rate_limit_window 3600
+set $rate_limit_reset_time 1703251200
+
+print "📊 Simulated Rate Limit Analysis:"
+print "• Remaining requests: $rate_limit_remaining"
+print "• Time window: $rate_limit_window seconds"
+print "• Reset timestamp: $rate_limit_reset_time"
+
+# Test 4: Throttling behavior simulation
+print ""
+print "🐌 Test 4: Throttling behavior simulation..."
+
+set $throttle_requests 4
+set $throttle_delay 500
+
+print "Testing throttling with $throttle_delay ms delays..."
+
+repeat $throttle_requests times do
+    set $throttle_counter $throttle_counter + 1
+    print "Throttled request #$throttle_counter with $throttle_delay ms delay..."
+    
+    GET "$test_endpoint/posts/$throttle_counter"
+        header "X-Throttle-Test" "controlled-rate"
+        header "X-Delay-Pattern" "progressive"
+    
+    assert status 200
+    extract jsonpath "$.id" as $post_id
+    print "Retrieved post ID: $post_id"
+    
+    # Progressive delay increase
+    wait $throttle_delay ms
+    set $throttle_delay $throttle_delay + 200
+endloop
+
+print "✅ Throttling simulation completed"
+
+# Test 5: Client identification for rate limiting
+print ""
+print "🆔 Test 5: Client identification and tracking..."
+
+set $client_types "mobile web api"
+set $current_client "mobile"
+
+# Test different client identification methods
+if $current_client == "mobile" then
+    print "📱 Testing mobile client rate patterns..."
+    GET "$api_base/user-agent"
+        header "User-Agent" "MobileApp/1.0 (iOS 17.0)"
+        header "X-Client-Type" "mobile"
+        header "X-App-Version" "1.0.0"
+        header "X-Device-ID" "mobile-device-123"
+    
+    assert status 200
+    set $client_category "mobile"
+elif $current_client == "web" then
+    set $client_category "web"
+else
+    set $client_category "api"
+endif
+
+print "✅ Client identification test: $client_category"
+
+# Test 6: Rate limiting bypass prevention
+print ""
+print "🔒 Test 6: Rate limiting bypass prevention testing..."
+
+# Test with different IP simulation (headers only - defensive testing)
+GET "$test_endpoint/users/1"
+    header "X-Forwarded-For" "192.168.1.100"
+    header "X-Real-IP" "10.0.0.50"
+    header "X-Rate-Bypass-Test" "ip-rotation"
+    header "X-Security-Check" "bypass-prevention"
+
+assert status 200
+print "✅ IP rotation pattern tested (defensive check)"
+
+# Test with different User-Agent patterns
+repeat 2 times do
+    GET "$api_base/headers"
+        header "User-Agent" "SecurityTester-Rotation-Pattern"
+        header "X-UA-Rotation" "pattern-detection"
+    
+    assert status 200
+    print "User-Agent rotation pattern tested"
+    wait 500 ms
+endloop
+
+# Test 7: Rate limit recovery testing
+print ""
+print "🔄 Test 7: Rate limit recovery and backoff testing..."
+
+set $recovery_delay 2000
+print "Testing recovery with $recovery_delay ms backoff..."
+
+# Simulate waiting for rate limit recovery
+wait $recovery_delay ms
+
+# Test requests after backoff
+GET "$test_endpoint/posts"
+    header "X-Recovery-Test" "post-backoff"
+    header "X-Backoff-Duration" "$recovery_delay"
+
+assert status 200
+extract jsonpath "$[0].id" as $recovered_post_id
+
+if $recovered_post_id > 0 then
+    print "✅ Rate limit recovery successful"
+    set $recovery_status "SUCCESS"
+else
+    print "⚠️ Rate limit recovery needs more time"
+    set $recovery_status "PARTIAL"
+endif
+
+# Rate limiting security summary
+print ""
+print "📊 === Rate Limiting Security Test Summary ==="
+print "Baseline Rate Testing: ✅ COMPLETED"
+print "Burst Pattern Analysis: ✅ TESTED"
+print "Rate Limit Headers: ✅ MONITORED"
+print "Throttling Behavior: ✅ SIMULATED"
+print "Client Identification: ✅ $client_category"
+print "Bypass Prevention: ✅ TESTED"
+print "Recovery Testing: $recovery_status"
+
+print ""
+print "⚡ Rate Limiting Best Practices Validated:"
+print "• Proper request spacing and timing"
+print "• Rate limit header monitoring"
+print "• Client identification and categorization"
+print "• Graceful handling of rate limits"
+print "• Progressive backoff strategies"
+print "• Bypass prevention awareness"
+
+print ""
+print "🛡️ DoS Protection Patterns Tested:"
+print "• Burst request detection"
+print "• Rate limit threshold testing"
+print "• Client behavior analysis"
+print "• Recovery time validation"
+print "• Header-based monitoring"
+
+print ""
+print "⚠️ Security Recommendations:"
+print "• Implement progressive rate limiting"
+print "• Monitor for unusual request patterns"
+print "• Use multiple identification methods"
+print "• Implement exponential backoff"
+print "• Log and alert on rate limit violations"
+print "• Consider different limits for different endpoints"
+
+print ""
+print "🔍 Rate Limiting Checklist:"
+print "• ✅ Normal request patterns identified"
+print "• ✅ Burst behavior analyzed"
+print "• ✅ Rate limit headers monitored"
+print "• ✅ Throttling patterns tested"
+print "• ✅ Client identification verified"
+print "• ✅ Recovery mechanisms validated"
+
+print ""
+print "✅ Security Demo 4 completed - Rate limiting and DoS protection!"

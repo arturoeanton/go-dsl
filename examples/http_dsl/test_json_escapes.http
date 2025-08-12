@@ -1,0 +1,4 @@
+# Test JSON with complex escapes
+POST "https://httpbin.org/post" json {"path":"C:\\Users\\test","quote":"He said \"hello\"","tab":"line1\tline2"}
+
+print "JSON test completed"

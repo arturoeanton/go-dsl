@@ -1,0 +1,5 @@
+# Solo probamos headers
+GET "https://httpbin.org/headers"
+    header "Authorization" "Bearer token123"
+    header "X-Custom-1" "value1"
+    header "X-Custom-2" "value2"

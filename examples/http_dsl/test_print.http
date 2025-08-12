@@ -1,0 +1,9 @@
+set $name "World"
+set $count 42
+
+print "Hello, $name\!"
+print "The answer is: $count"
+
+if $count > 40 then
+    print "Count is high\!"
+endif

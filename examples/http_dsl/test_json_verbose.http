@@ -1,0 +1,2 @@
+# Test JSON parsing
+POST "https://httpbin.org/post" json {"name":"test","path":"C:\\folder\\file.txt"}

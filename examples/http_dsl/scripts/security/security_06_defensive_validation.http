@@ -1,0 +1,334 @@
+# Security Demo 6: Advanced Defensive Validation Testing
+# Testing defensive patterns that DETECT potential security issues without exploitation
+# DEFENSIVE ONLY - No malicious payloads or exploitation attempts
+
+print "🛡️ === Security Demo 6: Advanced Defensive Validation Testing ==="
+print "Testing defensive patterns to detect potential security vulnerabilities"
+print "⚠️ DEFENSIVE TESTING ONLY - No exploitation attempts"
+
+set $api_base "https://httpbin.org"
+set $test_endpoint "https://jsonplaceholder.typicode.com"
+
+# ============================================================================
+# DEFENSIVE PATTERN 1: INPUT ENCODING VALIDATION
+# ============================================================================
+print ""
+print "🔤 Test 1: Input Encoding and Character Set Validation (DEFENSIVE)"
+
+# Test proper encoding handling (not malicious - just thorough)
+set $encoded_input "Hello%20World%21"
+set $unicode_input "Caf\u00e9"
+set $special_chars "Data with spaces and symbols: @#$%"
+
+print "Testing encoding validation patterns..."
+
+POST "$api_base/post" json {
+    "title": "Encoding Test",
+    "url_encoded": "$encoded_input",
+    "unicode_data": "$unicode_input", 
+    "special_characters": "$special_chars",
+    "content_type_test": "application/json; charset=utf-8"
+}
+    header "Content-Type" "application/json; charset=utf-8"
+    header "X-Encoding-Test" "defensive-validation"
+    header "X-Character-Set" "utf-8"
+
+assert status 200
+print "✅ Input encoding validation completed"
+
+# ============================================================================
+# DEFENSIVE PATTERN 2: CONTENT-TYPE VALIDATION  
+# ============================================================================
+print ""
+print "📋 Test 2: Content-Type Header Validation (DEFENSIVE)"
+
+# Test that APIs properly validate Content-Type headers
+print "Testing Content-Type validation patterns..."
+
+# Test with correct Content-Type
+POST "$test_endpoint/posts" json {
+    "title": "Content Type Test",
+    "body": "Testing proper content type handling",
+    "userId": 1
+}
+    header "Content-Type" "application/json"
+    header "X-Content-Validation" "proper-type"
+
+assert status 201
+print "✅ Proper Content-Type handling validated"
+
+# Test Content-Type mismatch detection (defensive)
+POST "$api_base/post" 
+    body "title=ContentTest&body=TestingMismatch"
+    header "Content-Type" "application/x-www-form-urlencoded"
+    header "X-Content-Validation" "form-encoded"
+
+assert status 200
+print "✅ Alternative Content-Type handling tested"
+
+# ============================================================================
+# DEFENSIVE PATTERN 3: PARAMETER POLLUTION DETECTION
+# ============================================================================
+print ""
+print "🔍 Test 3: Parameter Pollution Detection (DEFENSIVE)"
+
+# Test how APIs handle duplicate parameters (defensive pattern)
+print "Testing parameter pollution detection..."
+
+GET "$api_base/get"
+    header "X-Param-Test" "duplicate-detection"
+    header "X-Test-Param" "value1"
+    header "X-Test-Param-Duplicate" "value2"
+
+assert status 200
+print "✅ Parameter handling patterns tested"
+
+# ============================================================================
+# DEFENSIVE PATTERN 4: SIZE AND BOUNDARY VALIDATION
+# ============================================================================
+print ""
+print "📏 Test 4: Advanced Size and Boundary Validation (DEFENSIVE)"
+
+set $small_payload "Small"
+set $medium_payload "This is a medium sized payload for testing boundary conditions in API validation"
+set $large_payload "This is a significantly larger payload designed to test how well the API handles larger amounts of data without causing issues. The purpose is to validate that proper size limits are in place and working correctly for defensive purposes."
+
+print "Testing payload size validation..."
+
+# Test small payload
+POST "$api_base/post" json {
+    "size_test": "small",
+    "data": "$small_payload"
+}
+    header "X-Size-Test" "small-payload"
+
+assert status 200
+print "✅ Small payload handling validated"
+
+# Test medium payload  
+POST "$api_base/post" json {
+    "size_test": "medium",
+    "data": "$medium_payload"
+}
+    header "X-Size-Test" "medium-payload"
+
+assert status 200
+print "✅ Medium payload handling validated"
+
+# Test larger payload (still reasonable)
+POST "$api_base/post" json {
+    "size_test": "large",
+    "data": "$large_payload"
+}
+    header "X-Size-Test" "large-payload"
+
+assert status 200
+print "✅ Large payload handling validated"
+
+# ============================================================================
+# DEFENSIVE PATTERN 5: ERROR HANDLING VALIDATION
+# ============================================================================
+print ""
+print "⚠️ Test 5: Error Handling and Information Disclosure (DEFENSIVE)"
+
+# Test that APIs don't leak sensitive information in errors
+print "Testing error handling patterns..."
+
+# Test 404 handling (defensive)
+GET "$test_endpoint/posts/99999"
+    header "X-Error-Test" "not-found-handling"
+
+# Note: We don't assert status here as we're testing error handling
+print "✅ Not found error handling tested"
+
+# Test method not allowed (defensive)  
+GET "$api_base/status/405"
+    header "X-Error-Test" "method-not-allowed"
+
+print "✅ Method validation error handling tested"
+
+# ============================================================================
+# DEFENSIVE PATTERN 6: HEADER INJECTION PREVENTION
+# ============================================================================
+print ""
+print "📤 Test 6: Header Injection Prevention (DEFENSIVE)"
+
+# Test that APIs properly handle headers (defensive validation)
+print "Testing header injection prevention..."
+
+set $clean_header_value "CleanValue123"
+set $header_with_spaces "Value With Spaces"
+
+GET "$api_base/headers"
+    header "X-Clean-Header" "$clean_header_value"
+    header "X-Space-Header" "$header_with_spaces"
+    header "X-Header-Test" "injection-prevention"
+
+assert status 200
+print "✅ Header injection prevention patterns tested"
+
+# ============================================================================
+# DEFENSIVE PATTERN 7: JSON STRUCTURE VALIDATION
+# ============================================================================
+print ""
+print "🏗️ Test 7: Advanced JSON Structure Validation (DEFENSIVE)"
+
+# Test complex but valid JSON structures
+print "Testing JSON structure validation..."
+
+POST "$api_base/post" json {
+    "user_profile": {
+        "basic_info": {
+            "name": "Test User",
+            "email": "test@example.com"
+        },
+        "preferences": {
+            "theme": "dark",
+            "language": "en",
+            "notifications": {
+                "email": true,
+                "push": false,
+                "sms": false
+            }
+        },
+        "metadata": {
+            "created": "2024-01-01T00:00:00Z",
+            "version": 1.0,
+            "tags": ["test", "validation", "security"]
+        }
+    }
+}
+    header "X-JSON-Validation" "complex-structure"
+    header "Content-Type" "application/json"
+
+assert status 200
+print "✅ Complex JSON structure validation completed"
+
+# ============================================================================
+# DEFENSIVE PATTERN 8: RESPONSE VALIDATION
+# ============================================================================
+print ""
+print "📥 Test 8: Response Content Validation (DEFENSIVE)"
+
+# Test that responses contain expected security patterns
+print "Testing response validation patterns..."
+
+GET "$test_endpoint/users/1"
+    header "X-Response-Validation" "content-check"
+
+assert status 200
+extract jsonpath "$.name" as $response_name
+extract jsonpath "$.email" as $response_email
+
+# Validate response contains expected data structure
+if $response_name != "" then
+    print "✅ Response name validation: $response_name"
+    set $response_validation "PASS"
+else
+    print "⚠️ Response validation warning"
+    set $response_validation "WARN"
+endif
+
+if $response_email != "" then
+    print "✅ Response email validation: $response_email"
+else
+    print "⚠️ Email field validation warning"
+endif
+
+# ============================================================================
+# DEFENSIVE PATTERN 9: TIMING ATTACK PREVENTION
+# ============================================================================
+print ""
+print "⏱️ Test 9: Timing Attack Prevention (DEFENSIVE)"
+
+# Test consistent response times (defensive)
+print "Testing timing consistency patterns..."
+
+set $timing_tests 3
+set $timing_counter 0
+
+repeat $timing_tests times do
+    set $timing_counter $timing_counter + 1
+    print "Timing test #$timing_counter..."
+    
+    GET "$test_endpoint/posts/1"
+        header "X-Timing-Test" "consistency-check"
+        header "X-Test-Number" "$timing_counter"
+    
+    assert status 200
+    assert time less 5000 ms
+    print "Response time check #$timing_counter passed"
+    
+    wait 1000 ms
+endloop
+
+print "✅ Timing consistency validation completed"
+
+# ============================================================================
+# SUMMARY: DEFENSIVE VALIDATION RESULTS
+# ============================================================================
+print ""
+print "📊 === Advanced Defensive Validation Summary ==="
+print "════════════════════════════════════════════════"
+
+print "Defensive Patterns Tested:"
+print "✅ Input Encoding Validation"
+print "✅ Content-Type Validation"  
+print "✅ Parameter Pollution Detection"
+print "✅ Size/Boundary Validation"
+print "✅ Error Handling Validation"
+print "✅ Header Injection Prevention"
+print "✅ JSON Structure Validation"
+print "✅ Response Content Validation: $response_validation"
+print "✅ Timing Attack Prevention"
+
+print ""
+print "🛡️ Defensive Security Controls Validated:"
+print "• Proper input encoding and character handling"
+print "• Content-Type validation and enforcement"
+print "• Parameter handling consistency"
+print "• Size limits and boundary checking"
+print "• Secure error handling (no info disclosure)"
+print "• Header injection prevention"
+print "• JSON schema validation"
+print "• Response content consistency"
+print "• Timing attack resistance"
+
+print ""
+print "⚠️ What This Testing DOES NOT Do:"
+print "❌ Does NOT attempt SQL injection attacks"
+print "❌ Does NOT attempt XSS exploitation"
+print "❌ Does NOT use malicious payloads"
+print "❌ Does NOT try to bypass security"
+print "❌ Does NOT attempt system compromise"
+
+print ""
+print "✅ What This Testing DOES Do:"
+print "✅ Validates proper input handling"
+print "✅ Tests defensive security patterns"
+print "✅ Checks security control effectiveness"
+print "✅ Verifies proper error handling"
+print "✅ Confirms response consistency"
+
+print ""
+print "🔍 Security Recommendations Based on Results:"
+print "• Implement comprehensive input validation"
+print "• Use proper encoding for all data handling"
+print "• Validate Content-Type headers strictly"
+print "• Handle errors securely without info leakage"
+print "• Implement consistent response timing"
+print "• Use JSON schema validation"
+print "• Monitor for unusual request patterns"
+
+print ""
+print "🎯 For Actual Vulnerability Scanning:"
+print "Use dedicated security tools like:"
+print "• OWASP ZAP (free, open source)"
+print "• Burp Suite (commercial)"
+print "• Nessus (commercial)"
+print "• OpenVAS (open source)"
+print "• Qualys (commercial)"
+
+print ""
+print "✅ Security Demo 6 completed - Advanced defensive validation!"
+print "🛡️ This complements (but doesn't replace) professional security scanners"

@@ -1,0 +1,70 @@
+# Demo 7: Autenticación y Headers Avanzados
+# Aprende a usar diferentes tipos de autenticación y headers avanzados
+
+print "=== Demo 7: Autenticación y Headers Avanzados ==="
+
+set $api_base "https://jsonplaceholder.typicode.com"
+set $mock_token "bearer-token-12345"
+set $api_key "api-key-abcdef"
+
+# Request con Bearer Authentication (simulado)
+print "🔐 Probando Bearer Authentication..."
+GET "$api_base/posts/1"
+    header "Authorization" "Bearer $mock_token"
+    header "X-API-Key" "$api_key"
+    header "Accept" "application/json"
+    header "User-Agent" "HTTPDSLv3-Demo/1.0"
+    header "X-Request-ID" "demo-auth-001"
+
+assert status 200
+print "✅ Authentication headers enviados correctamente"
+
+# Request con headers condicionales
+set $user_role "admin"
+if $user_role == "admin" then set $auth_header "Bearer admin-token" else set $auth_header "Bearer user-token"
+
+print "🎯 Headers dinámicos basados en rol: $user_role"
+GET "$api_base/users/1"
+    header "Authorization" "$auth_header"
+    header "X-User-Role" "$user_role"
+    header "Content-Type" "application/json"
+
+assert status 200
+extract jsonpath "$.name" as $user_name
+print "Usuario autenticado: $user_name"
+
+# Simular diferentes niveles de autenticación
+repeat 2 times do
+    if $user_role == "admin" then
+        print "🔓 Acceso de administrador - Datos sensibles"
+        GET "$api_base/users"
+        assert status 200
+        set $access_granted "full"
+    else
+        print "👤 Acceso de usuario regular - Datos públicos"  
+        GET "$api_base/posts"
+        assert status 200
+        set $access_granted "limited"
+    endif
+    
+    print "Acceso otorgado: $access_granted"
+    
+    # Cambiar rol para la siguiente iteración
+    set $user_role "user"
+endloop
+
+# Headers con información de contexto
+set $client_version "3.1.0"
+set $platform "linux"
+
+print "📱 Request con información de contexto..."
+GET "$api_base/posts/1"
+    header "X-Client-Version" "$client_version"
+    header "X-Platform" "$platform"
+    header "X-Timestamp" "2024-12-12T10:30:00Z"
+    header "Accept-Encoding" "gzip, deflate"
+    header "Cache-Control" "no-cache"
+
+assert status 200
+
+print "✅ Demo 7 completado - Autenticación y headers avanzados!"

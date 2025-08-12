@@ -1,0 +1,33 @@
+# Comprehensive test of all urgent fixes
+
+# Test 1: if/then/else single line
+set $x 5
+if $x > 3 then print "X is greater than 3" else print "X is 3 or less"
+
+set $y 2
+if $y > 3 then print "Y is greater than 3" else print "Y is 3 or less"
+
+# Test 2: JSON with complex escapes
+POST "https://httpbin.org/post" json {"path":"C:\\Users\\test","quote":"He said \"hello\"","tab":"line1\tline2","backslash":"\\"}
+extract jsonpath "$.json.path" as $jsonPath
+print "Extracted path: $jsonPath"
+
+# Test 3: Extract validation without response (should warn, not error)
+# Reset to ensure no previous response
+reset
+extract jsonpath "$.test" as $empty
+print "Empty value: '$empty' (should be empty with warning)"
+
+# Test 4: Complex JSONPath patterns
+GET "https://jsonplaceholder.typicode.com/posts"
+
+# Simple array access
+extract jsonpath "$[0].title" as $firstTitle
+print "First title: $firstTitle"
+
+# Filter expression
+extract jsonpath "$[?(@.userId == 1)].id" as $userOnePosts
+print "Posts by user 1 (IDs): $userOnePosts"
+
+print ""
+print "✅ All tests completed successfully!"

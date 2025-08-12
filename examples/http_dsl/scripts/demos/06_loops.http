@@ -1,0 +1,54 @@
+# Demo 6: Loops y Repeticiones
+# Aprende a usar bucles repeat con bloques para automatizar tareas
+
+print "=== Demo 6: Loops y Repeticiones ==="
+
+set $api_url "https://jsonplaceholder.typicode.com"
+set $total_score 0
+set $request_count 0
+
+# Loop simple con contador
+print "🔄 Realizando múltiples requests con loop..."
+repeat 3 times do
+    set $request_count $request_count + 1
+    print "Request #$request_count"
+    GET "$api_url/posts/$request_count"
+    assert status 200
+    
+    # Simular procesamiento
+    set $current_score $request_count * 10
+    set $total_score $total_score + $current_score
+    print "Score acumulado: $total_score"
+endloop
+
+print "✅ Loop completado. Score total: $total_score"
+
+# Loop para probar diferentes endpoints
+set $test_endpoints 3
+print "🧪 Probando diferentes endpoints..."
+
+repeat $test_endpoints times do
+    set $endpoint_id $request_count + 1
+    print "Probando endpoint /posts/$endpoint_id"
+    
+    GET "$api_url/posts/$endpoint_id"
+    assert status 200
+    extract jsonpath "$.title" as $post_title
+    print "Título obtenido: $post_title"
+    
+    set $request_count $endpoint_id
+endloop
+
+# Loop con validación de performance
+print "⚡ Midiendo performance con múltiples requests..."
+set $performance_tests 2
+
+repeat $performance_tests times do
+    print "Test de performance en progreso..."
+    GET "$api_url/users"
+    assert status 200
+    assert time less 5000 ms
+    print "Performance test ✅ - Respuesta en menos de 5 segundos"
+endloop
+
+print "✅ Demo 6 completado - Loops y repeticiones funcionando!"

@@ -1,0 +1,151 @@
+# =============================================================================
+# HTTP DSL Demo - GitHub API Integration
+# =============================================================================
+# This script demonstrates interaction with GitHub's public API
+# Note: Some endpoints have rate limits for unauthenticated requests
+# =============================================================================
+
+PRINT "🐙 GitHub API Integration Demo"
+PRINT "=============================="
+
+# -----------------------------------------------------------------------------
+# Get Public Repository Information
+# -----------------------------------------------------------------------------
+
+PRINT "📦 Fetching Repository Information"
+
+# Get information about a popular repository
+GET "https://api.github.com/repos/microsoft/vscode"
+assert status 200
+
+# Extract repository data
+extract jsonpath "$.name" as $repo_name
+extract jsonpath "$.full_name" as $repo_full_name
+extract jsonpath "$.description" as $repo_description
+extract jsonpath "$.stargazers_count" as $stars
+extract jsonpath "$.forks_count" as $forks
+extract jsonpath "$.open_issues_count" as $issues
+extract jsonpath "$.language" as $language
+extract jsonpath "$.created_at" as $created
+extract jsonpath "$.updated_at" as $updated
+
+PRINT "Repository: $repo_full_name"
+print $repo_description
+PRINT "⭐ Stars: $stars"
+PRINT "🍴 Forks: $forks"
+PRINT "🐛 Open Issues: $issues"
+PRINT "💻 Language: $language"
+
+DELAY 1s
+
+# -----------------------------------------------------------------------------
+# Search for Repositories
+# -----------------------------------------------------------------------------
+
+PRINT "🔍 Searching for Popular Go Repositories"
+
+GET "https://api.github.com/search/repositories?q=language:go&sort=stars&order=desc&per_page=5"
+assert status 200
+
+extract jsonpath "$.total_count" as $total_go_repos
+PRINT "Total Go repositories found: $total_go_repos"
+
+extract jsonpath "$.items[0].name" as $top_go_repo
+extract jsonpath "$.items[0].stargazers_count" as $top_go_stars
+PRINT "Top Go repo: $top_go_repo (⭐ $top_go_stars)"
+
+DELAY 1s
+
+# -----------------------------------------------------------------------------
+# Get User Information
+# -----------------------------------------------------------------------------
+
+PRINT "👤 Fetching User Information"
+
+GET "https://api.github.com/users/torvalds"
+assert status 200
+
+extract jsonpath "$.name" as $user_name
+extract jsonpath "$.company" as $user_company
+extract jsonpath "$.location" as $user_location
+extract jsonpath "$.public_repos" as $user_repos
+extract jsonpath "$.followers" as $user_followers
+
+PRINT "User: $user_name"
+PRINT "📍 Location: $user_location"
+PRINT "🏢 Company: $user_company"
+PRINT "📚 Public Repos: $user_repos"
+PRINT "👥 Followers: $user_followers"
+
+DELAY 1s
+
+# -----------------------------------------------------------------------------
+# Get Latest Releases
+# -----------------------------------------------------------------------------
+
+PRINT "🚀 Fetching Latest Releases"
+
+GET "https://api.github.com/repos/golang/go/releases/latest"
+assert status 200
+
+extract jsonpath "$.tag_name" as $latest_version
+extract jsonpath "$.name" as $release_name
+extract jsonpath "$.published_at" as $release_date
+
+PRINT "Latest Go Release: $latest_version"
+PRINT "Release Name: $release_name"
+PRINT "Published: $release_date"
+
+# -----------------------------------------------------------------------------
+# Check GitHub API Status
+# -----------------------------------------------------------------------------
+
+PRINT "🔧 Checking GitHub API Status"
+
+GET "https://api.github.com/rate_limit"
+assert status 200
+
+extract jsonpath "$.rate.limit" as $rate_limit
+extract jsonpath "$.rate.remaining" as $rate_remaining
+extract jsonpath "$.rate.used" as $rate_used
+
+PRINT "API Rate Limit: $rate_limit"
+PRINT "Remaining: $rate_remaining"
+PRINT "Used: $rate_used"
+
+# -----------------------------------------------------------------------------
+# Get Trending Topics
+# -----------------------------------------------------------------------------
+
+PRINT "🔥 Getting Repository Topics"
+
+GET "https://api.github.com/repos/facebook/react/topics"
+assert status 200
+assert response contains "javascript"
+
+PRINT "✅ React repository topics fetched"
+
+# -----------------------------------------------------------------------------
+# Performance Test
+# -----------------------------------------------------------------------------
+
+PRINT "⚡ Testing API Response Times"
+
+GET "https://api.github.com"
+assert status 200
+assert time less 1000 ms
+PRINT "✅ Root endpoint responded quickly"
+
+GET "https://api.github.com/emojis"
+assert status 200
+assert time less 1000 ms
+PRINT "✅ Emojis endpoint responded quickly"
+
+# -----------------------------------------------------------------------------
+# Summary
+# -----------------------------------------------------------------------------
+
+PRINT "=============================="
+PRINT "✨ GitHub API Demo Complete!"
+PRINT "Successfully interacted with GitHub's public API"
+PRINT "==============================="

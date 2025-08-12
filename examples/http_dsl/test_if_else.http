@@ -1,0 +1,8 @@
+# Test if/then/else más simple
+set $x 5
+if $x > 3 then set $result "YES" else set $result "NO"
+print "Result should be YES: $result"
+
+set $y 2
+if $y > 3 then set $result2 "YES" else set $result2 "NO"
+print "Result2 should be NO: $result2"

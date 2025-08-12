@@ -1,0 +1,45 @@
+# Demo 4: Condicionales - If/Then/Else
+# Aprende a usar condicionales en línea y tomar decisiones basadas en datos
+
+print "=== Demo 4: Condicionales If/Then/Else ==="
+
+set $api_url "https://jsonplaceholder.typicode.com"
+set $test_user_id 1
+
+# Obtener información del usuario
+GET "$api_url/users/$test_user_id"
+assert status 200
+
+extract jsonpath "$.id" as $user_id
+extract jsonpath "$.name" as $user_name
+extract jsonpath "$.email" as $email
+print "Procesando usuario: $user_name ($email)"
+
+# Condicional simple: verificar ID de usuario
+if $user_id == 1 then set $user_type "admin" else set $user_type "regular"
+print "Tipo de usuario: $user_type"
+
+# Condicional con comparación numérica
+if $user_id > 5 then set $priority "low" else set $priority "high"
+print "Prioridad: $priority"
+
+# Condicional con strings
+if $email contains "example.com" then set $domain_type "test" else set $domain_type "production"
+print "Tipo de dominio: $domain_type"
+
+# Obtener posts del usuario
+GET "$api_url/users/$user_id/posts"
+assert status 200
+
+extract jsonpath "$[0].id" as $first_post_id
+print "Primer post ID: $first_post_id"
+
+# Decisiones basadas en datos extraídos
+if $first_post_id > 5 then set $post_category "popular" else set $post_category "new"
+print "Categoría del post: $post_category"
+
+# Configurar comportamiento basado en condiciones
+if $user_type == "admin" then set $max_requests 100 else set $max_requests 10
+print "Límite de requests para $user_name: $max_requests"
+
+print "✅ Demo 4 completado - Condicionales funcionando perfectamente!"

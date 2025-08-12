@@ -1,0 +1,40 @@
+# Demo 3: Aritmética y Extracción de Datos
+# Aprende a usar operaciones aritméticas y extraer datos de las respuestas
+
+print "=== Demo 3: Aritmética y Extracción de Datos ==="
+
+set $api_base "https://jsonplaceholder.typicode.com"
+
+# Obtener datos de un post
+GET "$api_base/posts/1"
+assert status 200
+
+# Extraer datos usando JSONPath
+extract jsonpath "$.userId" as $user_id
+extract jsonpath "$.id" as $post_id
+print "Post ID: $post_id, User ID: $user_id"
+
+# Realizar operaciones aritméticas
+set $base_score 100
+set $bonus_points 25
+set $multiplier 1.5
+
+# Calcular puntaje final
+set $total_points $base_score + $bonus_points
+set $final_score $total_points * $multiplier
+print "Cálculo: ($base_score + $bonus_points) * $multiplier = $final_score"
+
+# Usar datos extraídos en cálculos
+set $user_bonus $user_id * 10
+set $combined_score $final_score + $user_bonus
+print "Puntaje final con bonus de usuario: $combined_score"
+
+# Obtener más datos del usuario
+GET "$api_base/users/$user_id"
+assert status 200
+
+extract jsonpath "$.name" as $user_name
+extract jsonpath "$.email" as $user_email
+print "Usuario: $user_name ($user_email)"
+
+print "✅ Demo 3 completado - Aritmética y extracción de datos!"

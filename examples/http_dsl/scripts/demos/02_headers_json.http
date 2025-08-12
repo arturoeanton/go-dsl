@@ -1,0 +1,31 @@
+# Demo 2: Headers Múltiples y JSON
+# Aprende a usar múltiples headers y enviar JSON con caracteres especiales
+
+print "=== Demo 2: Headers Múltiples y JSON ==="
+
+set $api_url "https://jsonplaceholder.typicode.com"
+
+# Request con múltiples headers (¡NUEVO en v3!)
+print "Enviando request con múltiples headers..."
+GET "$api_url/posts/1" 
+    header "Accept" "application/json"
+    header "User-Agent" "HTTP-DSL-v3/1.0"
+    header "X-API-Version" "v3"
+    header "X-Request-ID" "demo-123"
+
+assert status 200
+extract jsonpath "$.title" as $post_title
+print "Título del post: $post_title"
+
+# POST con JSON que contiene caracteres especiales (¡ARREGLADO en v3!)
+print "Enviando POST con JSON que contiene @ y #..."
+POST "$api_url/posts" json {
+    "title": "Demo con caracteres especiales",
+    "body": "Email: test@example.com y hashtag #demo",
+    "userId": 1,
+    "tags": ["@mention", "#hashtag", "test@email.com"]
+}
+
+assert status 201
+
+print "✅ Demo 2 completado - Headers múltiples y JSON con caracteres especiales!"

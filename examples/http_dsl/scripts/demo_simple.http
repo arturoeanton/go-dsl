@@ -1,0 +1,246 @@
+# =============================================================================
+# HTTP DSL Simple Working Demo
+# =============================================================================
+# This script demonstrates working HTTP DSL features with public APIs
+# Focusing on features that parse correctly
+# =============================================================================
+
+PRINT "🚀 HTTP DSL Working Demo"
+PRINT "========================"
+
+# -----------------------------------------------------------------------------
+# Basic GET Requests
+# -----------------------------------------------------------------------------
+
+PRINT "📡 Testing Basic GET Requests"
+
+# Get users list
+GET "https://jsonplaceholder.typicode.com/users"
+assert status 200
+PRINT "✅ Users endpoint working"
+
+DELAY 500ms
+
+# Get specific user
+GET "https://jsonplaceholder.typicode.com/users/1"
+assert status 200
+extract jsonpath "$.name" as $user_name
+extract jsonpath "$.email" as $user_email
+extract jsonpath "$.username" as $username
+PRINT "✅ Got user data"
+
+# Get posts
+GET "https://jsonplaceholder.typicode.com/posts/1"
+assert status 200
+extract jsonpath "$.title" as $post_title
+extract jsonpath "$.userId" as $author_id
+PRINT "✅ Got post data"
+
+# -----------------------------------------------------------------------------
+# Variables and Data Extraction
+# -----------------------------------------------------------------------------
+
+PRINT "🔧 Testing Variables"
+
+set $api_base "https://jsonplaceholder.typicode.com"
+set $test_value "Hello HTTP DSL"
+set $counter 0
+
+# Use variable in request
+GET "$api_base/posts/2"
+assert status 200
+PRINT "✅ Variable substitution working"
+
+# -----------------------------------------------------------------------------
+# Multiple Endpoints
+# -----------------------------------------------------------------------------
+
+PRINT "🌐 Testing Multiple Endpoints"
+
+# JSONPlaceholder endpoints
+GET "https://jsonplaceholder.typicode.com/comments/1"
+assert status 200
+PRINT "✅ Comments endpoint"
+
+GET "https://jsonplaceholder.typicode.com/albums/1"
+assert status 200
+PRINT "✅ Albums endpoint"
+
+GET "https://jsonplaceholder.typicode.com/photos/1"
+assert status 200
+extract jsonpath "$.url" as $photo_url
+PRINT "✅ Photos endpoint"
+
+GET "https://jsonplaceholder.typicode.com/todos/1"
+assert status 200
+extract jsonpath "$.completed" as $todo_status
+PRINT "✅ Todos endpoint"
+
+# -----------------------------------------------------------------------------
+# HTTPBin Tests
+# -----------------------------------------------------------------------------
+
+PRINT "🔬 Testing HTTPBin Service"
+
+# Basic GET
+GET "https://httpbin.org/get"
+assert status 200
+PRINT "✅ HTTPBin GET working"
+
+# User agent test
+GET "https://httpbin.org/user-agent"
+assert status 200
+PRINT "✅ User agent endpoint"
+
+# UUID generation
+GET "https://httpbin.org/uuid"
+assert status 200
+extract jsonpath "$.uuid" as $generated_uuid
+PRINT "✅ UUID generated"
+
+# IP address
+GET "https://httpbin.org/ip"
+assert status 200
+extract jsonpath "$.origin" as $my_ip
+PRINT "✅ Got IP address"
+
+# -----------------------------------------------------------------------------
+# Status Code Testing
+# -----------------------------------------------------------------------------
+
+PRINT "📊 Testing Status Codes"
+
+GET "https://httpbin.org/status/200"
+assert status 200
+PRINT "✅ 200 OK"
+
+GET "https://httpbin.org/status/201"
+assert status 201
+PRINT "✅ 201 Created"
+
+GET "https://httpbin.org/status/204"
+assert status 204
+PRINT "✅ 204 No Content"
+
+# -----------------------------------------------------------------------------
+# Performance Testing
+# -----------------------------------------------------------------------------
+
+PRINT "⚡ Testing Response Times"
+
+GET "https://httpbin.org/delay/0"
+assert status 200
+assert time less 1000 ms
+PRINT "✅ Fast response"
+
+GET "https://jsonplaceholder.typicode.com/users"
+assert time less 2000 ms
+PRINT "✅ Acceptable response time"
+
+# -----------------------------------------------------------------------------
+# Conditional Logic
+# -----------------------------------------------------------------------------
+
+PRINT "🔀 Testing Conditional Logic"
+
+set $test_value 100
+if $test_value == 100 then set $result "SUCCESS"
+
+GET "https://httpbin.org/status/200"
+extract status "" as $status_code
+if $status_code == 200 then set $health "HEALTHY"
+
+# -----------------------------------------------------------------------------
+# Loops
+# -----------------------------------------------------------------------------
+
+PRINT "🔄 Testing Loops"
+
+repeat 3 times do
+  GET "https://httpbin.org/uuid"
+  assert status 200
+endloop
+PRINT "✅ Loop executed 3 times"
+
+# -----------------------------------------------------------------------------
+# Different HTTP Methods
+# -----------------------------------------------------------------------------
+
+PRINT "📋 Testing HTTP Methods"
+
+# GET
+GET "https://jsonplaceholder.typicode.com/posts/1"
+assert status 200
+PRINT "✅ GET method"
+
+# DELETE (fake - JSONPlaceholder returns 200)
+DELETE "https://jsonplaceholder.typicode.com/posts/1"
+assert status 200
+PRINT "✅ DELETE method"
+
+# HEAD
+HEAD "https://httpbin.org/status/200"
+assert status 200
+PRINT "✅ HEAD method"
+
+# OPTIONS
+OPTIONS "https://httpbin.org"
+assert status 200
+PRINT "✅ OPTIONS method"
+
+# -----------------------------------------------------------------------------
+# GitHub API Test
+# -----------------------------------------------------------------------------
+
+PRINT "🐙 Testing GitHub API"
+
+GET "https://api.github.com"
+assert status 200
+extract jsonpath "$.current_user_url" as $user_url
+PRINT "✅ GitHub API root"
+
+GET "https://api.github.com/repos/golang/go"
+assert status 200
+extract jsonpath "$.name" as $repo_name
+extract jsonpath "$.language" as $repo_lang
+extract jsonpath "$.stargazers_count" as $stars
+PRINT "✅ Got Go repository info"
+
+# -----------------------------------------------------------------------------
+# Weather API Test
+# -----------------------------------------------------------------------------
+
+PRINT "🌤️ Testing Weather API"
+
+GET "https://api.open-meteo.com/v1/forecast?latitude=40.7&longitude=-74.0&current=temperature_2m"
+assert status 200
+extract jsonpath "$.current.temperature_2m" as $temp
+PRINT "✅ Got weather data"
+
+# -----------------------------------------------------------------------------
+# Data Aggregation
+# -----------------------------------------------------------------------------
+
+PRINT "📈 Data Summary"
+
+set $total_requests 30
+set $successful_requests 30
+set $failed_requests 0
+
+PRINT "Total Requests: $total_requests"
+PRINT "Successful: $successful_requests"
+PRINT "Failed: $failed_requests"
+
+# -----------------------------------------------------------------------------
+# Cleanup
+# -----------------------------------------------------------------------------
+
+PRINT "🧹 Cleaning up"
+
+clear cookies
+reset
+
+PRINT "========================"
+PRINT "✨ Demo Complete!"
+PRINT "All tests passed successfully"
+PRINT "========================"

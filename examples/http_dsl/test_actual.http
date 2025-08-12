@@ -1,0 +1,14 @@
+# Test de lo que arreglamos
+set $count 15
+print "Count is: $count"
+
+# Test if/then/endif blocks
+if $count > 10 then
+    print "Count is greater than 10"
+    set $status "HIGH"
+endif
+
+print "Status: $status"
+
+# Test múltiples headers
+GET "https://jsonplaceholder.typicode.com/posts/1"

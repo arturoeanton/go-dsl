@@ -1,0 +1,57 @@
+# Demo 5: Bloques If/Then/Endif - ¡NUEVO EN V3!
+# Aprende a usar bloques multiline para lógica más compleja
+
+print "=== Demo 5: Bloques If/Then/Endif (¡NUEVO!) ==="
+
+set $api_base "https://jsonplaceholder.typicode.com"
+set $user_id 1
+
+# Obtener datos del usuario
+GET "$api_base/users/$user_id"
+assert status 200
+
+extract jsonpath "$.name" as $username
+extract jsonpath "$.company.name" as $company
+print "Usuario: $username, Empresa: $company"
+
+# Bloque if/then/endif - Procesar usuario VIP
+if $user_id == 1 then
+    print "🌟 Procesando usuario VIP"
+    set $access_level "premium"
+    set $api_limit 1000
+    set $support_tier "priority"
+endif
+
+print "Configuración aplicada - Acceso: $access_level, Límite: $api_limit"
+
+# Bloque if/else/endif - Decidir plan basado en empresa
+if $company contains "Group" then
+    print "🏢 Usuario empresarial detectado"
+    set $plan "enterprise"
+    set $billing_cycle "annual"
+    set $discount 0.15
+else
+    print "👤 Usuario individual detectado"  
+    set $plan "personal"
+    set $billing_cycle "monthly"
+    set $discount 0.05
+endif
+
+# Calcular costo con descuento
+set $base_cost 100
+set $discount_amount $base_cost * $discount
+set $final_cost $base_cost - $discount_amount
+print "Plan: $plan, Costo final: $final_cost (descuento aplicado: $discount_amount)"
+
+# Bloque condicional complejo - Validar configuración
+if $plan == "enterprise" then
+    print "⚙️  Aplicando configuración empresarial"
+    set $max_users 50
+    set $storage_gb 500
+    set $support_response "2 hours"
+    print "Usuarios máximos: $max_users"
+    print "Almacenamiento: $storage_gb GB"
+    print "Tiempo de respuesta soporte: $support_response"
+endif
+
+print "✅ Demo 5 completado - ¡Bloques multiline funcionando!"

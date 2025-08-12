@@ -1,0 +1,229 @@
+# Security Demo 3: Input Validation Testing
+# Learn to test API input validation and sanitization for security
+
+print "🛡️ === Security Demo 3: Input Validation Testing ==="
+print "Testing input validation, sanitization, and defensive programming patterns"
+
+set $api_base "https://httpbin.org"
+set $test_endpoint "https://jsonplaceholder.typicode.com"
+
+# Test 1: Valid input scenarios
+print ""
+print "✅ Test 1: Valid input validation scenarios..."
+
+set $valid_title "Valid Product Title"
+set $valid_email "user@example.com"
+set $valid_id 123
+
+# Test with properly formatted inputs
+POST "$api_base/post" json {
+    "title": "$valid_title",
+    "email": "$valid_email", 
+    "id": $valid_id,
+    "description": "This is a valid product description"
+}
+    header "Content-Type" "application/json"
+    header "X-Input-Test" "valid-data"
+    header "X-Security-Check" "input-validation"
+
+assert status 200
+print "✅ Valid input test passed"
+
+# Test 2: Length validation testing
+print ""
+print "📏 Test 2: Input length validation testing..."
+
+set $short_input "OK"
+set $medium_input "This is a medium length input for testing"
+set $long_input "This is a very long input string that might exceed normal length limits and should be handled gracefully by the API endpoint to prevent buffer overflow or other length-related security issues"
+
+# Test various input lengths
+POST "$test_endpoint/posts" json {
+    "title": "$short_input",
+    "body": "$medium_input",
+    "userId": 1
+}
+    header "X-Length-Test" "short-input"
+
+assert status 201
+extract jsonpath "$.id" as $post_id_short
+print "✅ Short input test passed - ID: $post_id_short"
+
+# Test medium length input
+POST "$test_endpoint/posts" json {
+    "title": "Medium Length Test",
+    "body": "$long_input",
+    "userId": 1
+}
+    header "X-Length-Test" "long-input"
+
+assert status 201
+print "✅ Long input test passed (API handled gracefully)"
+
+# Test 3: Special character handling
+print ""
+print "🔤 Test 3: Special character and encoding validation..."
+
+set $special_chars_safe "Testing with safe chars: @example.com #hashtag"
+set $unicode_text "Unicode test: café naïve résumé"
+
+# Test safe special characters (defensive approach)
+POST "$api_base/post" json {
+    "title": "Special Chars Test",
+    "content": "$special_chars_safe",
+    "unicode_field": "$unicode_text",
+    "symbols": "Safe symbols: @#$%^&*()"
+}
+    header "X-Encoding-Test" "special-characters"
+    header "Content-Type" "application/json; charset=utf-8"
+
+assert status 200
+print "✅ Special characters handled safely"
+
+# Test 4: Data type validation
+print ""
+print "🔢 Test 4: Data type validation testing..."
+
+set $valid_number 42
+set $valid_string "test_string"
+set $valid_boolean "true"
+
+# Test with correct data types
+POST "$test_endpoint/posts" json {
+    "title": "$valid_string",
+    "userId": $valid_number,
+    "published": true,
+    "metadata": {
+        "version": 1.0,
+        "active": true
+    }
+}
+    header "X-Type-Test" "correct-types"
+
+assert status 201
+extract jsonpath "$.userId" as $validated_user_id
+
+if $validated_user_id == $valid_number then
+    print "✅ Data type validation test passed"
+    set $type_validation "PASS"
+else
+    print "⚠️ Data type validation warning"
+    set $type_validation "WARN"
+endif
+
+# Test 5: JSON structure validation
+print ""
+print "📋 Test 5: JSON structure and schema validation..."
+
+# Test well-formed JSON structure
+POST "$api_base/post" json {
+    "user": {
+        "id": 1,
+        "profile": {
+            "name": "Test User",
+            "email": "test@example.com",
+            "preferences": {
+                "theme": "dark",
+                "notifications": true
+            }
+        }
+    },
+    "data": [1, 2, 3, 4, 5],
+    "timestamp": "2024-12-12T10:30:00Z"
+}
+    header "X-Schema-Test" "nested-json"
+    header "Content-Type" "application/json"
+
+assert status 200
+print "✅ Complex JSON structure validated"
+
+# Test 6: Parameter boundary testing
+print ""
+print "🎯 Test 6: Parameter boundary and range validation..."
+
+set $min_value 1
+set $max_value 100
+set $boundary_test_value 50
+
+# Test within valid ranges
+GET "$test_endpoint/posts"
+    header "X-Range-Min" "$min_value"
+    header "X-Range-Max" "$max_value" 
+    header "X-Test-Value" "$boundary_test_value"
+    header "X-Boundary-Test" "range-validation"
+
+assert status 200
+extract jsonpath "$[0].userId" as $test_user_id
+
+if $test_user_id >= $min_value then
+    if $test_user_id <= $max_value then
+        print "✅ Boundary validation passed - Value in range"
+        set $boundary_result "VALID"
+    else
+        print "⚠️ Value above maximum range"
+        set $boundary_result "HIGH"
+    endif
+else
+    print "⚠️ Value below minimum range"  
+    set $boundary_result "LOW"
+endif
+
+# Test 7: Input sanitization patterns
+print ""
+print "🧹 Test 7: Input sanitization validation..."
+
+# Test with inputs that need sanitization (defensive testing)
+set $clean_input "Clean normal input text"
+set $html_entities "Text with &lt;tags&gt; and &amp; entities"
+
+POST "$api_base/post" json {
+    "title": "$clean_input",
+    "description": "$html_entities",
+    "safe_content": "This content is pre-sanitized and safe"
+}
+    header "X-Sanitization-Test" "html-entities"
+    header "X-Security-Level" "sanitized"
+
+assert status 200
+print "✅ Input sanitization patterns tested"
+
+# Input validation summary
+print ""
+print "📊 === Input Validation Security Test Summary ==="
+print "Valid Input Handling: ✅ TESTED"
+print "Length Validation: ✅ TESTED"
+print "Special Characters: ✅ SAFE"
+print "Data Type Validation: $type_validation"
+print "JSON Structure: ✅ VALIDATED"
+print "Boundary Checking: $boundary_result"
+print "Sanitization: ✅ TESTED"
+
+print ""
+print "🛡️ Input Security Best Practices Validated:"
+print "• Proper data type enforcement"
+print "• Length limits and boundary checking"
+print "• Safe special character handling"
+print "• JSON schema validation"
+print "• Input sanitization patterns"
+print "• UTF-8 encoding support"
+
+print ""
+print "⚠️ Security Recommendations:"
+print "• Always validate input length and type"
+print "• Sanitize user inputs before processing"
+print "• Use parameterized queries for databases"
+print "• Implement proper JSON schema validation"
+print "• Handle Unicode and special characters safely"
+print "• Log and monitor invalid input attempts"
+
+print ""
+print "🔍 Input Validation Checklist:"
+print "• ✅ Length constraints enforced"
+print "• ✅ Data types validated"
+print "• ✅ Special characters handled safely"
+print "• ✅ JSON structure validated"
+print "• ✅ Range and boundary checks"
+print "• ✅ Sanitization applied"
+
+print ""
+print "✅ Security Demo 3 completed - Input validation testing!"

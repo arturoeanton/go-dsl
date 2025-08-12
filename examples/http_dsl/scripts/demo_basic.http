@@ -1,0 +1,233 @@
+# =============================================================================
+# HTTP DSL Demo Script - Basic API Testing
+# =============================================================================
+# This script demonstrates basic HTTP DSL features using public APIs
+# 
+# APIs used:
+#   - JSONPlaceholder: Free fake API for testing
+#   - HTTPBin: HTTP request & response testing service
+# =============================================================================
+
+PRINT "🌟 Starting Basic HTTP DSL Demo"
+PRINT "================================"
+
+# -----------------------------------------------------------------------------
+# Section 1: Basic GET Requests
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 1: Basic GET Requests"
+
+# Get list of users from JSONPlaceholder
+GET "https://jsonplaceholder.typicode.com/users"
+assert status 200
+
+# Extract first user's ID and name
+extract jsonpath "$.[0].id" as $first_user_id
+extract jsonpath "$.[0].name" as $first_user_name
+extract jsonpath "$.[0].email" as $first_user_email
+
+PRINT "First user extracted:"
+print $first_user_name
+print $first_user_email
+
+DELAY 500ms
+
+# Get specific user details
+GET "https://jsonplaceholder.typicode.com/users/1"
+assert status 200
+extract jsonpath "$.username" as $username
+print $username
+
+# -----------------------------------------------------------------------------
+# Section 2: Testing Different HTTP Methods
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 2: Testing HTTP Methods"
+
+# Test POST request
+POST "https://jsonplaceholder.typicode.com/posts" json "{"title":"Test Post","body":"This is a test post created by HTTP DSL","userId":1}"
+assert status 201
+extract jsonpath "$.id" as $new_post_id
+PRINT "Created new post with ID:"
+print $new_post_id
+
+DELAY 500ms
+
+# Test PUT request
+PUT "https://jsonplaceholder.typicode.com/posts/1" json "{"id":1,"title":"Updated Post","body":"This post has been updated","userId":1}"
+assert status 200
+
+# Test PATCH request
+PATCH "https://jsonplaceholder.typicode.com/posts/1" json "{"title":"Patched Title"}"
+assert status 200
+
+# Test DELETE request
+DELETE "https://jsonplaceholder.typicode.com/posts/1"
+assert status 200
+
+# -----------------------------------------------------------------------------
+# Section 3: Headers and Authentication
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 3: Headers and Authentication"
+
+# Test with custom headers
+GET "https://httpbin.org/headers" header "X-Custom-Header" "HTTPDSLTest" header "User-Agent" "HTTPDSLRunner/1.0"
+assert status 200
+assert response contains "X-Custom-Header"
+
+DELAY 500ms
+
+# Test Basic Authentication
+GET "https://httpbin.org/basic-auth/testuser/testpass" auth basic "testuser" "testpass"
+assert status 200
+extract jsonpath "$.authenticated" as $auth_result
+print $auth_result
+
+# Test Bearer Token (httpbin will echo it back)
+GET "https://httpbin.org/bearer" auth bearer "test-token-123456"
+assert status 200
+
+# -----------------------------------------------------------------------------
+# Section 4: Query Parameters and Forms
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 4: Query Parameters and Forms"
+
+# Test query parameters
+GET "https://httpbin.org/get?foo=bar&test=123"
+assert status 200
+assert response contains "foo"
+
+# Test form data submission
+POST "https://httpbin.org/post" form "username" "johndoe" "password" "secret123" "remember" "true"
+assert status 200
+assert response contains "johndoe"
+
+# -----------------------------------------------------------------------------
+# Section 5: Response Time Assertions
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 5: Performance Testing"
+
+# Test response time
+GET "https://httpbin.org/delay/1"
+assert status 200
+assert time less 2000 ms
+
+# Fast endpoint test
+GET "https://httpbin.org/status/200"
+assert status 200
+assert time less 500 ms
+
+# -----------------------------------------------------------------------------
+# Section 6: Working with Variables
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 6: Variables and Data Extraction"
+
+# Set base URL for convenience
+set $base_url "https://jsonplaceholder.typicode.com"
+
+# Get a post and extract data
+GET "$base_url/posts/1"
+extract jsonpath "$.userId" as $post_author_id
+extract jsonpath "$.title" as $post_title
+
+PRINT "Post details extracted:"
+print $post_title
+print $post_author_id
+
+# Use extracted data in next request
+GET "$base_url/users/$post_author_id"
+assert status 200
+extract jsonpath "$.name" as $author_name
+
+PRINT "Post author:"
+print $author_name
+
+# -----------------------------------------------------------------------------
+# Section 7: Conditional Logic
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 7: Conditional Logic"
+
+# Check if service is up
+GET "https://httpbin.org/status/200"
+extract status "" as $service_status
+
+if $service_status == 200 then set $service_health "HEALTHY"
+print $service_health
+
+# Test different status codes
+GET "https://httpbin.org/status/204"
+extract status "" as $no_content_status
+if $no_content_status == 204 then set $message "No content as expected"
+print $message
+
+# -----------------------------------------------------------------------------
+# Section 8: Testing Error Handling
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 8: Error Handling"
+
+# Test 404 response
+GET "https://httpbin.org/status/404"
+extract status "" as $error_status
+if $error_status == 404 then set $error_msg "Resource not found (expected)"
+print $error_msg
+
+# Test 500 response
+GET "https://httpbin.org/status/500"
+extract status "" as $server_error
+if $server_error == 500 then set $server_msg "Server error (expected for test)"
+print $server_msg
+
+# -----------------------------------------------------------------------------
+# Section 9: Complex JSON Manipulation
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 9: Complex JSON Operations"
+
+# Get todos for a user
+GET "$base_url/todos?userId=1"
+assert status 200
+
+# Get first todo item
+extract jsonpath "$.[0].title" as $first_todo
+extract jsonpath "$.[0].completed" as $first_todo_status
+
+PRINT "First TODO item:"
+print $first_todo
+print $first_todo_status
+
+# Get comments for a post
+GET "$base_url/posts/1/comments"
+assert status 200
+extract jsonpath "$.[0].email" as $commenter_email
+PRINT "First commenter email:"
+print $commenter_email
+
+# -----------------------------------------------------------------------------
+# Section 10: Loops and Repetition
+# -----------------------------------------------------------------------------
+
+PRINT "📍 Section 10: Loop Testing"
+
+# Test endpoint stability with repeat
+set $test_count 0
+repeat 3 times do
+  GET "https://httpbin.org/uuid"
+  assert status 200
+endloop
+
+PRINT "✅ Stability test completed - endpoint responded 3 times"
+
+# -----------------------------------------------------------------------------
+# Summary
+# -----------------------------------------------------------------------------
+
+PRINT "================================"
+PRINT "✨ Demo completed successfully!"
+PRINT "All tests passed. The HTTP DSL is working correctly."
+PRINT "================================"

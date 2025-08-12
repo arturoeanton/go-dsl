@@ -1,0 +1,14 @@
+# Test 1: if/then/else en una línea
+set $count 15
+if $count > 10 then set $size "large" else set $size "small"
+print "Size is: $size"
+
+# Test 2: if/then/endif multilinea
+if $count > 10 then
+    set $status "high"
+    print "High count detected"
+    set $alert "true"
+endif
+
+print "Status: $status"
+print "Alert: $alert"

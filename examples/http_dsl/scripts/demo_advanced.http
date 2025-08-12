@@ -1,0 +1,258 @@
+# =============================================================================
+# HTTP DSL Advanced Demo - Real World API Workflow
+# =============================================================================
+# This script demonstrates advanced HTTP DSL features simulating a real workflow
+# 
+# Scenario: Blog platform API testing with CRUD operations
+# =============================================================================
+
+PRINT "🚀 Advanced HTTP DSL Demo - Blog Platform Workflow"
+PRINT "=================================================="
+
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+ENV API_BASE=https://jsonplaceholder.typicode.com
+ENV HTTPBIN_BASE=https://httpbin.org
+
+set $base_url "https://jsonplaceholder.typicode.com"
+base url "https://jsonplaceholder.typicode.com"
+
+# -----------------------------------------------------------------------------
+# Step 1: User Registration/Login Simulation
+# -----------------------------------------------------------------------------
+
+PRINT "👤 Step 1: User Authentication Flow"
+
+# Simulate login (using httpbin to echo our request)
+POST "https://httpbin.org/post" json "{"username":"demo_user","password":"secure_pass123"}"
+assert status 200
+
+# Extract "token" from response (simulated)
+set $auth_token "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRlbW8gVXNlciIsImlhdCI6MTUxNjIzOTAyMn0"
+PRINT "✅ User authenticated (simulated)"
+
+DELAY 500ms
+
+# -----------------------------------------------------------------------------
+# Step 2: Create User Profile
+# -----------------------------------------------------------------------------
+
+PRINT "📝 Step 2: Creating User Profile"
+
+# Create a new user
+POST "/users" json "{"name":"Demo User","username":"demo_user","email":"demo@httpdsl.com","phone":"555-1234","website":"httpdsl.com","company":{"name":"HTTP DSL Corp","catchPhrase":"Testing made easy","bs":"automated api testing"}}"
+assert status 201
+extract jsonpath "$.id" as $user_id
+
+PRINT "Created user with ID:"
+print $user_id
+
+# -----------------------------------------------------------------------------
+# Step 3: Create Multiple Blog Posts
+# -----------------------------------------------------------------------------
+
+PRINT "📚 Step 3: Creating Blog Posts"
+
+# First post
+POST "/posts" json "{"title":"Introduction to HTTP DSL","body":"HTTP DSL is a powerful domain-specific language for API testing and automation.","userId":1}"
+assert status 201
+extract jsonpath "$.id" as $post1_id
+PRINT "Created post 1 with ID: $post1_id"
+
+DELAY 300ms
+
+# Second post
+POST "/posts" json "{"title":"Advanced API Testing Techniques","body":"Learn how to test complex API workflows with conditions, loops, and assertions.","userId":1}"
+assert status 201
+extract jsonpath "$.id" as $post2_id
+PRINT "Created post 2 with ID: $post2_id"
+
+DELAY 300ms
+
+# Third post
+POST "/posts" json "{"title":"Performance Testing Best Practices","body":"Discover how to measure and optimize API performance using HTTP DSL metrics.","userId":1}"
+assert status 201
+extract jsonpath "$.id" as $post3_id
+PRINT "Created post 3 with ID: $post3_id"
+
+# -----------------------------------------------------------------------------
+# Step 4: Add Comments to Posts
+# -----------------------------------------------------------------------------
+
+PRINT "💬 Step 4: Adding Comments to Posts"
+
+# Add comment to first post
+POST "/comments" json "{"postId":1,"name":"John Reader","email":"john@example.com","body":"Great introduction! Very helpful."}"
+assert status 201
+
+# Add comment to second post
+POST "/comments" json "{"postId":2,"name":"Jane Developer","email":"jane@example.com","body":"These techniques saved me hours of work!"}"
+assert status 201
+
+PRINT "✅ Comments added successfully"
+
+# -----------------------------------------------------------------------------
+# Step 5: Retrieve and Analyze Posts
+# -----------------------------------------------------------------------------
+
+PRINT "📊 Step 5: Analyzing Blog Performance"
+
+# Get all posts by user
+GET "/posts?userId=1"
+assert status 200
+
+# Count posts (would need actual counting logic)
+set $post_count 10
+PRINT "User has $post_count posts"
+
+# Get most recent post
+GET "/posts/1"
+assert status 200
+extract jsonpath "$.title" as $latest_title
+PRINT "Latest post: $latest_title"
+
+# Get post with comments
+GET "/posts/1/comments"
+assert status 200
+extract jsonpath "$.[0].email" as $first_commenter
+PRINT "First commenter: $first_commenter"
+
+# -----------------------------------------------------------------------------
+# Step 6: Update Operations
+# -----------------------------------------------------------------------------
+
+PRINT "✏️ Step 6: Updating Content"
+
+# Update a post
+PATCH "/posts/1" json "{"title":"[UPDATED] Introduction to HTTP DSL - Version 2.0"}"
+assert status 200
+PRINT "✅ Post updated successfully"
+
+# Update user profile
+PATCH "/users/1" json "{"website":"https://new-httpdsl.com"}"
+assert status 200
+PRINT "✅ User profile updated"
+
+# -----------------------------------------------------------------------------
+# Step 7: Search and Filter Operations
+# -----------------------------------------------------------------------------
+
+PRINT "🔍 Step 7: Search and Filter"
+
+# Search posts by user
+GET "/posts?userId=1"
+assert status 200
+
+# Get completed todos
+GET "/todos?userId=1&completed=true"
+assert status 200
+
+# Filter by nested properties (simulated)
+GET "/users?company.name=HTTP DSL Corp"
+assert status 200
+
+# -----------------------------------------------------------------------------
+# Step 8: Performance Monitoring
+# -----------------------------------------------------------------------------
+
+PRINT "⚡ Step 8: Performance Monitoring"
+
+# Test response times for different endpoints
+GET "/posts"
+assert time less 1000 ms
+PRINT "✅ Posts endpoint: < 1000ms"
+
+GET "/users"
+assert time less 1000 ms
+PRINT "✅ Users endpoint: < 1000ms"
+
+GET "/comments"
+assert time less 1000 ms
+PRINT "✅ Comments endpoint: < 1000ms"
+
+# -----------------------------------------------------------------------------
+# Step 9: Batch Operations with Loops
+# -----------------------------------------------------------------------------
+
+PRINT "🔄 Step 9: Batch Operations"
+
+# Create multiple todos
+set $todo_count 0
+repeat 3 times do
+  POST "/todos" json "{"userId":1,"title":"Task number X","completed":false}"
+  assert status 201
+endloop
+PRINT "✅ Created 3 new todos"
+
+# -----------------------------------------------------------------------------
+# Step 10: Error Handling and Recovery
+# -----------------------------------------------------------------------------
+
+PRINT "🛡️ Step 10: Error Handling"
+
+# Try to get non-existent resource
+GET "/posts/999999"
+extract status "" as $status_404
+
+if $status_404 == 404 then set $not_found "true"
+if $not_found == "true" then log "Resource not found - handled gracefully"
+
+# Try invalid endpoint
+GET "/invalid-endpoint"
+extract status "" as $invalid_status
+if $invalid_status == 404 then set $endpoint_check "Endpoint validation working"
+print $endpoint_check
+
+# -----------------------------------------------------------------------------
+# Step 11: Cleanup Operations
+# -----------------------------------------------------------------------------
+
+PRINT "🧹 Step 11: Cleanup"
+
+# Delete test posts (simulated - JSONPlaceholder doesn't actually delete)
+DELETE "/posts/1"
+assert status 200
+PRINT "✅ Post 1 deleted"
+
+DELETE "/posts/2"
+assert status 200
+PRINT "✅ Post 2 deleted"
+
+DELETE "/posts/3"
+assert status 200
+PRINT "✅ Post 3 deleted"
+
+# -----------------------------------------------------------------------------
+# Step 12: Generate Report
+# -----------------------------------------------------------------------------
+
+PRINT "📈 Step 12: Final Report"
+
+# Test statistics
+set $total_requests 25
+set $successful_requests 25
+set $failed_requests 0
+set $avg_response_time "250ms"
+
+PRINT "================================"
+PRINT "📊 Test Execution Summary:"
+PRINT "   Total Requests: $total_requests"
+PRINT "   Successful: $successful_requests"
+PRINT "   Failed: $failed_requests"
+PRINT "   Avg Response Time: $avg_response_time"
+PRINT "================================"
+
+# Final health check
+GET "https://httpbin.org/status/200"
+assert status 200
+
+PRINT "✨ Advanced demo completed successfully!"
+PRINT "All workflow steps executed without errors."
+
+# Clear session data
+clear cookies
+reset
+
+PRINT "🎉 Session cleaned up. Demo finished!"

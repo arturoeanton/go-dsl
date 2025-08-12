@@ -1,0 +1,32 @@
+# Simple test for HTTPDSLv3
+# Tests the most critical fixes
+
+PRINT "🧪 Testing HTTPDSLv3 Core Features"
+
+# Test 1: Set variables
+set $name "HTTPDSLv3"
+set $version 3.0
+PRINT "System: $name version $version"
+
+# Test 2: Multiple headers (critical fix)
+GET "https://httpbin.org/headers" header "X-Test-1" "Value1" header "X-Test-2" "Value2"
+assert status 200
+PRINT "✅ Multiple headers work!"
+
+# Test 3: JSON with @ (critical fix)  
+POST "https://httpbin.org/post" json {"email":"test@example.com","name":"Test"}
+assert status 200
+PRINT "✅ JSON with @ works!"
+
+# Test 4: Arithmetic
+set $a 10
+set $b 5
+set $sum $a + $b
+PRINT "10 + 5 = $sum"
+
+# Test 5: Simple conditional
+set $status 200
+if $status == 200 then set $result "OK"
+print $result
+
+PRINT "✨ All critical features work!"

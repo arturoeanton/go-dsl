@@ -1,0 +1,17 @@
+# Demo 1: Básico - Variables y HTTP Simple
+# Aprende a usar variables y realizar requests HTTP básicos
+
+print "=== Demo 1: HTTP Básico con Variables ==="
+
+# Definir variables básicas
+set $base_url "https://jsonplaceholder.typicode.com"
+set $api_version "v1"
+print "API Base URL: $base_url"
+
+# Request HTTP simple
+GET "$base_url/posts/1"
+
+# Verificar que la respuesta sea exitosa
+assert status 200
+
+print "✅ Demo 1 completado - Variables y HTTP básico funcionando!"

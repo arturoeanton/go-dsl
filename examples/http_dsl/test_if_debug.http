@@ -1,0 +1,7 @@
+set $x 15
+
+# This should set $result to "YES" because 15 > 10
+if $x > 10 then set $result "YES" else set $result "NO"
+
+print "X is: $x"
+print "Result is: $result (should be YES)"

@@ -1,0 +1,3 @@
+# Try to extract without making a request first
+extract jsonpath "$.id" as $id
+print "Should fail: extracted $id"

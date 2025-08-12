@@ -1,0 +1,14 @@
+# Test 1: Should be YES
+set $x 15
+if $x > 10 then set $result1 "YES" else set $result1 "NO"
+print "Test 1: X=$x, Result=$result1 (should be YES)"
+
+# Test 2: Should be NO
+set $y 5
+if $y > 10 then set $result2 "YES" else set $result2 "NO"
+print "Test 2: Y=$y, Result=$result2 (should be NO)"
+
+# Test 3: Edge case equal
+set $z 10
+if $z > 10 then set $result3 "YES" else set $result3 "NO"
+print "Test 3: Z=$z, Result=$result3 (should be NO because 10 is not > 10)"

@@ -1,0 +1,9 @@
+set $x 15
+
+# Test 1: If simple funciona?
+if $x > 10 then set $result "SI_FUNCIONA"
+
+# Test 2: Multiples headers funciona?
+GET "https://httpbin.org/headers" header "X-Test-1" "value1" header "X-Test-2" "value2"
+
+print "Result: $result"

@@ -1,0 +1,167 @@
+# Security Demo 2: Authentication Validation Testing
+# Learn to test different authentication mechanisms and validate security
+
+print "🔐 === Security Demo 2: Authentication Validation Testing ==="
+print "Testing authentication mechanisms for security validation"
+
+set $api_base "https://httpbin.org"
+set $test_endpoint "https://jsonplaceholder.typicode.com"
+
+# Test 1: Valid authentication scenarios
+print ""
+print "✅ Test 1: Valid authentication scenarios..."
+
+set $valid_bearer "Bearer valid-token-12345"
+set $valid_api_key "api-key-abcdef67890"
+
+# Test valid Bearer token
+GET "$api_base/bearer"
+    header "Authorization" "$valid_bearer"
+    header "X-Auth-Test" "valid-bearer"
+    header "X-Security-Validation" "authentication"
+
+assert status 200
+print "✅ Valid Bearer token test passed"
+
+# Test API key authentication
+GET "$test_endpoint/posts/1"
+    header "X-API-Key" "$valid_api_key"
+    header "Authorization" "$valid_bearer"
+    header "X-Auth-Method" "api-key"
+
+assert status 200
+extract jsonpath "$.userId" as $user_id
+print "✅ API Key authentication test passed - User ID: $user_id"
+
+# Test 2: Authentication failure scenarios (defensive testing)
+print ""
+print "🚫 Test 2: Authentication failure scenarios..."
+
+# Test without authentication (should be handled gracefully)
+GET "$api_base/status/401"
+    header "X-Auth-Test" "no-auth"
+    header "X-Expected-Status" "401"
+
+# Note: We expect 401 but don't assert it as failure - this is defensive testing
+print "⚠️ No-auth test completed (expected 401)"
+
+# Test 3: Token validation and expiry simulation
+print ""
+print "⏰ Test 3: Token validation and expiry testing..."
+
+set $expired_token "Bearer expired-token-old"
+set $malformed_token "Malformed-Token-Format"
+
+# Test with potentially expired token (defensive approach)
+GET "$test_endpoint/users/1"
+    header "Authorization" "$expired_token"
+    header "X-Token-Test" "expired-simulation"
+    header "X-Security-Check" "token-validity"
+
+# We still expect success from public API, but we're testing the pattern
+assert status 200
+print "⚠️ Expired token pattern tested (public API succeeded as expected)"
+
+# Test 4: Multi-factor authentication simulation
+print ""
+print "🔒 Test 4: Multi-factor authentication patterns..."
+
+set $primary_auth "Bearer primary-token-123"
+set $secondary_factor "MFA-CODE-789"
+
+GET "$test_endpoint/posts"
+    header "Authorization" "$primary_auth"
+    header "X-MFA-Token" "$secondary_factor"
+    header "X-Auth-Method" "multi-factor"
+    header "X-Device-ID" "trusted-device-001"
+
+assert status 200
+extract jsonpath "$[0].id" as $first_post
+print "✅ Multi-factor pattern tested - First post: $first_post"
+
+# Test 5: Role-based access control validation
+print ""
+print "👥 Test 5: Role-based access control (RBAC) testing..."
+
+set $admin_token "Bearer admin-high-privilege"
+set $user_token "Bearer user-standard-access"
+set $readonly_token "Bearer readonly-limited"
+
+# Test admin privileges
+if $admin_token contains "admin" then
+    print "🔧 Testing admin access pattern..."
+    GET "$test_endpoint/users"
+        header "Authorization" "$admin_token"
+        header "X-Role" "administrator"
+        header "X-Permission-Level" "full"
+    
+    assert status 200
+    extract jsonpath "$[0].id" as $admin_user_id
+    print "✅ Admin access test passed - User: $admin_user_id"
+    set $admin_access "GRANTED"
+else
+    set $admin_access "DENIED"
+endif
+
+# Test regular user privileges  
+print "👤 Testing user access pattern..."
+GET "$test_endpoint/posts/1"
+    header "Authorization" "$user_token"
+    header "X-Role" "user"
+    header "X-Permission-Level" "standard"
+
+assert status 200
+extract jsonpath "$.title" as $post_title
+print "✅ User access test passed"
+
+# Test 6: Session validation patterns
+print ""
+print "📱 Test 6: Session validation patterns..."
+
+set $session_id "SESSION-ABC123DEF456"
+set $csrf_token "CSRF-TOKEN-XYZ789"
+
+repeat 2 times do
+    GET "$api_base/cookies"
+        header "Cookie" "sessionid=$session_id"
+        header "X-CSRF-Token" "$csrf_token"
+        header "X-Session-Test" "validation"
+    
+    assert status 200
+    print "Session validation iteration completed"
+    
+    # Simulate session refresh
+    set $session_id "SESSION-REFRESHED-NEW"
+endloop
+
+print "✅ Session validation patterns tested"
+
+# Authentication security summary
+print ""
+print "📊 === Authentication Security Test Summary ==="
+print "Bearer Token Validation: ✅ TESTED"
+print "API Key Authentication: ✅ TESTED"
+print "Token Expiry Patterns: ⚠️ SIMULATED"
+print "Multi-Factor Auth: ✅ PATTERN TESTED"
+print "Role-Based Access: $admin_access"
+print "Session Management: ✅ TESTED"
+
+print ""
+print "🛡️ Security Best Practices Validated:"
+print "• Strong token formats (Bearer JWT-style)"
+print "• Multi-layer authentication"
+print "• Role-based permission checking"
+print "• Session security patterns"
+print "• CSRF protection headers"
+print "• Graceful authentication failure handling"
+
+print ""
+print "⚠️ Security Recommendations:"
+print "• Always use HTTPS for authentication"
+print "• Implement token expiry and refresh"
+print "• Use strong, random session IDs"
+print "• Validate all authentication headers"
+print "• Log authentication attempts for monitoring"
+
+print ""
+print "✅ Security Demo 2 completed - Authentication validation!"

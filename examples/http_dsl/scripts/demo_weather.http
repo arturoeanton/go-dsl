@@ -1,0 +1,201 @@
+# =============================================================================
+# HTTP DSL Demo - Weather API with Advanced Features
+# =============================================================================
+# This script demonstrates advanced HTTP DSL features with weather APIs
+# =============================================================================
+
+PRINT "🌤️ Weather API Demo with Advanced Features"
+PRINT "=========================================="
+
+# -----------------------------------------------------------------------------
+# Using Open-Meteo API (Free, No API Key Required)
+# -----------------------------------------------------------------------------
+
+PRINT "🌍 Getting Weather Data"
+
+# Set base URL for weather API
+set $weather_base "https://api.open-meteo.com/v1"
+
+# Get weather for New York
+set $latitude "40.7128"
+set $longitude "-74.0060"
+set $city "New York"
+
+PRINT "📍 Fetching weather for $city"
+
+GET "$weather_base/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,windspeed_10m,relative_humidity_2m&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=America/New_York"
+assert status 200
+
+# Extract current weather
+extract jsonpath "$.current.temperature_2m" as $current_temp
+extract jsonpath "$.current.windspeed_10m" as $wind_speed
+extract jsonpath "$.current.relative_humidity_2m" as $humidity
+
+PRINT "Current Weather in $city:"
+PRINT "🌡️ Temperature: $current_temp°C"
+PRINT "💨 Wind Speed: $wind_speed km/h"
+PRINT "💧 Humidity: $humidity%"
+
+# Extract daily forecast
+extract jsonpath "$.daily.temperature_2m_max[0]" as $today_max
+extract jsonpath "$.daily.temperature_2m_min[0]" as $today_min
+
+PRINT "Today's Forecast:"
+PRINT "📈 Max: $today_max°C"
+PRINT "📉 Min: $today_min°C"
+
+DELAY 1s
+
+# -----------------------------------------------------------------------------
+# Multiple Cities Comparison
+# -----------------------------------------------------------------------------
+
+PRINT "🌆 Comparing Weather Across Cities"
+
+# London
+GET "$weather_base/forecast?latitude=51.5074&longitude=-0.1278&current=temperature_2m"
+assert status 200
+extract jsonpath "$.current.temperature_2m" as $london_temp
+PRINT "🇬🇧 London: $london_temp°C"
+
+DELAY 500ms
+
+# Tokyo
+GET "$weather_base/forecast?latitude=35.6762&longitude=139.6503&current=temperature_2m"
+assert status 200
+extract jsonpath "$.current.temperature_2m" as $tokyo_temp
+PRINT "🇯🇵 Tokyo: $tokyo_temp°C"
+
+DELAY 500ms
+
+# Sydney
+GET "$weather_base/forecast?latitude=-33.8688&longitude=151.2093&current=temperature_2m"
+assert status 200
+extract jsonpath "$.current.temperature_2m" as $sydney_temp
+PRINT "🇦🇺 Sydney: $sydney_temp°C"
+
+# -----------------------------------------------------------------------------
+# Using HTTPBin for Advanced Features Demo
+# -----------------------------------------------------------------------------
+
+PRINT "🔧 Demonstrating Advanced HTTP Features"
+
+# Test with custom User-Agent
+GET "https://httpbin.org/user-agent" header "User-Agent" "WeatherBot/1.0 (HTTP-DSL)"
+assert status 200
+assert response contains "WeatherBot"
+
+# Test cookies
+GET "https://httpbin.org/cookies/set?session=weather123"
+assert status 200
+
+GET "https://httpbin.org/cookies"
+assert status 200
+assert response contains "session"
+
+# Test response formats
+GET "https://httpbin.org/json"
+assert status 200
+assert response contains "slideshow"
+
+# Test GZIP compression
+GET "https://httpbin.org/gzip"
+assert status 200
+assert response contains "gzipped"
+
+# -----------------------------------------------------------------------------
+# Conditional Weather Alerts
+# -----------------------------------------------------------------------------
+
+PRINT "⚠️ Weather Alert System"
+
+# Check if temperature is extreme
+set $alert_threshold 30
+
+# Simulate temperature check
+set $current_temperature 25
+
+if $current_temperature > $alert_threshold then set $heat_warning "HIGH TEMPERATURE ALERT!"
+if $current_temperature < 0 then set $cold_warning "FREEZING TEMPERATURE ALERT!"
+
+# Check for alerts
+if $current_temperature > 20 then set $weather_status "Warm"
+if $current_temperature < 10 then set $weather_status "Cold"
+
+PRINT "Weather Status: $weather_status"
+
+# -----------------------------------------------------------------------------
+# Performance Monitoring
+# -----------------------------------------------------------------------------
+
+PRINT "📊 API Performance Monitoring"
+
+# Test weather API performance
+set $total_time 0
+
+repeat 3 times do
+  GET "$weather_base/forecast?latitude=40.7128&longitude=-74.0060&current=temperature_2m"
+  assert time less 2000 ms
+endloop
+
+PRINT "✅ Weather API responded consistently"
+
+# -----------------------------------------------------------------------------
+# Error Handling Demo
+# -----------------------------------------------------------------------------
+
+PRINT "🛡️ Error Handling Examples"
+
+# Test invalid coordinates
+GET "$weather_base/forecast?latitude=999&longitude=999&current=temperature_2m"
+extract status "" as $error_status
+
+if $error_status == 400 then set $error_handled "Invalid coordinates handled"
+print $error_handled
+
+# Test rate limiting simulation
+GET "https://httpbin.org/status/429"
+extract status "" as $rate_limit_status
+
+if $rate_limit_status == 429 then set $rate_limit_msg "Rate limit detected - would implement backoff"
+print $rate_limit_msg
+
+# -----------------------------------------------------------------------------
+# Data Aggregation
+# -----------------------------------------------------------------------------
+
+PRINT "📈 Weather Data Aggregation"
+
+# Collect multiple data points
+set $data_points 0
+set $total_requests 5
+
+PRINT "Collecting weather data points..."
+
+# Note: In a real scenario, you'd collect data over time
+repeat 3 times do
+  GET "$weather_base/forecast?latitude=40.7128&longitude=-74.0060&current=temperature_2m"
+  assert status 200
+endloop
+
+PRINT "✅ Collected weather data successfully"
+
+# -----------------------------------------------------------------------------
+# Final Report
+# -----------------------------------------------------------------------------
+
+PRINT "=========================================="
+PRINT "📊 Weather API Demo Summary"
+PRINT "=========================================="
+PRINT "✅ Successfully fetched weather for multiple cities"
+PRINT "✅ Demonstrated conditional logic"
+PRINT "✅ Tested error handling"
+PRINT "✅ Monitored API performance"
+PRINT "✅ All assertions passed"
+PRINT "=========================================="
+
+# Clean up
+clear cookies
+reset
+
+PRINT "🎯 Demo completed successfully!"
