@@ -234,6 +234,201 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 			results = append(results, fmt.Sprintf("Repeated %d times", count))
 			i++ // Skip the endloop
 			
+		} else if strings.HasPrefix(line, "while ") && strings.HasSuffix(line, " do") {
+			// Handle while blocks
+			// Extract condition
+			conditionStr := strings.TrimSuffix(strings.TrimPrefix(line, "while "), " do")
+			
+			// Collect the loop body
+			i++
+			var loopBody []string
+			nestLevel := 1
+			
+			for i < len(lines) && nestLevel > 0 {
+				innerLine := strings.TrimSpace(lines[i])
+				
+				if innerLine == "endloop" {
+					nestLevel--
+					if nestLevel == 0 {
+						break
+					}
+				} else if strings.HasSuffix(innerLine, " do") {
+					nestLevel++
+				}
+				
+				if innerLine != "" && innerLine != "endloop" {
+					loopBody = append(loopBody, innerLine)
+				}
+				i++
+			}
+			
+			// Execute the while loop
+			maxIterations := 1000 // Safety limit
+			iterations := 0
+			
+			for iterations < maxIterations {
+				// Evaluate condition
+				shouldContinue := false
+				
+				// Parse the condition (e.g., "$count < 10")
+				parts := strings.Fields(conditionStr)
+				if len(parts) == 3 {
+					varName := strings.TrimPrefix(parts[0], "$")
+					operator := parts[1]
+					compareToStr := parts[2]
+					
+					if val, ok := hd.variables[varName]; ok {
+						var numVal, compareVal float64
+						switch v := val.(type) {
+						case int:
+							numVal = float64(v)
+						case float64:
+							numVal = v
+						case string:
+							fmt.Sscanf(v, "%f", &numVal)
+						default:
+							numVal = 0
+						}
+						fmt.Sscanf(compareToStr, "%f", &compareVal)
+						
+						switch operator {
+						case "<":
+							shouldContinue = numVal < compareVal
+						case ">":
+							shouldContinue = numVal > compareVal
+						case "<=":
+							shouldContinue = numVal <= compareVal
+						case ">=":
+							shouldContinue = numVal >= compareVal
+						case "==":
+							shouldContinue = numVal == compareVal
+						case "!=":
+							shouldContinue = numVal != compareVal
+						}
+					}
+				}
+				
+				if !shouldContinue {
+					break
+				}
+				
+				hd.SetVariable("_iteration", iterations + 1)
+				
+				for _, loopLine := range loopBody {
+					result, err := hd.ParseWithContext(loopLine)
+					if err != nil {
+						return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
+					}
+					if result != nil && result != "" {
+						results = append(results, result)
+					}
+				}
+				
+				iterations++
+			}
+			
+			if iterations >= maxIterations {
+				return results, fmt.Errorf("while loop exceeded maximum iterations (%d)", maxIterations)
+			}
+			
+			results = append(results, fmt.Sprintf("While loop executed %d times", iterations))
+			i++ // Skip the endloop
+			
+		} else if strings.HasPrefix(line, "foreach ") && strings.Contains(line, " in ") && strings.HasSuffix(line, " do") {
+			// Handle foreach blocks
+			// Extract item variable and list
+			parts := strings.Split(line, " in ")
+			if len(parts) != 2 {
+				return results, fmt.Errorf("invalid foreach syntax: %s", line)
+			}
+			
+			itemVar := strings.TrimPrefix(strings.TrimPrefix(parts[0], "foreach "), "$")
+			listPart := strings.TrimSuffix(parts[1], " do")
+			
+			// Collect the loop body
+			i++
+			var loopBody []string
+			nestLevel := 1
+			
+			for i < len(lines) && nestLevel > 0 {
+				innerLine := strings.TrimSpace(lines[i])
+				
+				if innerLine == "endloop" {
+					nestLevel--
+					if nestLevel == 0 {
+						break
+					}
+				} else if strings.HasSuffix(innerLine, " do") {
+					nestLevel++
+				}
+				
+				if innerLine != "" && innerLine != "endloop" {
+					loopBody = append(loopBody, innerLine)
+				}
+				i++
+			}
+			
+			// Get the list to iterate over
+			var items []interface{}
+			
+			// Check if it's a JSON array literal
+			if strings.HasPrefix(listPart, "[") && strings.HasSuffix(listPart, "]") {
+				// Parse JSON array
+				listStr := listPart
+				// Simple parsing for string arrays like ["apple", "banana", "orange"]
+				listStr = strings.Trim(listStr, "[]")
+				parts := strings.Split(listStr, ",")
+				for _, part := range parts {
+					item := strings.TrimSpace(part)
+					item = strings.Trim(item, "\"'")
+					items = append(items, item)
+				}
+			} else if strings.HasPrefix(listPart, "$") {
+				// It's a variable reference
+				varName := strings.TrimPrefix(listPart, "$")
+				if val, ok := hd.variables[varName]; ok {
+					switch v := val.(type) {
+					case []interface{}:
+						items = v
+					case []string:
+						for _, s := range v {
+							items = append(items, s)
+						}
+					case string:
+						// Try to parse as JSON array
+						if strings.HasPrefix(v, "[") {
+							v = strings.Trim(v, "[]")
+							parts := strings.Split(v, ",")
+							for _, part := range parts {
+								item := strings.TrimSpace(part)
+								item = strings.Trim(item, "\"'")
+								items = append(items, item)
+							}
+						}
+					}
+				}
+			}
+			
+			// Execute the foreach loop
+			for idx, item := range items {
+				hd.SetVariable(itemVar, item)
+				hd.SetVariable("_index", idx)
+				hd.SetVariable("_iteration", idx + 1)
+				
+				for _, loopLine := range loopBody {
+					result, err := hd.ParseWithContext(loopLine)
+					if err != nil {
+						return results, fmt.Errorf("error in foreach iteration %d: %v", idx+1, err)
+					}
+					if result != nil && result != "" {
+						results = append(results, result)
+					}
+				}
+			}
+			
+			results = append(results, fmt.Sprintf("Foreach executed for %d items", len(items)))
+			i++ // Skip the endloop
+			
 		} else {
 			// Special handling for single-line if/then/else to avoid double execution
 			if strings.HasPrefix(line, "if ") && strings.Contains(line, " then ") && strings.Contains(line, " else ") && !strings.Contains(line, "endif") {
