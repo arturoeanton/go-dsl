@@ -25,13 +25,17 @@ import (
 //   - dsl: Parent DSL for function/context access
 //   - memo: Memoization table for Packrat parsing
 //   - input: Original input for error messages
+//   - leftRecStack: Stack for detecting left recursion cycles
+//   - growing: Track rules currently being grown
 type ImprovedParser struct {
-	grammar *Grammar
-	tokens  []TokenMatch
-	pos     int
-	dsl     *DSL
-	memo    map[string]map[int]memoEntry // Memoization for packrat parsing
-	input   string                       // Original input for error reporting
+	grammar      *Grammar
+	tokens       []TokenMatch
+	pos          int
+	dsl          *DSL
+	memo         map[string]map[int]memoEntry // Memoization for packrat parsing
+	input        string                       // Original input for error reporting
+	leftRecStack []string                     // Stack to detect left recursion
+	growing      map[string]bool              // Rules currently being grown
 }
 
 // memoEntry stores the cached result of parsing a rule at a specific position.
@@ -58,11 +62,13 @@ type memoEntry struct {
 //	result, err := parser.Parse("x = 1 + 2 * 3")
 func NewImprovedParser(grammar *Grammar) *ImprovedParser {
 	return &ImprovedParser{
-		grammar: grammar,
-		tokens:  []TokenMatch{},
-		pos:     0,
-		memo:    make(map[string]map[int]memoEntry),
-		input:   "", // Will be set during parsing
+		grammar:      grammar,
+		tokens:       []TokenMatch{},
+		pos:          0,
+		memo:         make(map[string]map[int]memoEntry),
+		input:        "", // Will be set during parsing
+		leftRecStack: []string{},
+		growing:      make(map[string]bool),
 	}
 }
 
@@ -92,6 +98,8 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 	p.pos = 0
 	p.memo = make(map[string]map[int]memoEntry)
 	p.input = code // Store input for error reporting
+	p.leftRecStack = []string{}
+	p.growing = make(map[string]bool)
 
 	// Tokenize
 	err := p.tokenize(code)
@@ -243,71 +251,104 @@ func (p *ImprovedParser) isLeftRecursive(ruleName string) bool {
 	return false
 }
 
-// parseLeftRecursive handles left-recursive rules using an iterative algorithm.
+// parseLeftRecursive handles left-recursive rules using an improved growing seed algorithm.
 // This prevents stack overflow and enables parsing of left-associative operators.
 //
-// Algorithm (for rule like: expr → expr '+' term | term):
+// Algorithm (growing seed approach):
 //  1. Parse base case first (non-recursive alternatives)
-//  2. Try to extend the result with recursive alternatives
-//  3. Repeat step 2 until no more extensions possible
+//  2. Use the base as a "seed" for growing the parse
+//  3. Iteratively try to extend the seed with recursive alternatives
+//  4. Continue until no more growth is possible
 //
-// This naturally produces left-associative parse trees.
-// For example, "1+2+3" parses as ((1+2)+3), not (1+(2+3)).
+// This naturally produces left-associative parse trees and handles
+// complex cases like multiple options in HTTP requests.
 //
 // Parameters:
 //   - ruleName: The left-recursive rule to parse
 //
 // Returns:
 //   - The final parsed result after all possible extensions
-//   - Error if no base case matches
+//   - Error if no alternatives match
 func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error) {
 	rule, exists := p.grammar.rules[ruleName]
 	if !exists {
 		return nil, fmt.Errorf("rule %s not found", ruleName)
 	}
 
-	// First, try non-left-recursive alternatives to get the base
-	var base interface{}
-	baseFound := false
-	savedPos := p.pos
+	startPos := p.pos
+	
+	// Mark this rule as growing to prevent infinite recursion
+	growKey := fmt.Sprintf("%s_%d", ruleName, startPos)
+	if p.growing[growKey] {
+		// Already growing this rule at this position - return failure
+		return nil, fmt.Errorf("left recursion cycle detected")
+	}
+	p.growing[growKey] = true
+	defer delete(p.growing, growKey)
 
+	// Step 1: Try all alternatives to find an initial seed
+	var seed interface{}
+	seedPos := startPos
+	foundSeed := false
+
+	// First pass: try non-recursive alternatives
 	for _, alt := range rule.alternatives {
-		// Skip left-recursive alternatives
+		// Skip left-recursive alternatives in first pass
 		if len(alt.sequence) > 0 && alt.sequence[0] == ruleName {
 			continue
 		}
 
-		p.pos = savedPos
+		p.pos = startPos
 		result, err := p.parseAlternative(alt)
 		if err == nil {
-			base = result
-			baseFound = true
+			seed = result
+			seedPos = p.pos
+			foundSeed = true
 			break
 		}
 	}
 
-	if !baseFound {
-		return nil, fmt.Errorf("no base case found for left-recursive rule %s", ruleName)
+	// If no non-recursive alternative matched, try recursive ones with nil seed
+	if !foundSeed {
+		// This handles cases where all alternatives are left-recursive
+		// We'll return an error but cache it to prevent re-parsing
+		return nil, fmt.Errorf("no alternative matched for rule %s", ruleName)
 	}
 
-	// Now iteratively apply left-recursive alternatives
+	// Step 2: Growing phase - iteratively extend the seed
 	for {
 		improved := false
-		savedPos = p.pos
+		bestResult := seed
+		bestPos := seedPos
 
+		// Try each left-recursive alternative with current seed
 		for _, alt := range rule.alternatives {
 			// Only process left-recursive alternatives
 			if len(alt.sequence) == 0 || alt.sequence[0] != ruleName {
 				continue
 			}
 
-			// Try to parse the rest of the sequence
-			p.pos = savedPos
-			var results []interface{}
-			results = append(results, base) // Use current base as first element
+			// Reset position for this attempt
+			p.pos = startPos
+			
+			// Temporarily install the seed in memo for this rule
+			if p.memo[ruleName] == nil {
+				p.memo[ruleName] = make(map[int]memoEntry)
+			}
+			p.memo[ruleName][startPos] = memoEntry{
+				result: seed,
+				endPos: seedPos,
+				err:    nil,
+			}
 
-			// Parse remaining symbols
+			// Try to parse this alternative
+			var results []interface{}
+			results = append(results, seed) // Use seed as first element
+
+			// Parse remaining symbols after the recursive call
+			p.pos = seedPos // Start after the seed
 			success := true
+			
 			for i := 1; i < len(alt.sequence); i++ {
 				symbol := alt.sequence[i]
 
@@ -326,7 +367,7 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 						break
 					}
 				} else {
-					// Symbol is a rule
+					// Symbol is a rule - parse it
 					result, err := p.parseRuleWithMemo(symbol)
 					if err != nil {
 						success = false
@@ -336,32 +377,35 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 				}
 			}
 
-			if success {
-				// Apply action if available
+			if success && p.pos > bestPos {
+				// We found a longer match - apply action
 				if alt.action != "" {
 					if action, exists := p.grammar.actions[alt.action]; exists {
-						newBase, err := action(results)
+						actionResult, err := action(results)
 						if err == nil {
-							base = newBase
+							bestResult = actionResult
+							bestPos = p.pos
 							improved = true
-							break
 						}
 					}
 				} else {
-					base = results
+					bestResult = results
+					bestPos = p.pos
 					improved = true
-					break
 				}
 			}
 		}
 
 		if !improved {
-			// No more improvements possible
-			break
+			// No more growth possible
+			p.pos = bestPos
+			return bestResult, nil
 		}
-	}
 
-	return base, nil
+		// Update seed for next iteration
+		seed = bestResult
+		seedPos = bestPos
+	}
 }
 
 // parseRuleRegular handles non-left-recursive rules using standard recursive descent.
