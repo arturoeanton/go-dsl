@@ -1,0 +1,2 @@
+load "test_input.wav"
+fft with window hamming

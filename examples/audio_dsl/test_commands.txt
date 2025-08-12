@@ -1,0 +1,19 @@
+load "test_input.wav"
+fft
+fft with window hamming
+spectrum
+phase
+ifft
+mark at 0.5s
+copy from 0.2s to 0.8s
+paste at 1.5s
+normalize
+filter lowpass 2000 Hz
+amplify 6 dB
+trim from 0.1s to 2.0s
+compress type flac ratio 4
+save "test_output.wav"
+laplace
+inverse_laplace
+resample rate 22050 Hz
+save "test_resampled.wav"
