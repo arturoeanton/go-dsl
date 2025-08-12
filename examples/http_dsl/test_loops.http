@@ -1,0 +1,49 @@
+# Test all loop types
+
+# Test 1: While loop
+print "=== Testing While Loop ==="
+set $count 0
+while $count < 5 do
+    print "While iteration: $count"
+    set $count $count + 1
+endloop
+
+# Test 2: Foreach with inline array
+print ""
+print "=== Testing Foreach with Inline Array ==="
+foreach $item in ["apple", "banana", "orange"] do
+    print "Fruit: $item"
+endloop
+
+# Test 3: Foreach with variable
+print ""
+print "=== Testing Foreach with Variable ==="
+set $fruits "[\"strawberry\", \"mango\", \"grape\"]"
+foreach $fruit in $fruits do
+    print "Another fruit: $fruit"
+endloop
+
+# Test 4: Nested loops
+print ""
+print "=== Testing Nested Loops ==="
+set $outer 0
+while $outer < 3 do
+    print "Outer loop: $outer"
+    repeat 2 times do
+        print "  Inner repeat"
+    endloop
+    set $outer $outer + 1
+endloop
+
+# Test 5: Loop with HTTP request
+print ""
+print "=== Testing Loop with HTTP Request ==="
+set $endpoints "[\"posts/1\", \"posts/2\", \"posts/3\"]"
+foreach $endpoint in $endpoints do
+    GET "https://jsonplaceholder.typicode.com/$endpoint"
+    extract jsonpath "$.title" as $title
+    print "Post title: $title"
+endloop
+
+print ""
+print "✅ All loop tests completed!"

@@ -1,0 +1,27 @@
+# Comprehensive regex extraction test
+
+# Test 1: Extract from JSON response
+GET "https://httpbin.org/json"
+extract regex "\"author\":\\s*\"([^\"]+)\"" as $author
+print "Author: $author"
+
+# Test 2: Extract from HTML
+GET "https://httpbin.org/html"
+extract regex "<h1>(.*?)</h1>" as $heading
+print "Heading: $heading"
+
+# Test 3: Extract multiple values
+extract regex "<p>(.*?)</p>" as $paragraph
+print "First paragraph: $paragraph"
+
+# Test 4: Extract with complex pattern
+POST "https://httpbin.org/post" json {"test":"value123","code":"ABC-456-XYZ"}
+extract regex "\"code\":\\s*\"([A-Z]{3}-\\d{3}-[A-Z]{3})\"" as $code
+print "Code extracted: $code"
+
+# Test 5: Extract numbers
+extract regex "\\d+" as $number
+print "First number found: $number"
+
+print ""
+print "✅ All regex tests completed!"

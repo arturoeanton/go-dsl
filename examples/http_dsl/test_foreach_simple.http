@@ -1,0 +1,5 @@
+# Simple foreach test
+foreach $item in ["apple", "banana", "orange"] do
+    print "Item: $item"
+endloop
+print "Foreach completed"

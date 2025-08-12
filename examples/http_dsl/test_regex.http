@@ -1,0 +1,10 @@
+# Test regex extraction
+GET "https://httpbin.org/html"
+
+# Try to extract a simple pattern  
+extract regex "<title>(.*?)</title>" as $title
+print "Title found: $title"
+
+# Try another pattern
+extract regex "<h1>(.*?)</h1>" as $heading
+print "Heading found: $heading"
