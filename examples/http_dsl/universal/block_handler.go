@@ -190,7 +190,26 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 			// Parse the repeat count
 			countStr := parts[1]
 			var count int
-			fmt.Sscanf(countStr, "%d", &count)
+			
+			// Check if it's a variable
+			if strings.HasPrefix(countStr, "$") {
+				varName := strings.TrimPrefix(countStr, "$")
+				if val, ok := hd.variables[varName]; ok {
+					switch v := val.(type) {
+					case int:
+						count = v
+					case float64:
+						count = int(v)
+					case string:
+						fmt.Sscanf(v, "%d", &count)
+					default:
+						count = 0
+					}
+				}
+			} else {
+				// It's a literal number
+				fmt.Sscanf(countStr, "%d", &count)
+			}
 			
 			// Collect the loop body
 			i++
