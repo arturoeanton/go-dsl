@@ -224,41 +224,6 @@ extract jsonpath "$.id" as $id  # Sin GET/POST previo
 
 ---
 
-## 🟡 PARCIALMENTE FUNCIONANDO
-
-### 🟡 **1. REPEAT LOOPS**
-**Estado:** ⚠️ PARCIAL (60% funcionando)  
-**Impacto:** MEDIO  
-**Problema:** Funciona básico pero falla con variables en contador
-```http
-# FUNCIONA:
-repeat 5 times do
-    print "Hello"
-endloop
-
-# FALLA:
-repeat $count times do
-    print "Hello"
-endloop
-```
-
-### ✅ **2. EXTRACCIÓN JSONPATH**
-**Estado:** ✅ COMPLETO (100% funcionando) (12/12/2024 - 20:30)  
-**Impacto:** ALTO  
-```http
-# FUNCIONA TODO:
-extract jsonpath "$.id" as $id                           # ✅ Paths simples
-extract jsonpath "$[0].title" as $title                  # ✅ Arrays con índice
-extract jsonpath "$[?(@.userId == 1)].title" as $titles  # ✅ Filtros complejos
-extract jsonpath "$[?(@.price < 10)].name" as $names     # ✅ Comparaciones numéricas
-```
-**Solución implementada:** Se mejoró `extractJSONPath()` en `http_engine.go` para soportar:
-- Arrays en la raíz del JSON
-- Filtros con operadores de comparación (==, !=, <, >)
-- Extracción de campos específicos después del filtro
-
----
-
 ## 📈 PLAN DE DESARROLLO - 🎉 100% COMPLETADO
 
 ### ✅ **FASE 1: CRÍTICO** (COMPLETADA - 12/12/2024 20:30)
@@ -281,7 +246,7 @@ extract jsonpath "$[?(@.price < 10)].name" as $names     # ✅ Comparaciones num
 | Implementar while loops | MEDIO | Alta | 3h | ✅ COMPLETADO |
 | Implementar foreach loops | MEDIO | Muy Alta | 5h | ✅ COMPLETADO |
 | Fix extracción regex | MEDIO | Baja | 1h | ✅ COMPLETADO |
-| Fix repeat con variables | MEDIO | Baja | 1h | ✅ YA FUNCIONABA |
+| Fix repeat con variables | MEDIO | Baja | 1h | ✅ COMPLETADO |
 | JSONPath avanzado | BAJO | Media | 2h | ✅ COMPLETADO |
 
 ### 🎊 **NO HAY FASE 3 - PROYECTO 100% COMPLETADO**
@@ -420,6 +385,7 @@ Production Ready:       [██████░░░░] 65% → 100%
 **Segunda Sesión (21:15):**
 - While loops implementados y funcionando perfectamente
 - Foreach loops con soporte de arrays inline y variables
+- Repeat loops con variables arreglado (21:20)
 - Regex extraction funcionando con patterns complejos
 - Test completo de todas las features ejecutado exitosamente
 - 100% retrocompatibilidad garantizada
