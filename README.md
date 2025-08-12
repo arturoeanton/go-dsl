@@ -11,7 +11,7 @@ go-dsl allows you to quickly build domain-specific languages with custom syntax,
 ## ✨ Features
 
 - 🚀 **Dynamic DSL Creation**: Build custom languages at runtime
-- 🎯 **Advanced Grammar System**: Full left-recursive grammar support with memoization
+- 🎯 **Advanced Grammar System**: Full left-recursive grammar support with growing seed algorithm
 - 🔄 **Context Support**: Pass dynamic data like r2lang's `q.use()` method
 - 🧠 **Production-Ready Parser**: Handles complex enterprise scenarios with stability
 - 📝 **Rich Examples**: Accounting systems, multi-country tax calculations, LINQ-like syntax
@@ -25,7 +25,9 @@ go-dsl allows you to quickly build domain-specific languages with custom syntax,
 - 🛠️ **Developer Tools**: AST viewer, grammar validator, and interactive REPL
 - 🎚️ **Operator Precedence**: Configurable precedence and associativity for operators
 - 🔁 **Repetition Rules**: Kleene star (*) and plus (+) for zero/one or more patterns
-- 🎯 **Advanced Grammar**: Support for complex language constructs and patterns
+- 📐 **Multiline Support**: NEW! ParseMultiline(), ParseAuto(), ParseWithBlocks()
+- 🔲 **Block Parsing**: NEW! Support for if/then/endif and other block structures
+- ✅ **100% Backward Compatible**: All improvements maintain full compatibility
 
 ## 🚀 Quick Start
 
