@@ -1,0 +1,28 @@
+# Test REPEAT loops - both with number and variable
+
+# Test 1: Repeat with literal number
+print "=== Test 1: Repeat with literal number ==="
+repeat 3 times do
+    print "Iteration $_iteration"
+endloop
+
+# Test 2: Repeat with variable
+print ""
+print "=== Test 2: Repeat with variable ==="
+set $count 5
+repeat $count times do
+    print "Dynamic iteration $_iteration of $count"
+endloop
+
+# Test 3: Repeat with arithmetic
+print ""
+print "=== Test 3: Repeat with arithmetic ==="
+set $base 2
+set $multiplier 3
+set $total $base * $multiplier
+repeat $total times do
+    print "Loop $_iteration of $total total"
+endloop
+
+print ""
+print "✅ All REPEAT tests completed!"
