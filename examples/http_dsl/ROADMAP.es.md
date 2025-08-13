@@ -1,8 +1,9 @@
-# 🗺️ ROADMAP HTTP DSL v3 - Estado Técnico Completo
+# 🗺️ ROADMAP HTTP DSL v3.0 & v3.1 - Estado Técnico Completo
 
-**Última Actualización:** 12 de Diciembre 2024 - 21:15  
-**Estado Global:** 100% Funcional ✅ 🎉 (PROYECTO COMPLETADO)  
-**Objetivo:** ~~100% Producción~~ ✅ LOGRADO  
+**Última Actualización:** 12 de Agosto 2024 - 18:00  
+**v3.0:** 100% COMPLETADO ✅ 🎉  
+**v3.1:** Mejoras Opcionales Propuestas (sin romper compatibilidad)  
+**Estado:** v3.0 en PRODUCCIÓN | v3.1 en DISEÑO  
 
 ---
 
@@ -249,7 +250,73 @@ extract jsonpath "$.id" as $id  # Sin GET/POST previo
 | Fix repeat con variables | MEDIO | Baja | 1h | ✅ COMPLETADO |
 | JSONPath avanzado | BAJO | Media | 2h | ✅ COMPLETADO |
 
-### 🎊 **NO HAY FASE 3 - PROYECTO 100% COMPLETADO**
+### 🎊 **PROYECTO v3.0 100% COMPLETADO**
+
+---
+
+## 🚀 FASE 4: MEJORAS v3.1 (Opcionales - Sin romper compatibilidad)
+
+### **Características Nuevas Propuestas:**
+
+| Feature | Prioridad | Riesgo | Tiempo Est. | Estado |
+|---------|-----------|--------|-------------|---------|
+| **break statement** | ALTA | BAJO | 2h | 🟡 PROPUESTO |
+| **continue statement** | MEDIA | BAJO | 2h | 🟡 PROPUESTO |
+| **Argumentos CLI ($ARG1, $ARGC)** | ALTA | BAJO | 3h | 🟡 PROPUESTO |
+| **If anidados (fix)** | ALTA | MEDIO | 4h | 🔴 BUG A CORREGIR |
+| **Operadores AND/OR** | BAJA | MEDIO | 4h | ⚪ FUTURO |
+| **Arrays inline** | MEDIA | ALTO | 6h | ⚪ FUTURO |
+| **Functions/Procedures** | BAJA | ALTO | 8h | ⚪ FUTURO |
+
+### **Implementación Segura (Sin riesgos):**
+
+#### 1. **break statement**
+```http
+# Salir de loops prematuramente
+while $count < 100 do
+    if $found == 1 then
+        break
+    endif
+    # continuar búsqueda...
+endloop
+```
+
+#### 2. **continue statement**
+```http
+# Saltar a siguiente iteración
+foreach $item in $items do
+    if $item == "skip" then
+        continue
+    endif
+    # procesar item...
+endloop
+```
+
+#### 3. **Argumentos de línea de comandos**
+```http
+# Uso: ./http-runner script.http url token
+set $target_url $ARG1     # primer argumento
+set $auth_token $ARG2     # segundo argumento
+set $total_args $ARGC     # cantidad de argumentos
+
+if $ARGC < 2 then
+    print "Uso: script.http <url> <token>"
+    exit 1
+endif
+```
+
+### **Correcciones Necesarias:**
+
+#### 1. **If anidados (actualmente roto)**
+```http
+# Debe funcionar pero falla:
+if $level1 > 5 then
+    print "Nivel 1 alto"
+    if $level2 > 3 then  # <-- Este if anidado falla
+        print "Ambos niveles altos"
+    endif
+endif
+```
 
 ---
 
@@ -273,21 +340,23 @@ Production Ready:       [██████░░░░] 65% → 100%
 
 ---
 
-## 🚀 ESTIMACIÓN DE TIEMPO RESTANTE
+## 🚀 ESTADO ACTUAL Y TIEMPO PARA v3.1
 
-### **Para llegar al 100% (desde 95% actual):**
+### **v3.0 COMPLETADO - v3.1 Mejoras Opcionales:**
 
-| Desarrollador | Tiempo Total | Estado Final |
-|---------------|--------------|--------------|
-| **Senior (Conoce el código)** | 8 horas | 100% Completo |
-| **Mid-level (Nuevo al código)** | 12-15 horas | 100% Completo |
-| **Con pair programming** | 5-6 horas | 100% Completo |
+| Feature v3.1 | Tiempo Est. | Prioridad | Riesgo |
+|--------------|-------------|-----------|---------|
+| **break/continue** | 4h total | ALTA | BAJO ✅ |
+| **Argumentos CLI** | 3h | ALTA | BAJO ✅ |
+| **Fix If anidados** | 4h | ALTA | MEDIO ⚠️ |
+| **Operadores AND/OR** | 4h | BAJA | MEDIO ⚠️ |
+| **Arrays inline** | 6h | MEDIA | ALTO ❌ |
 
-### **Trabajo Restante:**
-- 🟡 **While loops** - 3 horas
-- 🟡 **Foreach loops** - 5 horas
-- 🟢 **Regex extraction** - 1 hora
-- ⚪ **Testing final** - 1 hora
+### **Implementación Recomendada (Sin Riesgos):**
+1. ✅ **break statement** - 2 horas - SEGURO
+2. ✅ **Argumentos CLI** - 3 horas - SEGURO
+3. ⚠️ **Fix If anidados** - 4 horas - CUIDADO
+4. ✅ **continue** - 2 horas - SEGURO
 
 ---
 
