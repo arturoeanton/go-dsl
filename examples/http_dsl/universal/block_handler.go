@@ -73,55 +73,8 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 			// Extract and evaluate the condition
 			conditionStr := strings.TrimSuffix(strings.TrimPrefix(line, "if "), " then")
 			
-			// Evaluate condition by checking the actual comparison
-			// For now, just execute the then block always (simplified)
-			// TODO: Implement proper condition evaluation
-			shouldExecute := true
-			
-			// More sophisticated: parse the condition
-			parts := strings.Fields(conditionStr)
-			if len(parts) == 3 {
-				// Simple comparison like "$x > 3"
-				varName := strings.TrimPrefix(parts[0], "$")
-				operator := parts[1]
-				compareToStr := parts[2]
-				
-				if val, ok := hd.variables[varName]; ok {
-					var compareVal float64
-					fmt.Sscanf(compareToStr, "%f", &compareVal)
-					
-					var numVal float64
-					switch v := val.(type) {
-					case int:
-						numVal = float64(v)
-					case float64:
-						numVal = v
-					case string:
-						fmt.Sscanf(v, "%f", &numVal)
-					default:
-						numVal = 0
-					}
-					
-					switch operator {
-					case ">":
-						shouldExecute = numVal > compareVal
-					case "<":
-						shouldExecute = numVal < compareVal
-					case ">=":
-						shouldExecute = numVal >= compareVal
-					case "<=":
-						shouldExecute = numVal <= compareVal
-					case "==":
-						shouldExecute = numVal == compareVal
-					case "!=":
-						shouldExecute = numVal != compareVal
-					default:
-						shouldExecute = false
-					}
-				} else {
-					shouldExecute = false
-				}
-			}
+			// Evaluate condition using the new evaluator that supports AND/OR
+			shouldExecute := hd.EvaluateCondition(conditionStr)
 			
 			// Collect the block lines
 			i++
@@ -146,7 +99,7 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 					continue
 				}
 				
-				if innerLine != "" && innerLine != "endif" {
+				if innerLine != "" && innerLine != "endif" && !strings.HasPrefix(innerLine, "#") {
 					if inElse {
 						elseBlock = append(elseBlock, innerLine)
 					} else {
@@ -228,29 +181,78 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 					nestLevel++
 				}
 				
-				if innerLine != "" && innerLine != "endloop" {
+				if innerLine != "" && innerLine != "endloop" && !strings.HasPrefix(innerLine, "#") {
 					loopBody = append(loopBody, innerLine)
 				}
 				i++
 			}
 			
 			// Execute the loop
+			actualIterations := 0
 			for iteration := 0; iteration < count; iteration++ {
 				hd.SetVariable("_index", iteration)
 				hd.SetVariable("_iteration", iteration + 1)
 				
-				for _, loopLine := range loopBody {
-					result, err := hd.ParseWithContext(loopLine)
-					if err != nil {
-						return results, fmt.Errorf("error in loop iteration %d: %v", iteration+1, err)
+				breakLoop := false
+				// Process each line in the loop body
+				for j := 0; j < len(loopBody); j++ {
+					loopLine := loopBody[j]
+					trimmed := strings.TrimSpace(loopLine)
+					
+					// Check for break statement
+					if trimmed == "break" {
+						breakLoop = true
+						break
 					}
-					if result != nil {
-						results = append(results, result)
+					// Check for continue statement
+					if trimmed == "continue" {
+						break // Skip rest of loop body
 					}
+					
+					// Check if it's an if block
+					if strings.HasPrefix(trimmed, "if ") && strings.HasSuffix(trimmed, " then") {
+						// Find the matching endif
+						ifBlock := []string{loopLine}
+						nestLevel := 1
+						for k := j + 1; k < len(loopBody) && nestLevel > 0; k++ {
+							innerLine := loopBody[k]
+							ifBlock = append(ifBlock, innerLine)
+							trimmedInner := strings.TrimSpace(innerLine)
+							if trimmedInner == "endif" {
+								nestLevel--
+							} else if strings.HasPrefix(trimmedInner, "if ") && strings.HasSuffix(trimmedInner, " then") {
+								nestLevel++
+							}
+							j = k // Update outer loop counter
+						}
+						// Process the if block recursively
+						for _, ifLine := range ifBlock {
+							result, err := hd.ParseWithBlockSupport(ifLine)
+							if err != nil {
+								return results, fmt.Errorf("error in loop iteration %d: %v", iteration+1, err)
+							}
+							if result != nil && result != "" {
+								results = append(results, result)
+							}
+						}
+					} else {
+						// Process normal line
+						result, err := hd.ParseWithContext(loopLine)
+						if err != nil {
+							return results, fmt.Errorf("error in loop iteration %d: %v", iteration+1, err)
+						}
+						if result != nil && result != "" {
+							results = append(results, result)
+						}
+					}
+				}
+				actualIterations++
+				if breakLoop {
+					break // Exit the repeat loop
 				}
 			}
 			
-			results = append(results, fmt.Sprintf("Repeated %d times", count))
+			results = append(results, fmt.Sprintf("Repeated %d times", actualIterations))
 			i++ // Skip the endloop
 			
 		} else if strings.HasPrefix(line, "while ") && strings.HasSuffix(line, " do") {
@@ -275,7 +277,7 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 					nestLevel++
 				}
 				
-				if innerLine != "" && innerLine != "endloop" {
+				if innerLine != "" && innerLine != "endloop" && !strings.HasPrefix(innerLine, "#") {
 					loopBody = append(loopBody, innerLine)
 				}
 				i++
@@ -333,14 +335,69 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 				
 				hd.SetVariable("_iteration", iterations + 1)
 				
-				for _, loopLine := range loopBody {
-					result, err := hd.ParseWithContext(loopLine)
-					if err != nil {
-						return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
+				breakLoop := false
+				continueLoop := false
+				
+				// Process each line in the loop body
+				for j := 0; j < len(loopBody); j++ {
+					loopLine := loopBody[j]
+					trimmed := strings.TrimSpace(loopLine)
+					
+					// Check for break statement
+					if trimmed == "break" {
+						breakLoop = true
+						break
 					}
-					if result != nil && result != "" {
-						results = append(results, result)
+					// Check for continue statement
+					if trimmed == "continue" {
+						continueLoop = true
+						break
 					}
+					
+					// Check if it's an if block
+					if strings.HasPrefix(trimmed, "if ") && strings.HasSuffix(trimmed, " then") {
+						// Find the matching endif
+						ifBlock := []string{loopLine}
+						nestLevel := 1
+						for k := j + 1; k < len(loopBody) && nestLevel > 0; k++ {
+							innerLine := loopBody[k]
+							ifBlock = append(ifBlock, innerLine)
+							trimmedInner := strings.TrimSpace(innerLine)
+							if trimmedInner == "endif" {
+								nestLevel--
+							} else if strings.HasPrefix(trimmedInner, "if ") && strings.HasSuffix(trimmedInner, " then") {
+								nestLevel++
+							}
+							j = k // Update outer loop counter
+						}
+						// Process the if block recursively
+						for _, ifLine := range ifBlock {
+							result, err := hd.ParseWithBlockSupport(ifLine)
+							if err != nil {
+								return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
+							}
+							if result != nil && result != "" {
+								results = append(results, result)
+							}
+						}
+					} else {
+						// Process normal line
+						result, err := hd.ParseWithContext(loopLine)
+						if err != nil {
+							return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
+						}
+						if result != nil && result != "" {
+							results = append(results, result)
+						}
+					}
+				}
+				
+				if continueLoop {
+					continue // Skip to next iteration
+				}
+				
+				if breakLoop {
+					break // Exit the while loop
 				}
 				
 				iterations++
@@ -381,7 +438,7 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 					nestLevel++
 				}
 				
-				if innerLine != "" && innerLine != "endloop" {
+				if innerLine != "" && innerLine != "endloop" && !strings.HasPrefix(innerLine, "#") {
 					loopBody = append(loopBody, innerLine)
 				}
 				i++
@@ -429,12 +486,24 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 			}
 			
 			// Execute the foreach loop
+			actualIterations := 0
 			for idx, item := range items {
 				hd.SetVariable(itemVar, item)
 				hd.SetVariable("_index", idx)
 				hd.SetVariable("_iteration", idx + 1)
 				
+				breakLoop := false
 				for _, loopLine := range loopBody {
+					// Check for break statement
+					if strings.TrimSpace(loopLine) == "break" {
+						breakLoop = true
+						break
+					}
+					// Check for continue statement
+					if strings.TrimSpace(loopLine) == "continue" {
+						break // Skip rest of loop body
+					}
+					
 					result, err := hd.ParseWithContext(loopLine)
 					if err != nil {
 						return results, fmt.Errorf("error in foreach iteration %d: %v", idx+1, err)
@@ -443,9 +512,13 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 						results = append(results, result)
 					}
 				}
+				actualIterations++
+				if breakLoop {
+					break // Exit the foreach loop
+				}
 			}
 			
-			results = append(results, fmt.Sprintf("Foreach executed for %d items", len(items)))
+			results = append(results, fmt.Sprintf("Foreach executed for %d items", actualIterations))
 			i++ // Skip the endloop
 			
 		} else {
