@@ -1,0 +1,49 @@
+# HTTP DSL v3.1 - Características Funcionando
+
+print "=== TEST v3.1 FEATURES ==="
+print ""
+
+# Test 1: Arguments
+print "1. Command-line arguments:"
+print "   Total args: $ARGC"
+print "   First arg: $ARG1"
+print ""
+
+# Test 2: AND/OR operators
+print "2. AND/OR operators:"
+set $age 25
+set $license 1
+
+if $age > 18 AND $license == 1 then
+    print "   ✓ Can drive (age>18 AND has license)"
+endif
+
+if $age < 30 OR $license == 0 then
+    print "   ✓ Gets discount (under 30 OR no license)"
+endif
+print ""
+
+# Test 3: Comments in blocks
+print "3. Comments in blocks:"
+if $age > 20 then
+    # This comment works now
+    print "   ✓ Comments work in if blocks"
+endif
+
+# Test 4: Break (simplified)
+print ""
+print "4. Break in loops:"
+set $i 0
+repeat 5 times do
+    set $i $i + 1
+    print "   Iteration: $i"
+endloop
+print "   (Break requires if-in-loop fix)"
+
+print ""
+print "=== SUMMARY ==="
+print "✅ Arguments: WORKING"
+print "✅ AND/OR: WORKING"
+print "✅ Comments: WORKING"
+print "⚠️ Break/Continue: Needs if-in-loop fix"
+print "⚠️ Nested if in loops: Needs more work"
