@@ -1,0 +1,15 @@
+# Test simple de break con if
+
+print "Test: Break with IF in WHILE"
+
+set $i 0
+while $i < 5 do
+    set $i $i + 1
+    print "Iteration: $i"
+    if $i == 3 then
+        print "Breaking at 3"
+        break
+    endif
+endloop
+
+print "Final value: $i"

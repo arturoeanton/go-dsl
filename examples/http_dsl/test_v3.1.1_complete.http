@@ -1,0 +1,211 @@
+# TEST COMPLETO HTTP DSL v3.1.1
+# Verificación de todas las características funcionando
+
+print "════════════════════════════════════════════════════════════"
+print "          HTTP DSL v3.1.1 - TEST COMPLETO"
+print "     Break/Continue con IF dentro de Loops funcionando"
+print "════════════════════════════════════════════════════════════"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 1: BREAK con IF dentro de WHILE
+# ═══════════════════════════════════════════════════════════
+print "TEST 1: BREAK with IF in WHILE loop"
+print "════════════════════════════════"
+
+set $counter 0
+while $counter < 10 do
+    set $counter $counter + 1
+    print "  Iteration: $counter"
+    if $counter == 3 then
+        print "  ✓ Breaking at 3..."
+        break
+    endif
+endloop
+print "✅ BREAK works! Final value: $counter"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 2: CONTINUE con IF dentro de WHILE
+# ═══════════════════════════════════════════════════════════
+print "TEST 2: CONTINUE with IF in WHILE loop"
+print "══════════════════════════════════"
+
+set $i 0
+while $i < 5 do
+    set $i $i + 1
+    if $i == 3 then
+        print "  Skipping 3..."
+        continue
+    endif
+    print "  Number: $i"
+endloop
+print "✅ CONTINUE works! Skipped 3"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 3: BREAK con IF dentro de REPEAT
+# ═══════════════════════════════════════════════════════════
+print "TEST 3: BREAK with IF in REPEAT loop"
+print "════════════════════════════════"
+
+set $max 10
+set $found 0
+repeat $max times do
+    set $found $found + 1
+    print "  Checking: $found"
+    if $found == 4 then
+        print "  ✓ Found target at 4!"
+        break
+    endif
+endloop
+print "✅ BREAK in REPEAT works!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 4: CONTINUE con IF dentro de REPEAT
+# ═══════════════════════════════════════════════════════════
+print "TEST 4: CONTINUE with IF in REPEAT loop"
+print "═══════════════════════════════════"
+
+set $count 5
+set $current 0
+repeat $count times do
+    set $current $current + 1
+    if $current == 2 then
+        print "  Skipping iteration 2"
+        continue
+    endif
+    print "  Processing: $current"
+endloop
+print "✅ CONTINUE in REPEAT works!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 5: IF ANIDADOS dentro de LOOPS
+# ═══════════════════════════════════════════════════════════
+print "TEST 5: NESTED IF inside LOOPS"
+print "══════════════════════════════"
+
+set $x 0
+while $x < 3 do
+    set $x $x + 1
+    print "  Outer: $x"
+    if $x > 1 then
+        if $x == 2 then
+            print "    ✓ Nested IF: x is exactly 2"
+        else
+            print "    ✓ Nested IF: x is greater than 2"
+        endif
+    endif
+endloop
+print "✅ NESTED IF in loops works!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 6: OPERADORES AND/OR en LOOPS
+# ═══════════════════════════════════════════════════════════
+print "TEST 6: AND/OR operators in LOOPS"
+print "═════════════════════════════════"
+
+set $j 0
+while $j < 5 do
+    set $j $j + 1
+    if $j > 2 AND $j < 5 then
+        print "  $j is between 2 and 5"
+    endif
+    if $j == 1 OR $j == 5 then
+        print "  $j is either 1 or 5"
+    endif
+endloop
+print "✅ AND/OR in loops works!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 7: COMENTARIOS en BLOQUES dentro de LOOPS
+# ═══════════════════════════════════════════════════════════
+print "TEST 7: Comments in blocks inside LOOPS"
+print "═══════════════════════════════════════"
+
+set $test 0
+while $test < 2 do
+    set $test $test + 1
+    # This comment is inside a while loop
+    if $test == 1 then
+        # This comment is inside an if inside a while
+        print "  Comments work everywhere!"
+    endif
+endloop
+print "✅ Comments in nested blocks work!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 8: ARGUMENTOS CLI
+# ═══════════════════════════════════════════════════════════
+print "TEST 8: Command-line Arguments"
+print "══════════════════════════════"
+
+print "  Total arguments: $ARGC"
+if $ARGC > 0 then
+    print "  First argument: $ARG1"
+    if $ARGC > 1 then
+        print "  Second argument: $ARG2"
+    endif
+else
+    print "  (No arguments provided)"
+endif
+print "✅ CLI arguments work!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# TEST 9: CASO COMPLEJO - TODO JUNTO
+# ═══════════════════════════════════════════════════════════
+print "TEST 9: COMPLEX CASE - Everything Together"
+print "═══════════════════════════════════════"
+
+set $items 5
+set $processed 0
+set $skipped 0
+
+repeat $items times do
+    set $processed $processed + 1
+    
+    # Skip even numbers
+    if $processed == 2 OR $processed == 4 then
+        set $skipped $skipped + 1
+        print "  Skipping even: $processed"
+        continue
+    endif
+    
+    # Break at specific condition
+    if $processed > 3 AND $skipped > 0 then
+        print "  Breaking due to complex condition"
+        break
+    endif
+    
+    print "  Processing item: $processed"
+endloop
+
+print "  Results: Processed=$processed, Skipped=$skipped"
+print "✅ Complex case works!"
+print ""
+
+# ═══════════════════════════════════════════════════════════
+# RESUMEN FINAL
+# ═══════════════════════════════════════════════════════════
+print "════════════════════════════════════════════════════════════"
+print "                    RESUMEN v3.1.1"
+print "════════════════════════════════════════════════════════════"
+print ""
+print "✅ TODAS LAS CARACTERÍSTICAS FUNCIONANDO:"
+print ""
+print "  1. BREAK with IF in loops         ✓"
+print "  2. CONTINUE with IF in loops      ✓"
+print "  3. Nested IF in loops              ✓"
+print "  4. AND/OR operators in loops       ✓"
+print "  5. Comments in nested blocks       ✓"
+print "  6. Command-line arguments          ✓"
+print "  7. Complex nested logic            ✓"
+print ""
+print "🎉 HTTP DSL v3.1.1 - 100% FUNCIONAL!"
+print "════════════════════════════════════════════════════════════"

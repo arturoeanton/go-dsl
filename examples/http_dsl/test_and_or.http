@@ -1,0 +1,60 @@
+# Test de operadores AND/OR
+
+print "=== TEST 1: Operador AND ==="
+set $x 5
+set $y 10
+
+if $x > 3 AND $y > 8 then
+    print "✅ AND funciona: ambas condiciones son verdaderas"
+endif
+
+if $x > 3 AND $y < 5 then
+    print "❌ Esto no debería imprimirse"
+else
+    print "✅ AND funciona: una condición es falsa"
+endif
+
+print ""
+print "=== TEST 2: Operador OR ==="
+if $x > 3 OR $y < 5 then
+    print "✅ OR funciona: al menos una condición es verdadera"
+endif
+
+if $x < 0 OR $y < 0 then
+    print "❌ Esto no debería imprimirse"
+else
+    print "✅ OR funciona: ambas condiciones son falsas"
+endif
+
+print ""
+print "=== TEST 3: Combinación AND/OR (precedencia) ==="
+set $a 2
+set $b 5
+set $c 8
+
+# Test: ($a < 3 AND $b > 4) OR $c > 10
+# Esperado: (true AND true) OR false = true OR false = true
+if $a < 3 AND $b > 4 OR $c > 10 then
+    print "✅ Precedencia correcta: resultado es true"
+endif
+
+# Test: $a > 5 OR ($b == 5 AND $c < 10)
+# Esperado: false OR (true AND true) = false OR true = true
+if $a > 5 OR $b == 5 AND $c < 10 then
+    print "✅ Precedencia correcta: resultado es true"
+endif
+
+print ""
+print "=== TEST 4: Multiple AND ==="
+if $x > 0 AND $x < 10 AND $x != 3 then
+    print "✅ Multiple AND funciona"
+endif
+
+print ""
+print "=== TEST 5: Multiple OR ==="
+if $x == 1 OR $x == 5 OR $x == 10 then
+    print "✅ Multiple OR funciona"
+endif
+
+print ""
+print "✅ Todos los tests de AND/OR completados"

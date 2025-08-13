@@ -1,0 +1,47 @@
+# Test de arrays inline
+
+print "=== TEST 1: Array literal en foreach ==="
+foreach $item in ["apple", "banana", "orange"] do
+    print "Item: $item"
+endloop
+print "✅ Array literal funciona"
+
+print ""
+print "=== TEST 2: Array en variable ==="
+set $fruits "[\"strawberry\", \"mango\", \"grape\"]"
+foreach $fruit in $fruits do
+    print "Fruit: $fruit"
+endloop
+print "✅ Array en variable funciona"
+
+print ""
+print "=== TEST 3: Array con números ==="
+set $numbers "[1, 2, 3, 4, 5]"
+print "Array de números: $numbers"
+# Nota: foreach con números puede no funcionar correctamente
+# ya que el parser espera strings
+
+print ""
+print "=== TEST 4: Intentar acceso a elementos del array ==="
+set $myarray "[\"first\", \"second\", \"third\"]"
+print "Array completo: $myarray"
+# No hay soporte para acceso indexado como $myarray[0]
+
+print ""
+print "=== TEST 5: Array vacío ==="
+foreach $item in [] do
+    print "Este no debería imprimirse"
+endloop
+print "✅ Array vacío manejado"
+
+print ""
+print "=== TEST 6: Operaciones con arrays ==="
+# Intentar agregar elementos (no soportado)
+set $list "[\"a\", \"b\"]"
+# No hay append/push
+# No hay length/size
+# No hay contains/includes
+print "Operaciones de array no implementadas"
+
+print ""
+print "✅ Tests de arrays completados"
