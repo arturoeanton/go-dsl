@@ -58,6 +58,7 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.KeywordToken("set", "set")
 	hd.dsl.KeywordToken("var", "var")
 	hd.dsl.KeywordToken("print", "print")
+	hd.dsl.KeywordToken("length", "length")
 	hd.dsl.KeywordToken("extract", "extract")
 	hd.dsl.KeywordToken("from", "from")
 	hd.dsl.KeywordToken("as", "as")
@@ -421,6 +422,10 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.Rule("value", []string{"STRING"}, "valueString")
 	hd.dsl.Rule("value", []string{"NUMBER"}, "valueNumber")
 	hd.dsl.Rule("value", []string{"VARIABLE"}, "valueVariable")
+	hd.dsl.Rule("value", []string{"function_call"}, "passthrough")
+	
+	// Function calls
+	hd.dsl.Rule("function_call", []string{"length", "VARIABLE"}, "lengthFunction")
 	
 	hd.dsl.Action("valueString", func(args []interface{}) (interface{}, error) {
 		str := hd.unquoteString(args[0].(string))
@@ -438,6 +443,36 @@ func (hd *HTTPDSLv3) setupGrammar() {
 			return val, nil
 		}
 		return nil, fmt.Errorf("variable $%s not found", varName)
+	})
+	
+	hd.dsl.Action("lengthFunction", func(args []interface{}) (interface{}, error) {
+		varName := strings.TrimPrefix(args[1].(string), "$")
+		if val, ok := hd.variables[varName]; ok {
+			// Check if it's an array
+			switch v := val.(type) {
+			case []interface{}:
+				return len(v), nil
+			case []string:
+				return len(v), nil
+			case string:
+				// Try to parse as JSON array
+				if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") {
+					// Count elements
+					trimmed := strings.Trim(v, "[]")
+					if strings.TrimSpace(trimmed) == "" {
+						return 0, nil
+					}
+					// Simple count of comma-separated elements
+					parts := strings.Split(trimmed, ",")
+					return len(parts), nil
+				}
+				// Return string length
+				return len(v), nil
+			default:
+				return 0, nil
+			}
+		}
+		return 0, nil
 	})
 	
 	hd.dsl.Action("setVariable", func(args []interface{}) (interface{}, error) {
