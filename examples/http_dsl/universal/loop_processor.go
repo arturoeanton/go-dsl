@@ -331,76 +331,47 @@ func (hd *HTTPDSLv3) ProcessIfBlockWithControl(block []string) (*LoopResult, err
 		blockToExecute = elseBlock
 	}
 	
-	// Process each line in the selected block
-	for i := 0; i < len(blockToExecute); i++ {
-		blockLine := blockToExecute[i]
-		trimmed := strings.TrimSpace(blockLine)
+	// Process the block recursively to handle nested structures
+	if len(blockToExecute) > 0 {
+		// Join all lines and process as a complete block
+		blockCode := strings.Join(blockToExecute, "\n")
 		
-		// Skip empty lines (already processed)
-		if trimmed == "" {
-			continue
-		}
-		
-		// Check for break
-		if trimmed == "break" {
-			result.ShouldBreak = true
-			return result, nil
-		}
-		
-		// Check for continue
-		if trimmed == "continue" {
-			result.ShouldContinue = true
-			return result, nil
-		}
-		
-		// Process nested if blocks using ParseWithBlockSupport
-		if strings.HasPrefix(trimmed, "if ") && strings.HasSuffix(trimmed, " then") {
-			// Find the complete nested if block including all its content
-			nestedLines := []string{blockLine}
-			nestCount := 1
-			
-			// Collect all lines of the nested if block
-			for j := i + 1; j < len(blockToExecute) && nestCount > 0; j++ {
-				nestedLine := strings.TrimSpace(blockToExecute[j])
-				nestedLines = append(nestedLines, blockToExecute[j])
-				
-				if strings.HasPrefix(nestedLine, "if ") && strings.HasSuffix(nestedLine, " then") {
-					nestCount++
-				} else if nestedLine == "endif" {
-					nestCount--
-					if nestCount == 0 {
-						// Process the complete nested if block using ParseWithBlockSupport
-						nestedCode := strings.Join(nestedLines, "\n")
-						nestedResult, err := hd.ParseWithBlockSupport(nestedCode)
-						if err != nil {
-							return nil, err
-						}
-						if nestedResult != nil {
-							// Check if it's a slice of results
-							if results, ok := nestedResult.([]interface{}); ok {
-								result.Results = append(result.Results, results...)
-							} else if nestedResult != "" {
-								result.Results = append(result.Results, nestedResult)
-							}
-						}
-						
-						// Skip the lines we've processed
-						i = j
-						break
-					}
-				}
-			}
-			
-			continue
-		}
-		
-		// Execute normal line
-		lineResult, err := hd.ParseWithContext(trimmed)
+		// Use ParseWithBlockSupport to handle nested if/else properly
+		blockResult, err := hd.ParseWithBlockSupport(blockCode)
 		if err != nil {
-			return nil, fmt.Errorf("error processing line '%s': %v", trimmed, err)
+			// Check for break/continue in error message
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "break") {
+				result.ShouldBreak = true
+				return result, nil
+			}
+			if strings.Contains(errMsg, "continue") {
+				result.ShouldContinue = true
+				return result, nil
+			}
+			return nil, err
 		}
-		if lineResult != nil && lineResult != "" {
-			result.Results = append(result.Results, lineResult)
+		
+		// Add results
+		if blockResult != nil {
+			if results, ok := blockResult.([]interface{}); ok {
+				result.Results = append(result.Results, results...)
+			} else if blockResult != "" {
+				result.Results = append(result.Results, blockResult)
+			}
+		}
+		
+		// Check for break/continue statements in the block
+		for _, line := range blockToExecute {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "break" {
+				result.ShouldBreak = true
+				return result, nil
+			}
+			if trimmed == "continue" {
+				result.ShouldContinue = true
+				return result, nil
+			}
 		}
 	}
 	
