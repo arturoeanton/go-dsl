@@ -1,0 +1,5 @@
+# Test simple array 
+set $arr "[\"a\", \"b\", \"c\"]"
+print "Array: $arr"
+set $len length $arr
+print "Length: $len"

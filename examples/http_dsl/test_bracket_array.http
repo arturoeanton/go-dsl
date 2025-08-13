@@ -1,0 +1,20 @@
+# Test array indexing with bracket syntax
+
+print "=== TEST ARRAY BRACKET SYNTAX ==="
+
+# Test 1: Basic array access
+set $fruits "[\"apple\", \"banana\", \"orange\", \"grape\"]"
+print "Array: $fruits"
+set $first $fruits[0]
+set $second $fruits[1]
+set $last $fruits[3]
+print "First: $first"
+print "Second: $second"
+print "Last: $last"
+
+# Test 2: Variable index
+set $idx 2
+set $third $fruits[$idx]
+print "Third (using variable index): $third"
+
+print "✅ Array bracket syntax tests completed"

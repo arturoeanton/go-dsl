@@ -1,0 +1,37 @@
+# Test array indexing
+
+print "=== TEST ARRAY INDEXING ==="
+
+# Test 1: Basic array access
+set $fruits "[\"apple\", \"banana\", \"orange\", \"grape\"]"
+print "Array: $fruits"
+set $first $fruits[0]
+set $second $fruits[1]
+set $last $fruits[3]
+print "First: $first"
+print "Second: $second"
+print "Last: $last"
+
+# Test 2: Use in expressions
+set $items "[\"a\", \"b\", \"c\"]"
+set $item $items[1]
+if $item == "b" then
+    print "✅ Array indexing works in conditions"
+endif
+
+# Test 3: String character access
+set $text "Hello"
+set $char $text[0]
+print "First char of 'Hello': $char"
+
+# Test 4: Variable index
+set $idx 2
+set $third $fruits[$idx]
+print "Third (using variable index): $third"
+
+# Test 4: Error handling (out of bounds)
+set $small "[\"one\", \"two\"]"
+print "Small array: $small"
+# This would cause error: set $invalid $small[10]
+
+print "✅ Array indexing tests completed"
