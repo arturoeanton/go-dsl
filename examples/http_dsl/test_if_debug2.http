@@ -1,2 +1,0 @@
-set $x 15
-if $x > 10 then set $result "YES" else set $result "NO"

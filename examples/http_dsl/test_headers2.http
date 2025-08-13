@@ -1,1 +1,0 @@
-GET "https://httpbin.org/headers" header "Auth" "Bearer" header "Custom" "value"
