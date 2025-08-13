@@ -91,19 +91,37 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 					if nestLevel == 0 {
 						break
 					}
+					// Add endif for nested blocks
+					if inElse {
+						elseBlock = append(elseBlock, lines[i])
+					} else {
+						thenBlock = append(thenBlock, lines[i])
+					}
 				} else if strings.HasPrefix(innerLine, "if ") && strings.HasSuffix(innerLine, " then") {
 					nestLevel++
+					// Add the nested if line
+					if inElse {
+						elseBlock = append(elseBlock, lines[i])
+					} else {
+						thenBlock = append(thenBlock, lines[i])
+					}
 				} else if innerLine == "else" && nestLevel == 1 {
 					inElse = true
 					i++
 					continue
-				}
-				
-				if innerLine != "" && innerLine != "endif" && !strings.HasPrefix(innerLine, "#") {
+				} else if innerLine == "else" && nestLevel > 1 {
+					// This else belongs to a nested if
 					if inElse {
-						elseBlock = append(elseBlock, innerLine)
+						elseBlock = append(elseBlock, lines[i])
 					} else {
-						thenBlock = append(thenBlock, innerLine)
+						thenBlock = append(thenBlock, lines[i])
+					}
+				} else if innerLine != "" && !strings.HasPrefix(innerLine, "#") {
+					// Add the line with original formatting
+					if inElse {
+						elseBlock = append(elseBlock, lines[i])
+					} else {
+						thenBlock = append(thenBlock, lines[i])
 					}
 				}
 				i++
@@ -117,54 +135,20 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 				blockToExecute = elseBlock
 			}
 			
-			// Execute each line in the selected block
-			for j := 0; j < len(blockToExecute); j++ {
-				blockLine := blockToExecute[j]
-				trimmedLine := strings.TrimSpace(blockLine)
-				
-				// Handle nested if blocks
-				if strings.HasPrefix(trimmedLine, "if ") && strings.HasSuffix(trimmedLine, " then") {
-					// Find the complete nested if block
-					nestedBlock := []string{blockLine}
-					nestCount := 1
-					for k := j + 1; k < len(blockToExecute) && nestCount > 0; k++ {
-						nestedLine := strings.TrimSpace(blockToExecute[k])
-						nestedBlock = append(nestedBlock, blockToExecute[k])
-						
-						if strings.HasPrefix(nestedLine, "if ") && strings.HasSuffix(nestedLine, " then") {
-							nestCount++
-						} else if nestedLine == "endif" {
-							nestCount--
-							if nestCount == 0 {
-								// Process the complete nested if block
-								nestedCode := strings.Join(nestedBlock, "\n")
-								result, err := hd.ParseWithBlockSupport(nestedCode)
-								if err != nil {
-									return results, fmt.Errorf("error in nested if block: %v", err)
-								}
-								if result != nil {
-									// Add results from nested if
-									if nestedResults, ok := result.([]interface{}); ok {
-										results = append(results, nestedResults...)
-									} else if result != "" {
-										results = append(results, result)
-									}
-								}
-								// Skip the lines we've processed
-								j = k
-								break
-							}
-						}
-					}
-				} else {
-					// Regular line - parse normally
-					result, err := hd.ParseWithContext(blockLine)
-					if err != nil {
-						return results, fmt.Errorf("error in block line '%s': %v", blockLine, err)
-					}
-					// Only add non-nil results
-					if result != nil && result != "" {
-						results = append(results, result)
+			// Process the block as a whole to handle nested structures properly
+			if len(blockToExecute) > 0 {
+				// Join the block and process it
+				blockCode := strings.Join(blockToExecute, "\n")
+				blockResult, err := hd.ParseWithBlockSupport(blockCode)
+				if err != nil {
+					return results, fmt.Errorf("error processing block: %v", err)
+				}
+				if blockResult != nil {
+					// Add results from block
+					if blockResults, ok := blockResult.([]interface{}); ok {
+						results = append(results, blockResults...)
+					} else if blockResult != "" {
+						results = append(results, blockResult)
 					}
 				}
 			}
@@ -418,11 +402,19 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 				listStr := listPart
 				// Simple parsing for string arrays like ["apple", "banana", "orange"]
 				listStr = strings.Trim(listStr, "[]")
-				parts := strings.Split(listStr, ",")
-				for _, part := range parts {
-					item := strings.TrimSpace(part)
-					item = strings.Trim(item, "\"'")
-					items = append(items, item)
+				// Handle empty array
+				if strings.TrimSpace(listStr) == "" {
+					// Empty array - don't add any items
+					items = []interface{}{}
+				} else {
+					parts := strings.Split(listStr, ",")
+					for _, part := range parts {
+						item := strings.TrimSpace(part)
+						item = strings.Trim(item, "\"'")
+						if item != "" { // Skip empty items
+							items = append(items, item)
+						}
+					}
 				}
 			} else if strings.HasPrefix(listPart, "$") {
 				// It's a variable reference
@@ -439,11 +431,19 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 						// Try to parse as JSON array
 						if strings.HasPrefix(v, "[") {
 							v = strings.Trim(v, "[]")
-							parts := strings.Split(v, ",")
-							for _, part := range parts {
-								item := strings.TrimSpace(part)
-								item = strings.Trim(item, "\"'")
-								items = append(items, item)
+							// Handle empty array
+							if strings.TrimSpace(v) == "" {
+								// Empty array - don't add any items
+								items = []interface{}{}
+							} else {
+								parts := strings.Split(v, ",")
+								for _, part := range parts {
+									item := strings.TrimSpace(part)
+									item = strings.Trim(item, "\"'")
+									if item != "" { // Skip empty items
+										items = append(items, item)
+									}
+								}
 							}
 						}
 					}
