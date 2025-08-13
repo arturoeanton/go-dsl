@@ -1,3 +1,31 @@
+// Package universal provides a comprehensive HTTP DSL implementation for testing and automation.
+// The HTTPDSLv3 is the production-ready version with full feature support including
+// HTTP methods, variables, control flow, data extraction, and more.
+//
+// Features:
+//   - Complete HTTP method support (GET, POST, PUT, DELETE, PATCH, etc.)
+//   - Variable operations with arithmetic expressions
+//   - Control flow statements (if/else, while, foreach, repeat)
+//   - Break and continue statements for loop control
+//   - Logical operators (AND/OR) with proper precedence
+//   - Array operations including indexing with bracket notation
+//   - Data extraction (JSONPath, regex, XPath)
+//   - Response assertions and validations
+//   - Command-line argument support ($ARG1, $ARGC)
+//
+// Example usage:
+//
+//	hd := NewHTTPDSLv3()
+//	script := `
+//	    set $baseURL "https://api.example.com"
+//	    GET "$baseURL/users"
+//	    assert status 200
+//	    extract jsonpath "$.users[0].id" as $userId
+//	    if $userId > 0 then
+//	        print "Valid user ID: $userId"
+//	    endif
+//	`
+//	result, err := hd.ParseWithBlockSupport(script)
 package universal
 
 import (
@@ -10,15 +38,38 @@ import (
 	"github.com/arturoeanton/go-dsl/pkg/dslbuilder"
 )
 
-// HTTPDSLv3 represents the production-ready HTTP DSL with all fixes
+// HTTPDSLv3 represents the production-ready HTTP DSL implementation.
+// It provides a complete domain-specific language for HTTP testing and automation,
+// supporting methods, headers, variables, control flow, and data extraction.
+//
+// Version 3.1.1 includes:
+//   - Full HTTP method support (GET, POST, PUT, DELETE, etc.)
+//   - Variable operations with arithmetic
+//   - Control flow (if/else, while, foreach, repeat)
+//   - Break/continue statements
+//   - Logical operators (AND/OR)
+//   - Array operations with indexing
+//   - JSON/regex/XPath extraction
+//   - Command-line argument support
 type HTTPDSLv3 struct {
-	dsl       *dslbuilder.DSL
-	engine    *HTTPEngine
-	variables map[string]interface{}
-	context   map[string]interface{}
+	dsl       *dslbuilder.DSL          // DSL parser and tokenizer
+	engine    *HTTPEngine              // HTTP request execution engine
+	variables map[string]interface{}   // Script variables storage
+	context   map[string]interface{}   // Execution context (break/continue flags)
 }
 
-// NewHTTPDSLv3 creates a new production-ready HTTP DSL instance
+// NewHTTPDSLv3 creates a new HTTP DSL v3 instance.
+// It initializes the DSL parser with improved parsing capabilities,
+// sets up the HTTP engine for request execution, and prepares
+// variable and context storage for script execution.
+//
+// Example:
+//
+//	hd := NewHTTPDSLv3()
+//	result, err := hd.ParseWithBlockSupport(`
+//	    GET "https://api.example.com/users"
+//	    assert status 200
+//	`)
 func NewHTTPDSLv3() *HTTPDSLv3 {
 	hd := &HTTPDSLv3{
 		dsl:       dslbuilder.New("HTTPDSLv3"), // Already uses ImprovedParser by default
@@ -30,8 +81,11 @@ func NewHTTPDSLv3() *HTTPDSLv3 {
 	return hd
 }
 
+// setupGrammar defines the complete DSL grammar including tokens, rules, and actions.
+// It sets up all language constructs in the proper priority order to ensure
+// correct parsing. Keywords have priority 90, while general patterns have priority 0.
 func (hd *HTTPDSLv3) setupGrammar() {
-	// HTTP Methods - Highest priority (90)
+	// HTTP Methods - Highest priority (90) to ensure they're recognized before general IDs
 	hd.dsl.KeywordToken("GET", "GET")
 	hd.dsl.KeywordToken("POST", "POST")
 	hd.dsl.KeywordToken("PUT", "PUT")
@@ -59,6 +113,7 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.KeywordToken("var", "var")
 	hd.dsl.KeywordToken("print", "print")
 	hd.dsl.KeywordToken("length", "length")
+	hd.dsl.KeywordToken("at", "at")
 	hd.dsl.KeywordToken("extract", "extract")
 	hd.dsl.KeywordToken("from", "from")
 	hd.dsl.KeywordToken("as", "as")
@@ -113,10 +168,16 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.KeywordToken("or", "or")
 	hd.dsl.KeywordToken("not", "not")
 	
+	// DEVELOPER GUIDE: Token Definition
+	// Tokens are defined with patterns and priorities.
+	// KeywordToken() = priority 90 (matched first)
+	// Token() = priority 0 (matched last)
+	// Order matters only within same priority level.
+	
 	// Value tokens - Lower priority (0)
 	// Better JSON pattern to handle nested objects and special characters
 	hd.dsl.Token("JSON_INLINE", `\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}`)
-	// String with escape sequences
+	// String with escape sequences - handles \n, \t, \", etc.
 	hd.dsl.Token("STRING", `"(?:[^"\\]|\\.)*"`)
 	hd.dsl.Token("NUMBER", `[0-9]+(\.[0-9]+)?`)
 	hd.dsl.Token("VARIABLE", `\$[a-zA-Z_][a-zA-Z0-9_]*`)
@@ -126,6 +187,15 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.Token("ID", `[a-zA-Z_][a-zA-Z0-9_]*`)
 	hd.dsl.Token("(", `\(`)
 	hd.dsl.Token(")", `\)`)
+	hd.dsl.Token("[", `\[`)
+	hd.dsl.Token("]", `\]`)
+	
+	// DEVELOPER GUIDE: Grammar Rules
+	// Rules define the syntax structure. Format: Rule(name, pattern, action)
+	// - name: rule identifier
+	// - pattern: array of tokens/rules to match
+	// - action: function name to execute when matched
+	// Rules are tried in order until one matches.
 	
 	// Main program rule - accepts single statement OR multiple statements
 	hd.dsl.Rule("program", []string{"statement"}, "executeSingleStatement")
@@ -134,6 +204,15 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	// Statements (supports multiple statements)
 	hd.dsl.Rule("statements", []string{"statement", "statements"}, "multipleStatements")
 	hd.dsl.Rule("statements", []string{"statement"}, "singleStatement")
+	
+	// DEVELOPER GUIDE: Actions
+	// Actions are functions that execute when rules match.
+	// They receive matched tokens/values as args[].
+	// Return value becomes the rule's result.
+	// To add new functionality:
+	// 1. Define tokens (if needed)
+	// 2. Create rules that use those tokens
+	// 3. Write actions to process the matched data
 	
 	hd.dsl.Action("executeSingleStatement", func(args []interface{}) (interface{}, error) {
 		return args[0], nil
@@ -183,25 +262,36 @@ func (hd *HTTPDSLv3) setupGrammar() {
 		return nil, nil
 	})
 	
+	// DEVELOPER GUIDE: Control Flow Implementation
+	// Break/continue use context flags to signal loop termination.
+	// Loops check these flags after each iteration.
+	// The flags propagate through nested structures via LoopResult.
+	
 	// Control flow
 	hd.dsl.Rule("control_flow", []string{"break"}, "breakCmd")
 	hd.dsl.Rule("control_flow", []string{"continue"}, "continueCmd")
 	
 	hd.dsl.Action("breakCmd", func(args []interface{}) (interface{}, error) {
-		hd.context["break"] = true
+		hd.context["break"] = true  // Set flag for loop to check
 		return "break", nil
 	})
 	
 	hd.dsl.Action("continueCmd", func(args []interface{}) (interface{}, error) {
-		hd.context["continue"] = true
+		hd.context["continue"] = true  // Set flag to skip to next iteration
 		return "continue", nil
 	})
+	
+	// DEVELOPER GUIDE: HTTP Request Pattern
+	// HTTP requests can have optional parameters (headers, body, auth).
+	// Rules are ordered: most specific first, general last.
+	// This prevents shorter patterns from matching prematurely.
 	
 	// HTTP Requests - Order matters! Longer patterns first
 	hd.dsl.Rule("http_request", []string{"http_method", "url_value", "option_list"}, "httpWithOptions")
 	hd.dsl.Rule("http_request", []string{"http_method", "url_value"}, "httpSimple")
 	
 	// Option list - using LEFT recursion (now supported by improved parser)
+	// Left recursion is more efficient for building lists
 	hd.dsl.Rule("option_list", []string{"option"}, "firstOption")
 	hd.dsl.Rule("option_list", []string{"option_list", "option"}, "appendOption")
 	
@@ -393,6 +483,8 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.Rule("set_var", []string{"var", "VARIABLE", "expression"}, "setVariable")
 	
 	// Expressions (supports arithmetic and string concatenation)
+	hd.dsl.Rule("expression", []string{"array_access"}, "passthrough")
+	hd.dsl.Rule("expression", []string{"function_call"}, "passthrough")
 	hd.dsl.Rule("expression", []string{"expression", "ARITHMETIC", "term"}, "arithmeticOp")
 	hd.dsl.Rule("expression", []string{"term"}, "passthrough")
 	
@@ -422,10 +514,24 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	hd.dsl.Rule("value", []string{"STRING"}, "valueString")
 	hd.dsl.Rule("value", []string{"NUMBER"}, "valueNumber")
 	hd.dsl.Rule("value", []string{"VARIABLE"}, "valueVariable")
-	hd.dsl.Rule("value", []string{"function_call"}, "passthrough")
+	
+	// DEVELOPER GUIDE: Extending Functions
+	// To add a new function:
+	// 1. Add keyword token for function name
+	// 2. Create rule: Rule("function_call", [funcname, ...args], actionName)
+	// 3. Implement action to process the function
 	
 	// Function calls
 	hd.dsl.Rule("function_call", []string{"length", "VARIABLE"}, "lengthFunction")
+	
+	// DEVELOPER GUIDE: Array Indexing
+	// Arrays use bracket notation: $array[index]
+	// Supports both numeric and variable indices.
+	// The brackets are separate tokens to avoid conflicts with JSON arrays.
+	
+	// Array access - using bracket syntax
+	hd.dsl.Rule("array_access", []string{"VARIABLE", "[", "NUMBER", "]"}, "arrayAccess")
+	hd.dsl.Rule("array_access", []string{"VARIABLE", "[", "VARIABLE", "]"}, "arrayAccessVar")
 	
 	hd.dsl.Action("valueString", func(args []interface{}) (interface{}, error) {
 		str := hd.unquoteString(args[0].(string))
@@ -445,10 +551,14 @@ func (hd *HTTPDSLv3) setupGrammar() {
 		return nil, fmt.Errorf("variable $%s not found", varName)
 	})
 	
+	// DEVELOPER GUIDE: Function Implementation
+	// Functions operate on variables and return computed values.
+	// They can handle different data types (arrays, strings, etc.).
+	
 	hd.dsl.Action("lengthFunction", func(args []interface{}) (interface{}, error) {
 		varName := strings.TrimPrefix(args[1].(string), "$")
 		if val, ok := hd.variables[varName]; ok {
-			// Check if it's an array
+			// Handle different types: arrays, strings, JSON arrays
 			switch v := val.(type) {
 			case []interface{}:
 				return len(v), nil
@@ -473,6 +583,112 @@ func (hd *HTTPDSLv3) setupGrammar() {
 			}
 		}
 		return 0, nil
+	})
+	
+	hd.dsl.Action("arrayAccess", func(args []interface{}) (interface{}, error) {
+		varName := strings.TrimPrefix(args[0].(string), "$")
+		// Parse index from NUMBER token (now at position 2 with brackets)
+		indexStr := args[2].(string)
+		index, _ := strconv.Atoi(indexStr)
+		
+		if val, ok := hd.variables[varName]; ok {
+			switch v := val.(type) {
+			case []interface{}:
+				if index >= 0 && index < len(v) {
+					return v[index], nil
+				}
+				return nil, fmt.Errorf("array index out of bounds: %d", index)
+			case []string:
+				if index >= 0 && index < len(v) {
+					return v[index], nil
+				}
+				return nil, fmt.Errorf("array index out of bounds: %d", index)
+			case string:
+				// Try to parse as JSON array
+				if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") {
+					trimmed := strings.Trim(v, "[]")
+					if strings.TrimSpace(trimmed) == "" {
+						return nil, fmt.Errorf("cannot access index %d of empty array", index)
+					}
+					parts := strings.Split(trimmed, ",")
+					if index >= 0 && index < len(parts) {
+						item := strings.TrimSpace(parts[index])
+						item = strings.Trim(item, "\"'")
+						return item, nil
+					}
+					return nil, fmt.Errorf("array index out of bounds: %d", index)
+				}
+				// String character access
+				if index >= 0 && index < len(v) {
+					return string(v[index]), nil
+				}
+				return nil, fmt.Errorf("string index out of bounds: %d", index)
+			default:
+				return nil, fmt.Errorf("variable $%s is not an array", varName)
+			}
+		}
+		return nil, fmt.Errorf("variable $%s not found", varName)
+	})
+	
+	hd.dsl.Action("arrayAccessVar", func(args []interface{}) (interface{}, error) {
+		varName := strings.TrimPrefix(args[0].(string), "$")
+		indexVarName := strings.TrimPrefix(args[2].(string), "$")
+		
+		// Get index from variable
+		var index int
+		if idxVal, ok := hd.variables[indexVarName]; ok {
+			switch v := idxVal.(type) {
+			case float64:
+				index = int(v)
+			case int:
+				index = v
+			case string:
+				index, _ = strconv.Atoi(v)
+			default:
+				return nil, fmt.Errorf("index variable $%s is not a number", indexVarName)
+			}
+		} else {
+			return nil, fmt.Errorf("index variable $%s not found", indexVarName)
+		}
+		
+		// Now use the same logic as arrayAccess
+		if val, ok := hd.variables[varName]; ok {
+			switch v := val.(type) {
+			case []interface{}:
+				if index >= 0 && index < len(v) {
+					return v[index], nil
+				}
+				return nil, fmt.Errorf("array index out of bounds: %d", index)
+			case []string:
+				if index >= 0 && index < len(v) {
+					return v[index], nil
+				}
+				return nil, fmt.Errorf("array index out of bounds: %d", index)
+			case string:
+				// Try to parse as JSON array
+				if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") {
+					trimmed := strings.Trim(v, "[]")
+					if strings.TrimSpace(trimmed) == "" {
+						return nil, fmt.Errorf("cannot access index %d of empty array", index)
+					}
+					parts := strings.Split(trimmed, ",")
+					if index >= 0 && index < len(parts) {
+						item := strings.TrimSpace(parts[index])
+						item = strings.Trim(item, "\"'")
+						return item, nil
+					}
+					return nil, fmt.Errorf("array index out of bounds: %d", index)
+				}
+				// String character access
+				if index >= 0 && index < len(v) {
+					return string(v[index]), nil
+				}
+				return nil, fmt.Errorf("string index out of bounds: %d", index)
+			default:
+				return nil, fmt.Errorf("variable $%s is not an array", varName)
+			}
+		}
+		return nil, fmt.Errorf("variable $%s not found", varName)
 	})
 	
 	hd.dsl.Action("setVariable", func(args []interface{}) (interface{}, error) {
@@ -848,8 +1064,10 @@ func (hd *HTTPDSLv3) setupGrammar() {
 	})
 }
 
-// Helper methods
+// Helper methods for internal use
 
+// unquoteString removes surrounding quotes and processes escape sequences.
+// Handles standard escape sequences like \n, \t, \r, and escaped quotes.
 func (hd *HTTPDSLv3) unquoteString(s string) string {
 	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
 		// Remove quotes and handle escape sequences
@@ -863,6 +1081,15 @@ func (hd *HTTPDSLv3) unquoteString(s string) string {
 	return s
 }
 
+// expandVariables replaces $variable references with their actual values.
+// Scans the string for $name patterns and substitutes them with variable values.
+// Used throughout the DSL to enable variable interpolation in strings.
+//
+// DEVELOPER GUIDE: Variable System
+// Variables are stored in hd.variables map.
+// They're expanded in strings before execution.
+// To add special variables (like $ARGC), set them during initialization.
+// Variables persist across statements but are cleared on Reset.
 func (hd *HTTPDSLv3) expandVariables(s string) string {
 	// Expand variables in the string
 	result := s
@@ -874,6 +1101,9 @@ func (hd *HTTPDSLv3) expandVariables(s string) string {
 	return result
 }
 
+// toBool converts various types to boolean.
+// Empty strings, "false", "0", zero numbers, and nil return false.
+// Everything else returns true.
 func (hd *HTTPDSLv3) toBool(v interface{}) bool {
 	switch val := v.(type) {
 	case bool:
@@ -887,6 +1117,9 @@ func (hd *HTTPDSLv3) toBool(v interface{}) bool {
 	}
 }
 
+// toNumber converts various types to float64.
+// Handles int, int64, float64, and numeric strings.
+// Returns 0 if conversion fails.
 func (hd *HTTPDSLv3) toNumber(v interface{}) float64 {
 	switch val := v.(type) {
 	case float64:
@@ -903,6 +1136,9 @@ func (hd *HTTPDSLv3) toNumber(v interface{}) float64 {
 	return 0
 }
 
+// toSlice converts various types to a slice of interfaces.
+// Handles arrays, slices, and comma-separated strings.
+// Used internally for foreach loop iteration.
 func (hd *HTTPDSLv3) toSlice(v interface{}) []interface{} {
 	switch val := v.(type) {
 	case []interface{}:
@@ -931,6 +1167,9 @@ func (hd *HTTPDSLv3) toSlice(v interface{}) []interface{} {
 	return nil
 }
 
+// executeStatement processes a single DSL statement.
+// It handles both pre-parsed statements and string commands that need parsing.
+// Used internally by the execution engine.
 func (hd *HTTPDSLv3) executeStatement(stmt interface{}) (interface{}, error) {
 	// If the statement is already executed (is the result), return it
 	if stmt == nil {
@@ -953,6 +1192,9 @@ func (hd *HTTPDSLv3) executeStatement(stmt interface{}) (interface{}, error) {
 	return stmt, nil
 }
 
+// executeStatements processes a list of DSL statements sequentially.
+// It handles control flow (break/continue) and returns the last result.
+// Used internally for processing multi-statement scripts.
 func (hd *HTTPDSLv3) executeStatements(stmts interface{}) (interface{}, error) {
 	statements, ok := stmts.([]interface{})
 	if !ok {
@@ -975,13 +1217,20 @@ func (hd *HTTPDSLv3) executeStatements(stmts interface{}) (interface{}, error) {
 	return lastResult, nil
 }
 
+// evaluateCondition converts a condition result to boolean.
+// Used by control flow statements (if/while) to determine execution path.
 func (hd *HTTPDSLv3) evaluateCondition(cond interface{}) bool {
 	// Re-evaluate the condition (for while loops)
 	// This would need to re-parse the condition in a real implementation
 	return hd.toBool(cond)
 }
 
-// Parse processes DSL input and returns the result
+// Parse processes a single line of DSL input and returns the result.
+// It clears the execution context and provides detailed error messages.
+//
+// Example:
+//
+//	result, err := hd.Parse(`GET "https://api.example.com"`)
 func (hd *HTTPDSLv3) Parse(input string) (interface{}, error) {
 	// Clear context for new parse
 	hd.context = make(map[string]interface{})
@@ -997,8 +1246,17 @@ func (hd *HTTPDSLv3) Parse(input string) (interface{}, error) {
 	return result.Output, nil
 }
 
-// ParseMultiline parses multiple HTTP DSL statements separated by newlines
-// This enables script-like execution of multiple commands
+// ParseMultiline parses multiple HTTP DSL statements separated by newlines.
+// This enables script-like execution of multiple commands in sequence.
+// Each line is parsed and executed independently.
+//
+// Example:
+//
+//	results, err := hd.ParseMultiline(`
+//	    set $url "https://api.example.com"
+//	    GET "$url/users"
+//	    assert status 200
+//	`)
 func (hd *HTTPDSLv3) ParseMultiline(input string) ([]interface{}, error) {
 	// Clear context for new parse
 	hd.context = make(map[string]interface{})
@@ -1033,8 +1291,11 @@ func (hd *HTTPDSLv3) ParseAuto(input string) (interface{}, error) {
 	return result, nil
 }
 
-// ParseWithBlocks handles multiline blocks with if/then/endif structures
-// This method preprocesses block constructs before parsing
+// ParseWithBlocks handles multiline blocks with if/then/endif structures.
+// This method preprocesses block constructs before parsing, enabling
+// complex control flow with nested blocks.
+//
+// Deprecated: Use ParseWithBlockSupport instead for better block handling.
 func (hd *HTTPDSLv3) ParseWithBlocks(input string) (interface{}, error) {
 	// Clear context for new parse
 	hd.context = make(map[string]interface{})
@@ -1051,7 +1312,9 @@ func (hd *HTTPDSLv3) ParseWithBlocks(input string) (interface{}, error) {
 	return result, nil
 }
 
-// ParseWithContext parses without clearing the context (for internal use)
+// ParseWithContext parses DSL input without clearing the execution context.
+// This allows maintaining variables and state across multiple parse calls.
+// Primarily used internally for recursive parsing within blocks.
 func (hd *HTTPDSLv3) ParseWithContext(input string) (interface{}, error) {
 	// DO NOT clear context - keep existing variables
 	result, err := hd.dsl.Parse(input)
@@ -1065,39 +1328,69 @@ func (hd *HTTPDSLv3) ParseWithContext(input string) (interface{}, error) {
 	return result.Output, nil
 }
 
-// GetEngine returns the HTTP engine
+// GetEngine returns the underlying HTTP execution engine.
+// The engine handles actual HTTP requests, responses, and network operations.
 func (hd *HTTPDSLv3) GetEngine() *HTTPEngine {
 	return hd.engine
 }
 
-// GetVariable returns a variable value
+// GetVariable retrieves a variable value by name.
+// Returns the value and a boolean indicating if the variable exists.
+//
+// Example:
+//
+//	if val, ok := hd.GetVariable("username"); ok {
+//	    fmt.Printf("Username: %v\n", val)
+//	}
 func (hd *HTTPDSLv3) GetVariable(name string) (interface{}, bool) {
 	val, ok := hd.variables[name]
 	return val, ok
 }
 
-// SetVariable sets a variable value
+// SetVariable sets a variable value in the DSL context.
+// Variables can be referenced in scripts using $name syntax.
+//
+// Example:
+//
+//	hd.SetVariable("baseURL", "https://api.example.com")
+//	hd.SetVariable("timeout", 5000)
 func (hd *HTTPDSLv3) SetVariable(name string, value interface{}) {
 	hd.variables[name] = value
 }
 
-// ClearVariables clears all variables
+// ClearVariables removes all variables from the DSL context.
+// Useful for resetting state between script executions.
 func (hd *HTTPDSLv3) ClearVariables() {
 	hd.variables = make(map[string]interface{})
 }
 
-// GetVariables returns all variables
+// GetVariables returns a copy of all current variables.
+// The returned map can be used for debugging or state inspection.
 func (hd *HTTPDSLv3) GetVariables() map[string]interface{} {
 	return hd.variables
 }
 
-// ValidateJSON validates a JSON string
+// ValidateJSON validates that a string contains valid JSON.
+// Returns nil if valid, or an error describing the JSON syntax issue.
+//
+// Example:
+//
+//	if err := hd.ValidateJSON(responseBody); err != nil {
+//	    log.Printf("Invalid JSON: %v", err)
+//	}
 func (hd *HTTPDSLv3) ValidateJSON(jsonStr string) error {
 	var temp interface{}
 	return json.Unmarshal([]byte(jsonStr), &temp)
 }
 
-// MatchesPattern checks if a string matches a regex pattern
+// MatchesPattern checks if a string matches a regular expression pattern.
+// Returns true if the pattern matches anywhere in the string.
+//
+// Example:
+//
+//	if hd.MatchesPattern(response, `\"id\":\s*\d+`) {
+//	    fmt.Println("Found ID in response")
+//	}
 func (hd *HTTPDSLv3) MatchesPattern(str, pattern string) bool {
 	matched, _ := regexp.MatchString(pattern, str)
 	return matched
