@@ -118,14 +118,54 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 			}
 			
 			// Execute each line in the selected block
-			for _, blockLine := range blockToExecute {
-				result, err := hd.ParseWithContext(blockLine)
-				if err != nil {
-					return results, fmt.Errorf("error in block line '%s': %v", blockLine, err)
-				}
-				// Only add non-nil results
-				if result != nil && result != "" {
-					results = append(results, result)
+			for j := 0; j < len(blockToExecute); j++ {
+				blockLine := blockToExecute[j]
+				trimmedLine := strings.TrimSpace(blockLine)
+				
+				// Handle nested if blocks
+				if strings.HasPrefix(trimmedLine, "if ") && strings.HasSuffix(trimmedLine, " then") {
+					// Find the complete nested if block
+					nestedBlock := []string{blockLine}
+					nestCount := 1
+					for k := j + 1; k < len(blockToExecute) && nestCount > 0; k++ {
+						nestedLine := strings.TrimSpace(blockToExecute[k])
+						nestedBlock = append(nestedBlock, blockToExecute[k])
+						
+						if strings.HasPrefix(nestedLine, "if ") && strings.HasSuffix(nestedLine, " then") {
+							nestCount++
+						} else if nestedLine == "endif" {
+							nestCount--
+							if nestCount == 0 {
+								// Process the complete nested if block
+								nestedCode := strings.Join(nestedBlock, "\n")
+								result, err := hd.ParseWithBlockSupport(nestedCode)
+								if err != nil {
+									return results, fmt.Errorf("error in nested if block: %v", err)
+								}
+								if result != nil {
+									// Add results from nested if
+									if nestedResults, ok := result.([]interface{}); ok {
+										results = append(results, nestedResults...)
+									} else if result != "" {
+										results = append(results, result)
+									}
+								}
+								// Skip the lines we've processed
+								j = k
+								break
+							}
+						}
+					}
+				} else {
+					// Regular line - parse normally
+					result, err := hd.ParseWithContext(blockLine)
+					if err != nil {
+						return results, fmt.Errorf("error in block line '%s': %v", blockLine, err)
+					}
+					// Only add non-nil results
+					if result != nil && result != "" {
+						results = append(results, result)
+					}
 				}
 			}
 			
@@ -193,61 +233,28 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 				hd.SetVariable("_index", iteration)
 				hd.SetVariable("_iteration", iteration + 1)
 				
-				breakLoop := false
-				// Process each line in the loop body
-				for j := 0; j < len(loopBody); j++ {
-					loopLine := loopBody[j]
-					trimmed := strings.TrimSpace(loopLine)
-					
-					// Check for break statement
-					if trimmed == "break" {
-						breakLoop = true
-						break
-					}
-					// Check for continue statement
-					if trimmed == "continue" {
-						break // Skip rest of loop body
-					}
-					
-					// Check if it's an if block
-					if strings.HasPrefix(trimmed, "if ") && strings.HasSuffix(trimmed, " then") {
-						// Find the matching endif
-						ifBlock := []string{loopLine}
-						nestLevel := 1
-						for k := j + 1; k < len(loopBody) && nestLevel > 0; k++ {
-							innerLine := loopBody[k]
-							ifBlock = append(ifBlock, innerLine)
-							trimmedInner := strings.TrimSpace(innerLine)
-							if trimmedInner == "endif" {
-								nestLevel--
-							} else if strings.HasPrefix(trimmedInner, "if ") && strings.HasSuffix(trimmedInner, " then") {
-								nestLevel++
-							}
-							j = k // Update outer loop counter
-						}
-						// Process the if block recursively
-						for _, ifLine := range ifBlock {
-							result, err := hd.ParseWithBlockSupport(ifLine)
-							if err != nil {
-								return results, fmt.Errorf("error in loop iteration %d: %v", iteration+1, err)
-							}
-							if result != nil && result != "" {
-								results = append(results, result)
-							}
-						}
-					} else {
-						// Process normal line
-						result, err := hd.ParseWithContext(loopLine)
-						if err != nil {
-							return results, fmt.Errorf("error in loop iteration %d: %v", iteration+1, err)
-						}
-						if result != nil && result != "" {
-							results = append(results, result)
-						}
+				// Use the new ProcessLoopBody function
+				loopResult, err := hd.ProcessLoopBody(loopBody)
+				if err != nil {
+					return results, fmt.Errorf("error in loop iteration %d: %v", iteration+1, err)
+				}
+				
+				// Append results
+				for _, res := range loopResult.Results {
+					if res != nil && res != "" {
+						results = append(results, res)
 					}
 				}
+				
 				actualIterations++
-				if breakLoop {
+				
+				// Handle continue (skip to next iteration)
+				if loopResult.ShouldContinue {
+					continue
+				}
+				
+				// Handle break
+				if loopResult.ShouldBreak {
 					break // Exit the repeat loop
 				}
 			}
@@ -335,68 +342,26 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 				
 				hd.SetVariable("_iteration", iterations + 1)
 				
-				breakLoop := false
-				continueLoop := false
+				// Use the new ProcessLoopBody function
+				loopResult, err := hd.ProcessLoopBody(loopBody)
+				if err != nil {
+					return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
+				}
 				
-				// Process each line in the loop body
-				for j := 0; j < len(loopBody); j++ {
-					loopLine := loopBody[j]
-					trimmed := strings.TrimSpace(loopLine)
-					
-					// Check for break statement
-					if trimmed == "break" {
-						breakLoop = true
-						break
-					}
-					// Check for continue statement
-					if trimmed == "continue" {
-						continueLoop = true
-						break
-					}
-					
-					// Check if it's an if block
-					if strings.HasPrefix(trimmed, "if ") && strings.HasSuffix(trimmed, " then") {
-						// Find the matching endif
-						ifBlock := []string{loopLine}
-						nestLevel := 1
-						for k := j + 1; k < len(loopBody) && nestLevel > 0; k++ {
-							innerLine := loopBody[k]
-							ifBlock = append(ifBlock, innerLine)
-							trimmedInner := strings.TrimSpace(innerLine)
-							if trimmedInner == "endif" {
-								nestLevel--
-							} else if strings.HasPrefix(trimmedInner, "if ") && strings.HasSuffix(trimmedInner, " then") {
-								nestLevel++
-							}
-							j = k // Update outer loop counter
-						}
-						// Process the if block recursively
-						for _, ifLine := range ifBlock {
-							result, err := hd.ParseWithBlockSupport(ifLine)
-							if err != nil {
-								return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
-							}
-							if result != nil && result != "" {
-								results = append(results, result)
-							}
-						}
-					} else {
-						// Process normal line
-						result, err := hd.ParseWithContext(loopLine)
-						if err != nil {
-							return results, fmt.Errorf("error in while loop iteration %d: %v", iterations+1, err)
-						}
-						if result != nil && result != "" {
-							results = append(results, result)
-						}
+				// Append results
+				for _, res := range loopResult.Results {
+					if res != nil && res != "" {
+						results = append(results, res)
 					}
 				}
 				
-				if continueLoop {
+				// Handle continue
+				if loopResult.ShouldContinue {
 					continue // Skip to next iteration
 				}
 				
-				if breakLoop {
+				// Handle break
+				if loopResult.ShouldBreak {
 					break // Exit the while loop
 				}
 				
@@ -492,28 +457,28 @@ func (hd *HTTPDSLv3) ParseWithBlockSupport(code string) (interface{}, error) {
 				hd.SetVariable("_index", idx)
 				hd.SetVariable("_iteration", idx + 1)
 				
-				breakLoop := false
-				for _, loopLine := range loopBody {
-					// Check for break statement
-					if strings.TrimSpace(loopLine) == "break" {
-						breakLoop = true
-						break
-					}
-					// Check for continue statement
-					if strings.TrimSpace(loopLine) == "continue" {
-						break // Skip rest of loop body
-					}
-					
-					result, err := hd.ParseWithContext(loopLine)
-					if err != nil {
-						return results, fmt.Errorf("error in foreach iteration %d: %v", idx+1, err)
-					}
-					if result != nil && result != "" {
-						results = append(results, result)
+				// Use the new ProcessLoopBody function
+				loopResult, err := hd.ProcessLoopBody(loopBody)
+				if err != nil {
+					return results, fmt.Errorf("error in foreach iteration %d: %v", idx+1, err)
+				}
+				
+				// Append results
+				for _, res := range loopResult.Results {
+					if res != nil && res != "" {
+						results = append(results, res)
 					}
 				}
+				
 				actualIterations++
-				if breakLoop {
+				
+				// Handle continue (skip to next iteration)
+				if loopResult.ShouldContinue {
+					continue
+				}
+				
+				// Handle break
+				if loopResult.ShouldBreak {
 					break // Exit the foreach loop
 				}
 			}
