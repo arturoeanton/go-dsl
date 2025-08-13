@@ -17,6 +17,7 @@ type HTTPRunner struct {
 	stopOnFail bool
 	dryRun     bool
 	validate   bool
+	scriptArgs []string
 }
 
 // NewHTTPRunner creates a new HTTP script runner
@@ -28,6 +29,18 @@ func NewHTTPRunner(verbose, stopOnFail, dryRun, validate bool) *HTTPRunner {
 		dryRun:     dryRun,
 		validate:   validate,
 	}
+}
+
+// SetScriptArguments sets command-line arguments for the script
+func (hr *HTTPRunner) SetScriptArguments(args []string) {
+	hr.scriptArgs = args
+	
+	// Set arguments as DSL variables
+	for i, arg := range args {
+		hr.dsl.SetVariable(fmt.Sprintf("ARG%d", i+1), arg)
+		hr.dsl.SetVariable(fmt.Sprintf("ARGV[%d]", i), arg)
+	}
+	hr.dsl.SetVariable("ARGC", len(args))
 }
 
 // RunFile executes an HTTP DSL script file
@@ -151,6 +164,11 @@ func main() {
 	runner := NewHTTPRunner(verboseMode, *stopOnFail, *dryRun, *validate)
 
 	filename := flag.Arg(0)
+	
+	// Pass command-line arguments to the DSL engine
+	scriptArgs := flag.Args()[1:] // Get all args after the script filename
+	runner.SetScriptArguments(scriptArgs)
+	
 	if err := runner.RunFile(filename); err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
 		os.Exit(1)
@@ -187,8 +205,9 @@ func showHelp() {
 	fmt.Println("  http-runner -v script.http              # Execute with verbose output")
 	fmt.Println("  http-runner --validate script.http      # Validate syntax only")
 	fmt.Println("  http-runner --dry-run script.http       # Show execution plan")
+	fmt.Println("  http-runner script.http url token       # Pass arguments to script")
 }
 
 func showUsage() {
-	fmt.Println("Usage: http-runner [options] <script.http>")
+	fmt.Println("Usage: http-runner [options] <script.http> [script arguments...]")
 }
