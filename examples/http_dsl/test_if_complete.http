@@ -1,0 +1,159 @@
+# Test exhaustivo de IF/ELSE - Todos los casos de uso
+
+print "========================================"
+print "TEST COMPLETO IF/ELSE - TODOS LOS CASOS"
+print "========================================"
+
+# TEST 1: IF simple sin ELSE
+print ""
+print "TEST 1: IF simple sin ELSE"
+set $a 10
+if $a > 5 then
+    print "✅ a > 5 (correcto)"
+endif
+
+# TEST 2: IF simple con ELSE
+print ""
+print "TEST 2: IF simple con ELSE"
+set $b 3
+if $b > 5 then
+    print "❌ b > 5 (no debería aparecer)"
+else
+    print "✅ b <= 5 (correcto)"
+endif
+
+# TEST 3: IF anidado sin ELSE
+print ""
+print "TEST 3: IF anidado sin ELSE"
+set $c 8
+if $c > 5 then
+    print "✅ Nivel 1: c > 5"
+    if $c > 7 then
+        print "✅ Nivel 2: c > 7"
+        if $c == 8 then
+            print "✅ Nivel 3: c == 8"
+        endif
+    endif
+endif
+
+# TEST 4: IF anidado con ELSE en nivel interno
+print ""
+print "TEST 4: IF anidado con ELSE interno"
+set $d 6
+if $d > 5 then
+    print "✅ Nivel 1: d > 5"
+    if $d > 10 then
+        print "❌ Nivel 2: d > 10 (no debería aparecer)"
+    else
+        print "✅ Nivel 2: d <= 10"
+    endif
+endif
+
+# TEST 5: IF anidado con ELSE en ambos niveles
+print ""
+print "TEST 5: IF con ELSE en ambos niveles"
+set $e 3
+if $e > 5 then
+    print "❌ Nivel 1: e > 5 (no debería aparecer)"
+    if $e > 10 then
+        print "❌ Nivel 2: e > 10 (no debería aparecer)"
+    else
+        print "❌ Nivel 2: e <= 10 (no debería aparecer)"
+    endif
+else
+    print "✅ Nivel 1: e <= 5"
+    if $e == 3 then
+        print "✅ Nivel 2: e == 3"
+    else
+        print "❌ Nivel 2: e != 3 (no debería aparecer)"
+    endif
+endif
+
+# TEST 6: Triple anidamiento
+print ""
+print "TEST 6: Triple anidamiento"
+set $f 15
+if $f > 10 then
+    print "✅ Nivel 1: f > 10"
+    if $f > 12 then
+        print "✅ Nivel 2: f > 12"
+        if $f == 15 then
+            print "✅ Nivel 3: f == 15"
+        else
+            print "❌ Nivel 3: f != 15 (no debería aparecer)"
+        endif
+    else
+        print "❌ Nivel 2: f <= 12 (no debería aparecer)"
+    endif
+else
+    print "❌ Nivel 1: f <= 10 (no debería aparecer)"
+endif
+
+# TEST 7: IF con operadores AND/OR
+print ""
+print "TEST 7: IF con operadores AND/OR"
+set $g 7
+set $h 12
+if $g > 5 AND $h > 10 then
+    print "✅ AND: ambas condiciones verdaderas"
+endif
+if $g > 10 OR $h > 10 then
+    print "✅ OR: al menos una condición verdadera"
+endif
+
+# TEST 8: IF en línea (single line)
+print ""
+print "TEST 8: IF en línea"
+set $i 20
+if $i > 15 then print "✅ IF en línea funciona"
+
+# TEST 9: IF con comparaciones de strings
+print ""
+print "TEST 9: IF con strings"
+set $name "John"
+if $name == "John" then
+    print "✅ Comparación de strings funciona"
+else
+    print "❌ Error en comparación de strings"
+endif
+
+# TEST 10: IF dentro de loops
+print ""
+print "TEST 10: IF dentro de loops"
+set $count 0
+while $count < 3 do
+    set $count $count + 1
+    if $count == 2 then
+        print "✅ IF en loop: count == 2"
+    else
+        print "  count = $count"
+    endif
+endloop
+
+# TEST 11: Múltiples IF consecutivos (no anidados)
+print ""
+print "TEST 11: Múltiples IF consecutivos"
+set $j 5
+if $j > 3 then
+    print "✅ Primer IF: j > 3"
+endif
+if $j == 5 then
+    print "✅ Segundo IF: j == 5"
+endif
+if $j < 10 then
+    print "✅ Tercer IF: j < 10"
+endif
+
+# TEST 12: IF con expresiones aritméticas
+print ""
+print "TEST 12: IF con expresiones"
+set $k 10
+set $l 5
+if $k - $l == 5 then
+    print "✅ Expresión aritmética en condición"
+endif
+
+print ""
+print "========================================"
+print "✅ TODOS LOS TESTS COMPLETADOS"
+print "========================================"

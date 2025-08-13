@@ -1,0 +1,10 @@
+# Test length más simple
+set $empty "[]"
+print "Empty array: $empty"
+set $len_empty length $empty
+print "Length of empty: $len_empty"
+
+set $arr "[\"one\", \"two\"]"
+print "Array: $arr"
+set $len_arr length $arr
+print "Length: $len_arr"

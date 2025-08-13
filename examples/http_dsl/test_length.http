@@ -1,0 +1,32 @@
+# Test función length
+
+print "=== TEST LENGTH FUNCTION ==="
+
+# Test 1: Array literal
+set $fruits "[\"apple\", \"banana\", \"orange\"]"
+set $len length $fruits
+print "Array: $fruits"
+print "Length: $len"
+
+# Test 2: Empty array
+set $empty "[]"
+set $empty_len length $empty
+print "Empty array: $empty"
+print "Length: $empty_len"
+
+# Test 3: String length
+set $text "Hello World"
+set $text_len length $text
+print "Text: $text"
+print "Length: $text_len"
+
+# Test 4: Use in condition
+set $items "[\"a\", \"b\", \"c\", \"d\", \"e\"]"
+set $count length $items
+if $count > 3 then
+    print "Array has more than 3 items (has $count)"
+else
+    print "Array has 3 or fewer items"
+endif
+
+print "✅ Length function tests completed"
