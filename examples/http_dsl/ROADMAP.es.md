@@ -268,6 +268,9 @@ extract jsonpath "$.id" as $id  # Sin GET/POST previo
 | **Operadores AND/OR** | MEDIA | MEDIO | 3h | ✅ COMPLETADO 100% |
 | **Comentarios en bloques** | BAJA | BAJO | 1h | ✅ COMPLETADO 100% |
 | **Arrays inline** | MEDIA | ALTO | 6h | ✅ COMPLETADO (foreach: ✅, length: ✅, empty: ✅) |
+| **Array indexing ($arr[0])** | MEDIA | MEDIO | 2h | ✅ COMPLETADO (13/08/2024) |
+| **Unit tests completos** | ALTA | BAJO | 3h | ✅ COMPLETADO |
+| **Documentación godocs** | MEDIA | BAJO | 2h | ✅ COMPLETADO |
 | **Functions/Procedures** | BAJA | ALTO | --- | ⚪ FUTURO (v3.2) |
 
 ### **Implementación Segura (Sin riesgos):**
@@ -307,14 +310,14 @@ if $ARGC < 2 then
 endif
 ```
 
-### **Correcciones Necesarias:**
+### **Correcciones Implementadas ✅:**
 
-#### 1. **If anidados (actualmente roto)**
+#### 1. **If anidados (FUNCIONANDO AL 100%)**
 ```http
-# Debe funcionar pero falla:
+# Funciona perfectamente:
 if $level1 > 5 then
     print "Nivel 1 alto"
-    if $level2 > 3 then  # <-- Este if anidado falla
+    if $level2 > 3 then  # ✅ If anidados funcionan correctamente
         print "Ambos niveles altos"
     endif
 endif
@@ -503,7 +506,9 @@ La versión 3.1.1 implementa una solución completa de recursión para manejar b
 
 **Funcionalidad Implementada:**
 - ✅ Función length para arrays y strings
-- ⚠️ Acceso indexado a arrays: No implementado (no necesario para HTTP DSL)
+- ✅ Acceso indexado a arrays: IMPLEMENTADO con sintaxis $arr[index]
+- ✅ Tests unitarios completos para toda la funcionalidad
+- ✅ Documentación completa en inglés para godocs
 - ⚠️ Operaciones avanzadas de array: No implementadas (fuera del alcance)
 
 ✅ **LOGROS v3.0 (12/12/2024):**

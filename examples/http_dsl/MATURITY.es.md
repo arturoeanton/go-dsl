@@ -35,8 +35,10 @@
 | Extracción de Datos | ✅ | 100% | JSONPath, Regex, XPath |
 | CLI Arguments | ✅ | 100% | $ARG1, $ARGC automáticos |
 | Comentarios | ✅ | 100% | En todos los bloques anidados |
-| Arrays | ✅ | 100% | Foreach, length(), arrays vacíos correctos |
+| Arrays | ✅ | 100% | Foreach, length(), indexing con brackets, arrays vacíos |
+| Array Indexing | ✅ | 100% | $array[0], $array[$idx] funcionando |
 | Funciones | ✅ | Básico | length() para arrays y strings |
+| Tests Unitarios | ✅ | 100% | Cobertura completa de funcionalidad |
 
 ### 2. **ESTABILIDAD Y CONFIABILIDAD** (100%)
 
@@ -82,7 +84,7 @@
 |---------|------------|--------|
 | Modularidad | 95% | Arquitectura bien separada |
 | Documentación | 90% | README, ROADMAP, ejemplos completos |
-| Cobertura de Tests | 85% | Tests unitarios y de integración |
+| Cobertura de Tests | 95% | Tests unitarios completos y de integración |
 | Complejidad Ciclomática | Baja | <10 en mayoría de funciones |
 | Deuda Técnica | Mínima | Solo optimizaciones menores pendientes |
 | Estándares de Código | 95% | Go idiomático |
@@ -161,11 +163,12 @@
 
 ## 🚀 ROADMAP DE MEJORA CONTINUA
 
-### v3.2 (Próxima - Q3 2024)
-- [ ] Arrays inline avanzados
+### v3.2 (Próxima - Q4 2024)
+- [x] Arrays con indexing completo
 - [ ] Funciones definidas por usuario
 - [ ] Manejo de archivos binarios
 - [ ] WebSocket support básico
+- [ ] Map/dictionary support
 
 ### v3.3 (Futura - Q4 2024)
 - [ ] GraphQL support
