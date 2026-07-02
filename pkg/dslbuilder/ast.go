@@ -186,10 +186,33 @@ type NodeActionFunc func(ctx *EvalContext, node *Node) (interface{}, error)
 // A NodeAction with a given name takes precedence over an Action with
 // the same name.
 func (d *DSL) NodeAction(name string, fn NodeActionFunc) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.actionsFrozen {
+		d.deferredErrors = append(d.deferredErrors,
+			fmt.Errorf("actions are frozen (Build() was called); cannot register node action %s — register it before Build, or use BuildAllowLateActions and CompiledDSL.NodeAction", name))
+		return
+	}
 	if d.nodeActions == nil {
 		d.nodeActions = make(map[string]NodeActionFunc)
 	}
 	d.nodeActions[name] = fn
+}
+
+// lookupAction and lookupNodeAction read the action maps under the read
+// lock so late registration (BuildAllowLateActions) is race-free.
+func (d *DSL) lookupAction(name string) (ActionFunc, bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	fn, ok := d.actions[name]
+	return fn, ok
+}
+
+func (d *DSL) lookupNodeAction(name string) (NodeActionFunc, bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	fn, ok := d.nodeActions[name]
+	return fn, ok
 }
 
 // Eval evaluates a parse tree produced by ParseAST, executing the
@@ -221,7 +244,7 @@ func (d *DSL) evalNode(node *Node, depth int) (interface{}, error) {
 
 	// Lazy node actions decide what to evaluate.
 	if node.Action != "" {
-		if fn, exists := d.nodeActions[node.Action]; exists {
+		if fn, exists := d.lookupNodeAction(node.Action); exists {
 			return fn(&EvalContext{dsl: d, depth: depth + 1}, node)
 		}
 	}
@@ -236,7 +259,7 @@ func (d *DSL) evalNode(node *Node, depth int) (interface{}, error) {
 	}
 
 	if node.Action != "" {
-		if action, exists := d.actions[node.Action]; exists {
+		if action, exists := d.lookupAction(node.Action); exists {
 			return action(args)
 		}
 	}
@@ -686,8 +709,9 @@ func (p *astParser) parseRuleLongest(ruleName string) (*Node, error) {
 }
 
 // isLeftRecursive reports whether a rule has a directly left-recursive
-// alternative (rule → rule ...). Indirect left recursion is not detected
-// here and is not supported; Validate() warns about it.
+// alternative (rule → rule ...). Only DIRECT left recursion is detected
+// here; indirect left recursion is handled earlier in parseRule via
+// leftCycleRules/parseCycleLR.
 func (p *astParser) isLeftRecursive(ruleName string) bool {
 	rule, exists := p.grammar.rules[ruleName]
 	if !exists {

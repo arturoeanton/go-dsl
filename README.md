@@ -4,7 +4,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arturoeanton/go-dsl)](https://goreportcard.com/report/github.com/arturoeanton/go-dsl)
 
-**A practical Go toolkit for building small-to-medium DSLs with AST-first parsing, validation, diagnostics, and editor tooling.**
+**A practical Go toolkit for building small-to-medium DSLs with AST-first parsing, lazy evaluation, validation, diagnostics, and editor tooling.**
 
 go-dsl lets you define tokens, grammar rules, and semantic actions at runtime and get a working language: business rules, query filters, calculators, command syntaxes. The engine parses to a real AST first and evaluates actions afterwards (lazily where you need it), so side effects are safe by construction.
 
@@ -17,7 +17,7 @@ go-dsl lets you define tokens, grammar rules, and semantic actions at runtime an
 - 🎚️ **Pratt Expression Parser**: declare operators with binding power and associativity via `Expression()` — no grammar gymnastics for precedence
 - 🧭 **Farthest-Failure Errors**: syntax errors report the farthest failure point, the expected tokens, and the rule stack
 - 🧊 **Freezable Builder**: `Build()` validates the grammar once and returns an immutable `CompiledDSL`, safe for concurrent use
-- ✅ **Integrated Validator**: `dsl.Validate()` detects unknown symbols, unreachable rules, unregistered actions, non-productive cycles, and indirect left recursion (which is unsupported by design — see below)
+- ✅ **Integrated Validator**: `dsl.Validate()` detects unknown symbols, unreachable rules, unregistered actions, non-productive cycles, and indirect left-recursive cycles. Indirect LR is supported, but warned because it disables memoization during growth (see below)
 - 🦥 **Lazy Node Actions**: `NodeAction()` receives the unevaluated AST node, enabling real control flow (if/else branches that don't execute unless taken)
 - 🧰 **Typed Action Helpers**: `Action1/Action2/Action3` generics and the `Args` accessor remove type-assertion boilerplate
 - 🔒 **Per-Parse Context**: `Use(code, ctx)` scopes the context to that call — it no longer mutates the DSL's persistent context; `Set/Get/SetContext/GetContext` are mutex-protected

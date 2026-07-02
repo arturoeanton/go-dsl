@@ -140,6 +140,10 @@ func createParseError(message string, position int, token string, input string) 
 //   - Actions: Functions that execute when rules match
 //   - Functions: Go functions exposed to the DSL
 //   - Context: Runtime variables accessible during parsing
+//
+// A *DSL is intended for single-goroutine construction and use. It is NOT
+// safe for concurrent Use/Parse with context (see Use). For concurrent
+// parsing, freeze it with Build() and share the CompiledDSL.
 type DSL struct {
 	name        string                    // Name of the DSL for identification
 	grammar     *Grammar                  // Grammar rules and tokens
@@ -161,6 +165,11 @@ type DSL struct {
 	// return errors directly (e.g. TokenSet helpers). They are surfaced by
 	// Validate() and Build().
 	deferredErrors []error
+
+	// actionsFrozen is set by Build(): further Action/NodeAction calls on
+	// the DSL are rejected. BuildAllowLateActions leaves it false and
+	// late registration goes through CompiledDSL.Action/NodeAction.
+	actionsFrozen bool
 }
 
 // ActionFunc is a function that processes parsed tokens and returns a result.
@@ -234,11 +243,14 @@ func (d *DSL) KeywordToken(name, keyword string) error {
 }
 
 // TokenWithLookaround defines a token with lookahead/lookbehind assertions.
-// This allows for context-sensitive tokenization where a pattern matches
-// only when specific conditions are met before or after it.
 //
-// Note: Go's regexp package has limited lookaround support.
-// Lookbehind is stored but not enforced by the default implementation.
+// Deprecated: EXPERIMENTAL and only partially implemented — Go's RE2 engine
+// has no lookaround, so the lookahead/lookbehind patterns are STORED but NOT
+// ENFORCED by the parser (only the main pattern matches, at priority 50).
+// Prefer modeling the context in the grammar (e.g. a rule that matches
+// NUMBER followed by PX) or with KeywordToken priorities. This method is
+// kept for backward compatibility and may be removed in a future major
+// version.
 //
 // Parameters:
 //   - name: Token identifier
@@ -307,26 +319,21 @@ func (d *DSL) RuleWithError(name string, pattern []string, actionName string, er
 	rule.alternatives[len(rule.alternatives)-1].errHint = errorMessage
 }
 
-// RuleWithPrecedence defines a grammar rule with precedence and associativity.
-// This is essential for parsing expressions with operators correctly.
+// RuleWithPrecedence defines a grammar rule and records precedence and
+// associativity METADATA on it.
 //
-// Parameters:
-//   - name: Rule identifier
-//   - pattern: Sequence to match
-//   - actionName: Action to execute
-//   - precedence: Higher numbers = higher priority (tighter binding)
-//   - associativity: "left", "right", or "none"
+// Deprecated: the precedence/associativity values are stored but NOT used
+// by the parser to reorder parses — the rule behaves exactly like Rule()
+// (ordered choice), and Validate() warns about it. For operator precedence
+// use Expression(), which implements it correctly via a Pratt parser:
 //
-// Example:
+//	dsl.Expression("expr").
+//	    Atom("NUMBER", "number").
+//	    InfixLeft("PLUS", 10, "add").
+//	    InfixLeft("TIMES", 20, "mul").
+//	    InfixRight("POW", 30, "pow")
 //
-//	// Multiplication has higher precedence than addition
-//	dsl.RuleWithPrecedence("expr", []string{"expr", "TIMES", "expr"}, "mul", 20, "left")
-//	dsl.RuleWithPrecedence("expr", []string{"expr", "PLUS", "expr"}, "add", 10, "left")
-//	// Power operator is right-associative
-//	dsl.RuleWithPrecedence("expr", []string{"expr", "POW", "expr"}, "pow", 30, "right")
-//
-// With left associativity: 1+2+3 = (1+2)+3
-// With right associativity: 2^3^4 = 2^(3^4)
+// This method is kept only for backward compatibility.
 func (d *DSL) RuleWithPrecedence(name string, pattern []string, actionName string, precedence int, associativity string) {
 	if d.grammar.frozen {
 		d.deferredErrors = append(d.deferredErrors,
@@ -426,6 +433,13 @@ func (d *DSL) RuleWithPlusRepetition(name string, element string, actionName str
 //	    return left + right, nil
 //	})
 func (d *DSL) Action(name string, fn ActionFunc) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.actionsFrozen {
+		d.deferredErrors = append(d.deferredErrors,
+			fmt.Errorf("actions are frozen (Build() was called); cannot register action %s — register it before Build, or use BuildAllowLateActions and CompiledDSL.Action", name))
+		return
+	}
 	d.actions[name] = fn
 	d.grammar.actions[name] = fn
 }
@@ -450,7 +464,9 @@ func (d *DSL) WithRule(name string, pattern []string, actionName string) *DSL {
 	return d
 }
 
-// WithRulePrecedence adds a rule with precedence and returns the DSL for chaining
+// WithRulePrecedence adds a rule with precedence metadata and returns the DSL for chaining.
+//
+// Deprecated: see RuleWithPrecedence — use Expression() for operator precedence.
 func (d *DSL) WithRulePrecedence(name string, pattern []string, actionName string, precedence int, associativity string) *DSL {
 	d.RuleWithPrecedence(name, pattern, actionName, precedence, associativity)
 	return d
@@ -468,7 +484,9 @@ func (d *DSL) WithPlusRepetition(name string, element string, actionName string)
 	return d
 }
 
-// WithTokenLookaround adds a token with lookaround and returns the DSL for chaining
+// WithTokenLookaround adds a token with lookaround and returns the DSL for chaining.
+//
+// Deprecated: see TokenWithLookaround — experimental, lookaround is not enforced.
 func (d *DSL) WithTokenLookaround(name, pattern, lookahead, lookbehind string) *DSL {
 	d.TokenWithLookaround(name, pattern, lookahead, lookbehind)
 	return d
@@ -684,6 +702,15 @@ func (d *DSL) DebugTokens(code string) ([]TokenMatch, error) {
 //	})
 //
 // The context values are available to actions via GetContext.
+//
+// # Concurrency
+//
+// A *DSL is NOT safe for concurrent Use/Parse calls: the call-scoped
+// context lives on the DSL while the parse runs, so two overlapping Use()
+// calls on the same instance can observe each other's context even though
+// the individual map accesses are race-free. For concurrent parsing,
+// call Build() once and share the resulting CompiledDSL, which serializes
+// Parse/Use internally.
 func (d *DSL) Use(code string, ctx map[string]interface{}) (*Result, error) {
 	d.mu.Lock()
 	saved := d.parseContext
@@ -1082,8 +1109,10 @@ func (g *Grammar) AddRule(name string, sequence []string, action string) {
 	})
 }
 
-// AddRuleWithPrecedence adds a rule with explicit precedence and associativity.
-// Essential for correctly parsing expressions with multiple operators.
+// AddRuleWithPrecedence adds a rule with precedence/associativity metadata.
+//
+// Deprecated: the metadata is not used to reorder parses; use the DSL
+// Expression() API for operator precedence.
 //
 // Parameters:
 //   - name: Rule identifier

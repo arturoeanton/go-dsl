@@ -818,3 +818,74 @@ func TestParseStreamHandlerAborts(t *testing.T) {
 	assert.Equal(t, 1, calls)
 	assert.Contains(t, err.Error(), "stop here")
 }
+
+func TestBuildFreezesActions(t *testing.T) {
+	d := New("frozenactions")
+	require.NoError(t, d.Token("NUM", "[0-9]+"))
+	d.Rule("expr", []string{"NUM"}, "num")
+	d.Action("num", Action1(strconv.Atoi))
+
+	compiled, err := d.Build()
+	require.NoError(t, err)
+
+	// Registering through the DSL after Build is rejected (deferred error).
+	d.Action("late", func(args []interface{}) (interface{}, error) { return nil, nil })
+	_, err = d.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "actions are frozen")
+
+	// Registering through the compiled handle is also rejected on Build().
+	err = compiled.Action("late2", func(args []interface{}) (interface{}, error) { return nil, nil })
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "frozen")
+	err = compiled.NodeAction("late3", func(ctx *EvalContext, n *Node) (interface{}, error) { return nil, nil })
+	require.Error(t, err)
+
+	// Parsing still works.
+	result, err := compiled.Parse("42")
+	require.NoError(t, err)
+	assert.Equal(t, 42, result.GetOutput())
+}
+
+func TestBuildAllowLateActions(t *testing.T) {
+	d := New("lateactions")
+	require.NoError(t, d.Token("NUM", "[0-9]+"))
+	d.Rule("expr", []string{"NUM"}, "num")
+	// Grammar references "num" but the action arrives after the build.
+
+	compiled, err := d.BuildAllowLateActions()
+	require.NoError(t, err)
+
+	// Grammar is frozen...
+	err = d.Token("LATE", "x")
+	require.Error(t, err)
+
+	// ...but actions can be registered through the compiled handle.
+	require.NoError(t, compiled.Action("num", Action1(strconv.Atoi)))
+
+	result, err := compiled.Parse("42")
+	require.NoError(t, err)
+	assert.Equal(t, 42, result.GetOutput())
+
+	// Late registration is safe while other goroutines parse.
+	done := make(chan error, 4)
+	for i := 0; i < 4; i++ {
+		go func(i int) {
+			for j := 0; j < 30; j++ {
+				if i%2 == 0 {
+					if err := compiled.Action("num", Action1(strconv.Atoi)); err != nil {
+						done <- err
+						return
+					}
+				} else if _, err := compiled.Parse("7"); err != nil {
+					done <- err
+					return
+				}
+			}
+			done <- nil
+		}(i)
+	}
+	for i := 0; i < 4; i++ {
+		require.NoError(t, <-done)
+	}
+}

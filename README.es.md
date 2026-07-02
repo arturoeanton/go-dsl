@@ -1,6 +1,6 @@
 # go-dsl
 
-**Un toolkit práctico en Go para construir DSLs chicos y medianos, con parsing AST-first, validación, diagnósticos y tooling de editor.**
+**Un toolkit práctico en Go para construir DSLs chicos y medianos, con parsing AST-first, evaluación lazy, validación, diagnósticos y tooling de editor.**
 
 Definís tokens, reglas y acciones en runtime y obtenés un lenguaje funcionando: reglas de negocio, filtros de consulta, calculadoras, sintaxis de comandos. El motor parsea a un AST real primero y evalúa después (lazy donde hace falta), así los efectos secundarios son seguros por construcción.
 
@@ -13,7 +13,7 @@ Definís tokens, reglas y acciones en runtime y obtenés un lenguaje funcionando
 - 🎚️ **Parser de Expresiones Pratt** - Declarás operadores con binding power y asociatividad vía `Expression()`; sin malabares de gramática para la precedencia
 - 🧭 **Errores de "Farthest Failure"** - Los errores de sintaxis reportan el punto más lejano alcanzado, los tokens esperados y el stack de reglas
 - 🧊 **Builder Congelable** - `Build()` valida la gramática una sola vez y devuelve un `CompiledDSL` inmutable, seguro para uso concurrente
-- ✅ **Validador Integrado** - `dsl.Validate()` detecta símbolos desconocidos, reglas inalcanzables, acciones sin registrar, ciclos no productivos y recursión izquierda indirecta (no soportada por diseño, ver abajo)
+- ✅ **Validador Integrado** - `dsl.Validate()` detecta símbolos desconocidos, reglas inalcanzables, acciones sin registrar, ciclos no productivos y ciclos de recursión izquierda indirecta. La RI indirecta está soportada, pero se warnea porque deshabilita la memoización durante el growth (ver abajo)
 - 🦥 **Node Actions (lazy)** - `NodeAction()` recibe el nodo sin evaluar: control de flujo real (la rama del if que no se toma, no se ejecuta)
 - 🧰 **Acciones Tipadas** - Genéricos `Action1/Action2/Action3` y el helper `Args` eliminan los casts repetitivos
 - 🔒 **Contexto por Parse** - `Use(code, ctx)` limita el contexto a esa llamada: ya no muta el contexto persistente del DSL; `Set/Get/SetContext/GetContext` protegidos con mutex (libre de data races)
