@@ -75,3 +75,6 @@ examples/image_dsl/*.png
 examples/image_dsl/*.jpg
 examples/image_dsl/final_output.jpg
 examples/http_dsl/bin/
+# artifacts written to the cwd when running examples from the repo root
+/calculator.json
+/*.wav
