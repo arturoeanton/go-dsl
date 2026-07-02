@@ -61,3 +61,9 @@ copilot-*
 *.copilot
 
 
+# built binaries
+/lsp
+/dslgen
+/validator
+/repl
+/ast_viewer_bin
