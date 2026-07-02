@@ -54,9 +54,6 @@ Showcases advanced grammar features:
 
 ## Test Files
 
-### [test_failing.go](test_failing.go)
-Test cases demonstrating error handling and parsing failures.
-
 ## Running Examples
 
 Each example can be run independently:
