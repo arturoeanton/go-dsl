@@ -349,8 +349,11 @@ func (d *DSL) toConfig() DSLConfig {
 		config.Tokens[name] = token.pattern
 	}
 
-	// Export rules
-	for name, rule := range d.grammar.rules {
+	// Export rules in declaration order: Go map iteration is randomized,
+	// and the first rule of the config becomes the start rule on reload,
+	// so a nondeterministic order would corrupt round-trips.
+	for _, name := range d.grammar.ruleOrder {
+		rule := d.grammar.rules[name]
 		for _, alt := range rule.alternatives {
 			config.Rules = append(config.Rules, RuleConfig{
 				Name:    name,

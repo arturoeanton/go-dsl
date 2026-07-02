@@ -775,6 +775,7 @@ func (d *DSL) Parse(code string) (*Result, error) {
 //   - actions: Functions that process matched patterns
 type Grammar struct {
 	rules     map[string]*Rule      // Named grammar rules
+	ruleOrder []string              // Rule names in declaration order (deterministic export)
 	tokens    map[string]*Token     // Named token definitions (fast lookup)
 	tokenList []*Token              // Tokens in declaration order (deterministic matching)
 	startRule string                // Entry point for parsing
@@ -1067,6 +1068,7 @@ func (g *Grammar) AddRule(name string, sequence []string, action string) {
 			alternatives: []*Alternative{},
 		}
 		g.rules[name] = rule
+		g.ruleOrder = append(g.ruleOrder, name)
 		if g.startRule == "" {
 			g.startRule = name
 		}
@@ -1109,6 +1111,7 @@ func (g *Grammar) AddRuleWithPrecedence(name string, sequence []string, action s
 			alternatives: []*Alternative{},
 		}
 		g.rules[name] = rule
+		g.ruleOrder = append(g.ruleOrder, name)
 		if g.startRule == "" {
 			g.startRule = name
 		}
