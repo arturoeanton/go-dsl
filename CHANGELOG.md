@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Editor tooling (P1)
+- **LSP completion** — `textDocument/completion` backed by the new core API
+  `Completions(text, offset)`: suggestions are the parser's own expectations
+  at the cursor (keywords/literals as insertable text, free-form tokens as
+  placeholders).
+- **LSP hover** — `textDocument/hover` shows the AST node under the cursor
+  (rule, action, source span) via `Document.NodeAt`.
+
+### Engine
+- **Incremental documents** — `DSL.NewDocument()` keeps parse state across
+  edits and re-parses only the statements the edit touched (prefix reused
+  as-is, suffix reused with shifted spans). Powers the LSP per keystroke.
+- **Attribute grammars** — `NewAttributeGrammar()` with `Inherited`
+  (top-down) and `Synthesized` (bottom-up) attribute definitions evaluated
+  over the AST in two passes.
+- **Immutable builds** — `Build()` now freezes actions too;
+  `BuildAllowLateActions()` + lock-protected `CompiledDSL.Action/NodeAction`
+  for late binding. Deprecated: `RuleWithPrecedence` (use `Expression()`),
+  `TokenWithLookaround` (lookaround never enforced).
+
+### Product & CI (P2)
+- **apiflow** — product CLI for the HTTP DSL (`examples/http_dsl/cmd/apiflow`):
+  `run`, `check` (syntax-validates via the AST phase, zero side effects),
+  `version`.
+- **Manual benchmark job** — `workflow_dispatch` job compares HEAD vs main
+  with benchstat on the same runner.
+- **Release automation** — pushing a `v*` tag runs the full gate and
+  publishes a GitHub release with generated notes.
+
 ## v1.3.0 — the "go-dsl v2" engine
 
 A ground-up rework of the parsing engine. Fully backward compatible with the

@@ -889,3 +889,233 @@ func TestBuildAllowLateActions(t *testing.T) {
 		require.NoError(t, <-done)
 	}
 }
+
+func newDocDSL(t *testing.T) *DSL {
+	t.Helper()
+	d := New("doc")
+	require.NoError(t, d.KeywordToken("SET", "set"))
+	require.NoError(t, d.Token("IDENT", `[a-z]+`))
+	require.NoError(t, d.Token("NUMBER", `[0-9]+`))
+	d.Rule("stmt", []string{"SET", "IDENT", "NUMBER"}, "")
+	return d
+}
+
+func TestDocumentIncrementalReuse(t *testing.T) {
+	d := newDocDSL(t)
+	doc := d.NewDocument()
+
+	doc.Update("set a 1\nset b 2\nset c 3\nset d 4\nset e 5")
+	assert.Equal(t, 5, doc.Stats().Reparsed)
+	assert.Equal(t, 0, doc.Stats().Reused)
+	require.Len(t, doc.Statements(), 5)
+	assert.Empty(t, doc.Diagnostics())
+
+	// Edit ONLY the middle statement: prefix and suffix trees must be reused.
+	doc.Update("set a 1\nset b 2\nset cc 33\nset d 4\nset e 5")
+	assert.Equal(t, 1, doc.Stats().Reparsed, "only the edited statement should re-parse")
+	assert.Equal(t, 4, doc.Stats().Reused)
+	require.Len(t, doc.Statements(), 5)
+	assert.Empty(t, doc.Diagnostics())
+
+	// Suffix statements must have correctly shifted spans.
+	last := doc.Statements()[4]
+	assert.Equal(t, "set e 5", doc.Text()[last.Span.Start:last.Span.End])
+}
+
+func TestDocumentNodeAt(t *testing.T) {
+	d := newDocDSL(t)
+	doc := d.NewDocument()
+	doc.Update("set abc 42\nset xyz 7")
+
+	// Offset inside "abc" resolves to the IDENT token leaf.
+	off := strings.Index(doc.Text(), "abc") + 1
+	node := doc.NodeAt(off)
+	require.NotNil(t, node)
+	require.True(t, node.IsToken())
+	assert.Equal(t, "IDENT", node.Token.TokenType)
+	assert.Equal(t, "abc", node.Token.Value)
+
+	// After an edit that shifts the second statement, NodeAt still works.
+	doc.Update("set abcdef 42\nset xyz 7")
+	off = strings.Index(doc.Text(), "xyz") + 1
+	node = doc.NodeAt(off)
+	require.NotNil(t, node)
+	assert.Equal(t, "xyz", node.Token.Value)
+}
+
+func TestDocumentDiagnosticsAcrossEdits(t *testing.T) {
+	d := newDocDSL(t)
+	doc := d.NewDocument()
+
+	doc.Update("set a 1\nset b\nset c 3")
+	require.Len(t, doc.Diagnostics(), 1)
+	assert.GreaterOrEqual(t, doc.Diagnostics()[0].Line, 2)
+
+	// Fix the error: diagnostics clear; the untouched statements reuse.
+	doc.Update("set a 1\nset b 2\nset c 3")
+	assert.Empty(t, doc.Diagnostics())
+	require.Len(t, doc.Statements(), 3)
+
+	// Identical update: everything reused, nothing reparsed.
+	doc.Update("set a 1\nset b 2\nset c 3")
+	assert.Equal(t, 0, doc.Stats().Reparsed)
+	assert.Equal(t, 3, doc.Stats().Reused)
+}
+
+func TestCompletionsMidStatement(t *testing.T) {
+	d := New("completion")
+	require.NoError(t, d.KeywordToken("SET", "set"))
+	require.NoError(t, d.KeywordToken("PRINT", "print"))
+	require.NoError(t, d.Token("PLUS", `\+`))
+	require.NoError(t, d.Token("IDENT", `[a-z]+`))
+	require.NoError(t, d.Token("NUMBER", `[0-9]+`))
+	d.Rule("stmt", []string{"SET", "IDENT", "NUMBER"}, "")
+	d.Rule("stmt", []string{"PRINT", "IDENT"}, "")
+
+	// After "set x " the parser expects a NUMBER.
+	text := "set x "
+	comps := d.Completions(text, len(text))
+	require.NotEmpty(t, comps)
+	labels := make([]string, 0, len(comps))
+	for _, c := range comps {
+		labels = append(labels, c.Label)
+	}
+	assert.Contains(t, labels, "NUMBER")
+
+	// At a statement boundary, statement starters are suggested as keywords.
+	text = "set x 1 "
+	comps = d.Completions(text, len(text))
+	var keywords []string
+	for _, c := range comps {
+		if c.IsKeyword {
+			keywords = append(keywords, c.Label)
+		}
+	}
+	assert.Contains(t, keywords, "set")
+	assert.Contains(t, keywords, "print")
+
+	// Empty document: same statement starters.
+	comps = d.Completions("", 0)
+	keywords = keywords[:0]
+	for _, c := range comps {
+		if c.IsKeyword {
+			keywords = append(keywords, c.Label)
+		}
+	}
+	assert.Contains(t, keywords, "set")
+}
+
+func TestCompletionsLiteralTokens(t *testing.T) {
+	d := New("complit").
+		Tokens(func(t *TokenSet) {
+			t.Regex("NUMBER", `\d+`)
+			t.Literal("PLUS", "+")
+			t.Literal("LPAREN", "(")
+			t.Literal("RPAREN", ")")
+		}).
+		Expr("expr", func(e *ExpressionBuilder) {
+			e.Atom("NUMBER", "number")
+			e.Group("LPAREN", "expr", "RPAREN")
+			e.InfixLeft("PLUS", 10, "add")
+		})
+	d.Action("number", Action1(strconv.Atoi))
+	d.Action("add", Action3(func(l int, _ string, r int) (int, error) { return l + r, nil }))
+
+	// After "1 + " an operand is expected: NUMBER placeholder or "(" literal.
+	comps := d.Completions("1 + ", 4)
+	require.NotEmpty(t, comps)
+	var hasNumber, hasLParen bool
+	for _, c := range comps {
+		if c.Label == "NUMBER" && !c.IsKeyword {
+			hasNumber = true
+		}
+		if c.Label == "(" && c.IsKeyword {
+			hasLParen = true
+		}
+	}
+	assert.True(t, hasNumber, "NUMBER placeholder expected: %v", comps)
+	assert.True(t, hasLParen, "( literal expected: %v", comps)
+}
+
+func TestAttributeGrammar(t *testing.T) {
+	d := newCalcDSL(t)
+	root, err := d.ParseAST("1 + 2 * 3")
+	require.NoError(t, err)
+
+	ag := NewAttributeGrammar()
+
+	// Inherited: depth of every node.
+	ag.Inherited("depth", func(parent Attrs, node *Node, childIndex int) interface{} {
+		pd, _ := parent["depth"].(int)
+		return pd + 1
+	})
+
+	// Synthesized: arithmetic value of every expr node.
+	ag.Synthesized("value", "expr", func(node *Node, children []Attrs) (interface{}, error) {
+		switch node.Action {
+		case "number":
+			return strconv.Atoi(node.Child(0).Token.Value)
+		case "add":
+			return children[0]["value"].(int) + children[2]["value"].(int), nil
+		case "mul":
+			return children[0]["value"].(int) * children[2]["value"].(int), nil
+		}
+		return nil, nil
+	})
+
+	// Synthesized on all rules: node count of the subtree.
+	ag.Synthesized("nodes", "", func(node *Node, children []Attrs) (interface{}, error) {
+		count := 1
+		for _, c := range children {
+			if n, ok := c["nodes"].(int); ok {
+				count += n
+			} else {
+				count++ // token leaf
+			}
+		}
+		return count, nil
+	})
+
+	attrs, err := ag.Evaluate(root)
+	require.NoError(t, err)
+
+	assert.Equal(t, 7, attrs[root]["value"], "synthesized value must respect precedence")
+	assert.Equal(t, 1, attrs[root]["depth"], "root depth (initial parent = 0)")
+	// The mul subtree sits one level deeper.
+	mulNode := root.Child(2)
+	assert.Equal(t, 2, attrs[mulNode]["depth"])
+	assert.Equal(t, 6, attrs[mulNode]["value"])
+	assert.Greater(t, attrs[root]["nodes"].(int), 5)
+}
+
+func TestAttributeGrammarErrorPropagates(t *testing.T) {
+	d := newCalcDSL(t)
+	root, err := d.ParseAST("1 + 2")
+	require.NoError(t, err)
+
+	ag := NewAttributeGrammar()
+	ag.Synthesized("boom", "expr", func(node *Node, children []Attrs) (interface{}, error) {
+		return nil, fmt.Errorf("attribute failure")
+	})
+
+	_, err = ag.Evaluate(root)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "attribute failure")
+	assert.Contains(t, err.Error(), "boom")
+}
+
+func TestAttributeGrammarInitialContext(t *testing.T) {
+	d := newCalcDSL(t)
+	root, err := d.ParseAST("2 + 2")
+	require.NoError(t, err)
+
+	ag := NewAttributeGrammar()
+	ag.Inherited("env", func(parent Attrs, node *Node, childIndex int) interface{} {
+		return parent["env"] // pass the environment straight down
+	})
+
+	attrs, err := ag.Evaluate(root, Attrs{"env": "prod"})
+	require.NoError(t, err)
+	assert.Equal(t, "prod", attrs[root]["env"])
+	assert.Equal(t, "prod", attrs[root.Child(0)]["env"])
+}

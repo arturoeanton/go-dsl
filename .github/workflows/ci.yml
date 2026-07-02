@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch: # manual: also runs the benchmark comparison job
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -42,3 +43,36 @@ jobs:
           go build ./...
           go vet ./...
           go test ./...
+
+  # Manual benchmark regression check: compares HEAD against main on the
+  # SAME runner (numbers from different machines are meaningless, so the
+  # committed baseline is not used here). Run it from the Actions tab.
+  bench:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+
+      - name: Benchmark main (baseline)
+        run: |
+          git checkout origin/main
+          go test -run xxx -bench . -benchmem -count 6 ./pkg/dslbuilder | tee /tmp/bench_main.txt
+
+      - name: Benchmark HEAD
+        run: |
+          git checkout ${{ github.sha }}
+          go test -run xxx -bench . -benchmem -count 6 ./pkg/dslbuilder | tee /tmp/bench_head.txt
+
+      - name: Compare
+        run: benchstat /tmp/bench_main.txt /tmp/bench_head.txt

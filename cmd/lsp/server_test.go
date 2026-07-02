@@ -118,3 +118,57 @@ func TestLSPLifecycleAndDiagnostics(t *testing.T) {
 		t.Errorf("expected shutdown response with id 2, got %v", messages[3])
 	}
 }
+
+func TestLSPCompletionAndHover(t *testing.T) {
+	var input bytes.Buffer
+	input.WriteString(frame(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`))
+	// Document: "set x 1\nset y " — cursor at end of line 2 expects NUMBER.
+	didOpen := `{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///t.dsl","text":"set x 1\nset y "}}}`
+	input.WriteString(frame(didOpen))
+	completion := `{"jsonrpc":"2.0","id":2,"method":"textDocument/completion","params":{"textDocument":{"uri":"file:///t.dsl"},"position":{"line":1,"character":6}}}`
+	input.WriteString(frame(completion))
+	// Hover over "x" (line 0, char 4).
+	hover := `{"jsonrpc":"2.0","id":3,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///t.dsl"},"position":{"line":0,"character":4}}}`
+	input.WriteString(frame(hover))
+	input.WriteString(frame(`{"jsonrpc":"2.0","method":"exit"}`))
+
+	var output bytes.Buffer
+	srv := newServer(testDSL(t), &input, &output)
+	if err := srv.run(); err != nil {
+		t.Fatalf("server error: %v", err)
+	}
+
+	messages := decodeFrames(t, output.String())
+	// init resp, diagnostics (1 error: incomplete stmt), completion resp, hover resp
+	if len(messages) != 4 {
+		t.Fatalf("expected 4 messages, got %d", len(messages))
+	}
+
+	// Capabilities advertise completion and hover.
+	caps := messages[0]["result"].(map[string]interface{})["capabilities"].(map[string]interface{})
+	if caps["hoverProvider"] != true {
+		t.Errorf("hoverProvider not advertised")
+	}
+	if _, ok := caps["completionProvider"]; !ok {
+		t.Errorf("completionProvider not advertised")
+	}
+
+	// Completion result contains a NUMBER suggestion.
+	items := messages[2]["result"].([]interface{})
+	var hasNumber bool
+	for _, it := range items {
+		if it.(map[string]interface{})["label"] == "NUMBER" {
+			hasNumber = true
+		}
+	}
+	if !hasNumber {
+		t.Errorf("completion should suggest NUMBER, got %v", items)
+	}
+
+	// Hover result describes the IDENT token "x".
+	hoverResult := messages[3]["result"].(map[string]interface{})
+	value := hoverResult["contents"].(map[string]interface{})["value"].(string)
+	if !strings.Contains(value, "IDENT") || !strings.Contains(value, "x") {
+		t.Errorf("hover should describe IDENT token x, got %q", value)
+	}
+}

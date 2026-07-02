@@ -120,4 +120,21 @@ type textDocumentParams struct {
 	ContentChanges []struct {
 		Text string `json:"text"`
 	} `json:"contentChanges"`
+	Position lspPosition `json:"position"`
+}
+
+type lspCompletionItem struct {
+	Label  string `json:"label"`
+	Kind   int    `json:"kind"` // 14 = Keyword, 1 = Text
+	Detail string `json:"detail,omitempty"`
+}
+
+type lspHover struct {
+	Contents lspMarkup `json:"contents"`
+	Range    *lspRange `json:"range,omitempty"`
+}
+
+type lspMarkup struct {
+	Kind  string `json:"kind"` // "markdown"
+	Value string `json:"value"`
 }

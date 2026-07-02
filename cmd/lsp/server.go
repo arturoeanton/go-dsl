@@ -12,14 +12,17 @@ import (
 	"github.com/arturoeanton/go-dsl/pkg/dslbuilder"
 )
 
-// server is a minimal stdio LSP server. It is deliberately tiny: framing,
-// four lifecycle methods, and diagnostics on open/change.
+// server is a minimal stdio LSP server: framing, lifecycle, diagnostics on
+// open/change (incrementally re-parsed via dslbuilder.Document), completion
+// (parser expectations at the cursor), and hover (AST node under the cursor).
 type server struct {
 	dsl    *dslbuilder.DSL
 	reader *bufio.Reader
 	writer io.Writer
 	mu     sync.Mutex // serializes writes to the client
 	exited bool
+
+	docs map[string]*dslbuilder.Document // open documents by URI
 }
 
 func newServer(dsl *dslbuilder.DSL, r io.Reader, w io.Writer) *server {
@@ -27,6 +30,7 @@ func newServer(dsl *dslbuilder.DSL, r io.Reader, w io.Writer) *server {
 		dsl:    dsl,
 		reader: bufio.NewReader(r),
 		writer: w,
+		docs:   make(map[string]*dslbuilder.Document),
 	}
 }
 
@@ -88,11 +92,13 @@ func (s *server) handle(req *rpcRequest) {
 		s.reply(req.ID, map[string]interface{}{
 			"capabilities": map[string]interface{}{
 				// 1 = full document sync: the client sends the whole text.
-				"textDocumentSync": 1,
+				"textDocumentSync":   1,
+				"completionProvider": map[string]interface{}{},
+				"hoverProvider":      true,
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "go-dsl-lsp",
-				"version": "1.0",
+				"version": "1.1",
 			},
 		})
 
@@ -112,17 +118,42 @@ func (s *server) handle(req *rpcRequest) {
 			// Full sync: the last change carries the complete text.
 			text = params.ContentChanges[len(params.ContentChanges)-1].Text
 		}
-		s.publishDiagnostics(params.TextDocument.URI, text)
+		uri := params.TextDocument.URI
+		doc, ok := s.docs[uri]
+		if !ok {
+			doc = s.dsl.NewDocument()
+			s.docs[uri] = doc
+		}
+		// Incremental: only statements touched by the edit re-parse.
+		doc.Update(text)
+		s.publishDiagnostics(uri, doc)
 
 	case "textDocument/didClose":
 		var params textDocumentParams
 		if err := json.Unmarshal(req.Params, &params); err != nil {
 			return
 		}
+		delete(s.docs, params.TextDocument.URI)
 		s.notify("textDocument/publishDiagnostics", publishDiagnosticsParams{
 			URI:         params.TextDocument.URI,
 			Diagnostics: []lspDiagnostic{},
 		})
+
+	case "textDocument/completion":
+		var params textDocumentParams
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.reply(req.ID, nil)
+			return
+		}
+		s.reply(req.ID, s.completionItems(params.TextDocument.URI, params.Position))
+
+	case "textDocument/hover":
+		var params textDocumentParams
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.reply(req.ID, nil)
+			return
+		}
+		s.reply(req.ID, s.hover(params.TextDocument.URI, params.Position))
 
 	default:
 		// Requests we don't implement get an empty result so clients
@@ -133,10 +164,9 @@ func (s *server) handle(req *rpcRequest) {
 	}
 }
 
-// publishDiagnostics validates the document with the multi-error engine
-// and pushes the results to the client.
-func (s *server) publishDiagnostics(uri, text string) {
-	diags := s.dsl.Diagnostics(text)
+// publishDiagnostics pushes the document's current diagnostics.
+func (s *server) publishDiagnostics(uri string, doc *dslbuilder.Document) {
+	diags := doc.Diagnostics()
 
 	lspDiags := make([]lspDiagnostic, 0, len(diags))
 	for _, d := range diags {
@@ -168,6 +198,95 @@ func (s *server) publishDiagnostics(uri, text string) {
 		URI:         uri,
 		Diagnostics: lspDiags,
 	})
+}
+
+// completionItems returns the parser's suggestions at a cursor position.
+func (s *server) completionItems(uri string, pos lspPosition) []lspCompletionItem {
+	doc, ok := s.docs[uri]
+	if !ok {
+		return []lspCompletionItem{}
+	}
+	offset := offsetForPosition(doc.Text(), pos)
+
+	comps := s.dsl.Completions(doc.Text(), offset)
+	items := make([]lspCompletionItem, 0, len(comps))
+	for _, c := range comps {
+		kind := 1 // Text (placeholder for free-form tokens)
+		if c.IsKeyword {
+			kind = 14 // Keyword
+		}
+		items = append(items, lspCompletionItem{
+			Label:  c.Label,
+			Kind:   kind,
+			Detail: c.Detail,
+		})
+	}
+	return items
+}
+
+// hover describes the AST node under the cursor.
+func (s *server) hover(uri string, pos lspPosition) *lspHover {
+	doc, ok := s.docs[uri]
+	if !ok {
+		return nil
+	}
+	offset := offsetForPosition(doc.Text(), pos)
+	node := doc.NodeAt(offset)
+	if node == nil {
+		return nil
+	}
+
+	var md strings.Builder
+	if node.IsToken() {
+		fmt.Fprintf(&md, "**token** `%s`\n\n`%s`", node.Token.TokenType, node.Token.Value)
+	} else {
+		fmt.Fprintf(&md, "**rule** `%s`", node.Rule)
+		if node.Action != "" {
+			fmt.Fprintf(&md, " → action `%s`", node.Action)
+		}
+		text := doc.Text()
+		if node.Span.Start >= 0 && node.Span.End <= len(text) {
+			fmt.Fprintf(&md, "\n\n```\n%s\n```", text[node.Span.Start:node.Span.End])
+		}
+	}
+
+	start := positionForOffset(doc.Text(), node.Span.Start)
+	end := positionForOffset(doc.Text(), node.Span.End)
+	return &lspHover{
+		Contents: lspMarkup{Kind: "markdown", Value: md.String()},
+		Range:    &lspRange{Start: start, End: end},
+	}
+}
+
+// offsetForPosition converts an LSP position (0-based line/character) to a
+// byte offset. Characters are counted as bytes, which is exact for ASCII
+// DSLs and a close approximation otherwise.
+func offsetForPosition(text string, pos lspPosition) int {
+	offset := 0
+	line := 0
+	for line < pos.Line {
+		idx := strings.IndexByte(text[offset:], '\n')
+		if idx < 0 {
+			return len(text)
+		}
+		offset += idx + 1
+		line++
+	}
+	offset += pos.Character
+	if offset > len(text) {
+		offset = len(text)
+	}
+	return offset
+}
+
+// positionForOffset converts a byte offset to an LSP position.
+func positionForOffset(text string, offset int) lspPosition {
+	if offset > len(text) {
+		offset = len(text)
+	}
+	line := strings.Count(text[:offset], "\n")
+	lineStart := strings.LastIndexByte(text[:offset], '\n') + 1
+	return lspPosition{Line: line, Character: offset - lineStart}
 }
 
 func (s *server) reply(id *json.RawMessage, result interface{}) {

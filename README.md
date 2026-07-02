@@ -26,7 +26,9 @@ go-dsl lets you define tokens, grammar rules, and semantic actions at runtime an
 - 🔁 **Indirect Left Recursion**: multi-rule leftmost cycles (`a → b …`, `b → a …`) parse via a generalized growing algorithm
 - 🌊 **Streaming**: `ParseStream(io.Reader, handler)` processes line-oriented scripts without loading them into memory
 - 🖨️ **Code Generation**: `cmd/dslgen` turns a YAML/JSON grammar into checked-in Go code
-- 🧿 **LSP Server**: `cmd/lsp` publishes live diagnostics for your DSL in any LSP-capable editor
+- 🧿 **LSP Server**: `cmd/lsp` gives any LSP editor live diagnostics, **completion** (parser expectations at the cursor), and **hover** (AST node under the cursor)
+- ⚡ **Incremental Documents**: `NewDocument()` re-parses only the statements an edit touched, reusing untouched subtrees (this is what the LSP runs per keystroke)
+- 🧮 **Attribute Grammars**: `NewAttributeGrammar()` evaluates inherited (top-down) and synthesized (bottom-up) attributes over the AST
 
 ### Core
 - 🚀 **Dynamic DSL Creation**: Build custom languages at runtime
@@ -333,13 +335,19 @@ dslgen -dsl grammar.yaml -package mydsl -func NewMyDSL -o mydsl_gen.go
 ```
 
 ### LSP Server
-Live diagnostics for your DSL in any LSP-capable editor, powered by
-`Diagnostics()` (multi-error recovery):
+Live diagnostics, completion, and hover for your DSL in any LSP-capable
+editor. Documents re-parse incrementally (only edited statements), completion
+comes from the parser's own expectations at the cursor, and hover shows the
+AST node (rule, action, source span) under it:
 
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/lsp@latest
 lsp -dsl grammar.yaml    # wire as a stdio language server
 ```
+
+The same capabilities are available as library APIs: `dsl.NewDocument()`
+(incremental parse + `NodeAt`), `dsl.Completions(text, offset)`, and
+`dslbuilder.NewAttributeGrammar()` for semantic analysis over the AST.
 
 See the [cmd/](cmd/) directory for detailed documentation of each tool.
 

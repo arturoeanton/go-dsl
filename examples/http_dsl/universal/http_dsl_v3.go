@@ -1341,6 +1341,14 @@ func (hd *HTTPDSLv3) ParseWithBlocks(input string) (interface{}, error) {
 	return result, nil
 }
 
+// ValidateStatement checks the syntax of a single statement without
+// executing any action: only the AST phase runs, so validation can never
+// fire HTTP requests or mutate variables.
+func (hd *HTTPDSLv3) ValidateStatement(stmt string) error {
+	_, err := hd.dsl.ParseAST(stmt)
+	return err
+}
+
 // ParseWithContext parses DSL input without clearing the execution context.
 // This allows maintaining variables and state across multiple parse calls.
 // Primarily used internally for recursive parsing within blocks.

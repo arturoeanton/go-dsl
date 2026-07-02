@@ -22,7 +22,9 @@ Definís tokens, reglas y acciones en runtime y obtenés un lenguaje funcionando
 - 🔁 **Recursión Izquierda Indirecta** - Los ciclos leftmost multi-regla (`a → b …`, `b → a …`) parsean con growing generalizado
 - 🌊 **Streaming** - `ParseStream(io.Reader, handler)` procesa scripts orientados a líneas sin cargarlos en memoria
 - 🖨️ **Generación de Código** - `cmd/dslgen` convierte una gramática YAML/JSON en código Go versionable
-- 🧿 **Servidor LSP** - `cmd/lsp` publica diagnósticos en vivo para tu DSL en cualquier editor con LSP
+- 🧿 **Servidor LSP** - `cmd/lsp` da a cualquier editor LSP diagnósticos en vivo, **autocompletado** (expectativas del parser en el cursor) y **hover** (nodo del AST bajo el cursor)
+- ⚡ **Documentos Incrementales** - `NewDocument()` re-parsea solo los statements tocados por el edit, reusando los subárboles intactos (es lo que corre el LSP por tecla)
+- 🧮 **Gramáticas de Atributos** - `NewAttributeGrammar()` evalúa atributos heredados (top-down) y sintetizados (bottom-up) sobre el AST
 
 ### Núcleo
 - **Recursión Izquierda Directa** - Algoritmo de semilla creciente (solo directa; para operadores usá `Expression()`)
@@ -260,11 +262,18 @@ dslgen -dsl grammar.yaml -package midsl -func NewMiDSL -o midsl_gen.go
 ```
 
 ### Servidor LSP
-Diagnósticos en vivo para tu DSL en cualquier editor con LSP, usando `Diagnostics()` (multi-error):
+Diagnósticos en vivo, autocompletado y hover en cualquier editor con LSP.
+Los documentos se re-parsean incrementalmente (solo los statements editados),
+el completado sale de las expectativas del propio parser y el hover muestra
+el nodo del AST (regla, acción, span) bajo el cursor:
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/lsp@latest
 lsp -dsl grammar.yaml    # conectar como language server por stdio
 ```
+
+Las mismas capacidades existen como API de librería: `dsl.NewDocument()`
+(parse incremental + `NodeAt`), `dsl.Completions(text, offset)` y
+`dslbuilder.NewAttributeGrammar()` para análisis semántico sobre el AST.
 
 ## 📊 Comparación con Otras Herramientas
 

@@ -1,0 +1,49 @@
+# Release automation: pushing a tag v* runs the full quality gate and, only
+# if it is green, publishes a GitHub release with generated notes.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Quality gate (root module)
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...
+          go test -race ./pkg/...
+
+      - name: Quality gate (examples/http_dsl module)
+        working-directory: examples/http_dsl
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists, skipping"
+            exit 0
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes "Full details in [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)."

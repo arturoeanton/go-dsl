@@ -197,14 +197,14 @@ dsl.Action("add", func(args []interface{}) (interface{}, error) {
 ### 2. Características Avanzadas
 
 #### ✅ Ahora soportadas:
+- **Gramáticas de atributos**: `NewAttributeGrammar()` — síntesis (bottom-up) y herencia (top-down) declarativas sobre el AST
 - **Recuperación de errores**: `Diagnostics(code)` reporta todos los errores de una pasada (con resincronización por FIRST-set)
 - **Streaming**: `ParseStream(io.Reader, handler)` procesa scripts línea a línea sin cargar todo en memoria
 - **Generación de código**: `cmd/dslgen` convierte la gramática declarativa en Go versionable
-- **LSP**: `cmd/lsp` publica diagnósticos en vivo en el editor
+- **LSP**: `cmd/lsp` publica diagnósticos en vivo, autocompletado y hover en el editor
 
 #### Sin soporte:
-- **Gramáticas de atributos**: No hay síntesis/herencia automática de atributos
-- **Parsing incremental real**: no se reusan árboles entre ediciones (el LSP re-parsea el documento completo, que para DSLs es barato)
+- **Parsing incremental sub-statement**: `NewDocument()` reusa árboles a nivel statement; dentro del statement editado se re-parsea completo (para DSLs es barato)
 - **Múltiples archivos**: No hay sistema de módulos/imports integrado
 
 ### 3. Debugging Limitado
@@ -314,6 +314,11 @@ Resueltas también en esta versión:
 - [x] ✅ Servidor LSP mínimo: `cmd/lsp` (diagnósticos en vivo)
 - [x] ✅ Detección de alternativas ensombrecidas (elección ordenada PEG) en `Validate()`
 
+Resueltas después:
+- [x] ✅ Parsing incremental a nivel statement: `NewDocument()` reusa los subárboles no tocados por el edit (prefix directo, suffix con shift de spans); el lexing sigue siendo una pasada lineal completa
+- [x] ✅ Autocompletado y hover en el LSP (`Completions()` + `Document.NodeAt`)
+- [x] ✅ Gramáticas de atributos: `NewAttributeGrammar()` (heredados + sintetizados, evaluación L-attributed en dos pasadas)
+
 Pendientes para futuras versiones:
-- [ ] Parsing incremental real (reuso de árboles entre ediciones)
-- [ ] Autocompletado/hover en el LSP (hoy: solo diagnósticos)
+- [ ] Parsing incremental sub-statement (reuso dentro de un statement editado)
+- [ ] Signature help / go-to-definition en el LSP

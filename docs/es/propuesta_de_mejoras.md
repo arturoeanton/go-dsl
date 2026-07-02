@@ -270,7 +270,7 @@ Mejoras estructurales completadas sobre el parser y la API:
 - [x] **Code Generation**: `cmd/dslgen` genera el constructor Go desde la gramática → **✅ IMPLEMENTADO**
 - [ ] **Plugins**: Sistema de plugins para extender funcionalidad
 - [ ] **Integración con go:generate**: Para generar código en tiempo de compilación
-- [x] **LSP Server**: `cmd/lsp` con diagnósticos en vivo (autocompletado pendiente) → **✅ IMPLEMENTADO (diagnósticos)**
+- [x] **LSP Server**: `cmd/lsp` con diagnósticos en vivo, autocompletado y hover → **✅ IMPLEMENTADO**
 
 #### 9. Documentación y Ejemplos
 **Esfuerzo**: Medio (4-6 días)  
