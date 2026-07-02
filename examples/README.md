@@ -2,6 +2,14 @@
 
 This directory contains various examples demonstrating the capabilities of go-dsl.
 
+## Official Demos (start here)
+
+1. [**calculator_pratt**](calculator_pratt/) — expressions: Pratt precedence, typed actions, AST inspection, `Build()`
+2. [**http_dsl**](http_dsl/) — full scripting DSL: lazy control flow, side effects, API testing (self-contained Go module)
+3. [**scim**](scim/) — parsing a real-world standard (SCIM 2.0 filters): query DSL over data
+
+Everything below is kept as additional reference recipes.
+
 ## Basic Examples
 
 ### [simple](simple/)

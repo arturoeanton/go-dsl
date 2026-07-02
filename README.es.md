@@ -1,6 +1,8 @@
 # go-dsl
 
-Un constructor de DSL (Lenguaje de Dominio Específico) flexible y potente para Go que facilita la creación de lenguajes personalizados. **Ahora con motor en dos fases (parse/eval), AST real y parser de expresiones Pratt.**
+**Un toolkit práctico en Go para construir DSLs chicos y medianos, con parsing AST-first, validación, diagnósticos y tooling de editor.**
+
+Definís tokens, reglas y acciones en runtime y obtenés un lenguaje funcionando: reglas de negocio, filtros de consulta, calculadoras, sintaxis de comandos. El motor parsea a un AST real primero y evalúa después (lazy donde hace falta), así los efectos secundarios son seguros por construcción.
 
 ## ✨ Características
 
@@ -177,6 +179,17 @@ results, err := dsl.ParseWithBlocks(script) // con soporte de bloques
 ```
 
 ## 📚 Ejemplos Incluidos
+
+Tres demos oficiales cubren toda la superficie — empezá por acá:
+
+| Demo | Qué muestra |
+|---|---|
+| [`examples/calculator_pratt`](examples/calculator_pratt/) | Expresiones: precedencia/asociatividad Pratt, acciones tipadas, inspección de AST, Build() |
+| [`examples/http_dsl`](examples/http_dsl/) | Un DSL de scripting completo: control de flujo lazy, side effects bien hechos, testing de APIs (módulo autocontenido) |
+| [`examples/scim`](examples/scim/) | Parseo de un estándar real (filtros SCIM 2.0): query DSL sobre datos |
+
+El resto de [`examples/`](examples/) son recetas adicionales de referencia.
+
 
 ### 1. **Calculadora** (`examples/calculator/`)
 ```bash

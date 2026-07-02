@@ -1,6 +1,8 @@
-# HTTP DSL v3.1.1 - Production Ready
+# HTTP DSL v3.1.1
 
-A powerful Domain-Specific Language for HTTP testing and automation with comprehensive support for HTTP methods, variables, control flow, data extraction, and enterprise features. **Version 3.1.1 is production-ready with array indexing, complete test coverage, and extensive documentation.**
+A Domain-Specific Language for HTTP testing and automation: HTTP methods, variables, control flow (lazy — untaken branches never execute), data extraction, and scripting. Built on the go-dsl engine.
+
+> **Note**: this is a self-contained Go module and the largest go-dsl demo. If it keeps growing it will graduate into its own product (working name: *apiflow*), leaving go-dsl as the underlying engine.
 
 ## 🎯 Production Status
 

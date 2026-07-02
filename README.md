@@ -4,9 +4,9 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arturoeanton/go-dsl)](https://goreportcard.com/report/github.com/arturoeanton/go-dsl)
 
-**A powerful and flexible Domain Specific Language (DSL) builder for Go that enables you to create custom programming languages with enterprise-grade features.**
+**A practical Go toolkit for building small-to-medium DSLs with AST-first parsing, validation, diagnostics, and editor tooling.**
 
-go-dsl allows you to quickly build domain-specific languages with custom syntax, grammar rules, and semantic actions. Perfect for business rules, accounting systems, query languages, calculators, and complex enterprise applications. **Now with a two-phase parse/eval engine, a real AST, and a Pratt expression parser.**
+go-dsl lets you define tokens, grammar rules, and semantic actions at runtime and get a working language: business rules, query filters, calculators, command syntaxes. The engine parses to a real AST first and evaluates actions afterwards (lazily where you need it), so side effects are safe by construction.
 
 ## ✨ Features
 
@@ -177,7 +177,18 @@ compiled, err := dsl.Build() // Validate + freeze; mutations are rejected afterw
 
 ## 📚 Examples
 
-### 1. Enterprise Accounting DSL (Production Ready)
+Three official demos cover the whole surface — start with these:
+
+| Demo | What it shows |
+|---|---|
+| [`examples/calculator_pratt`](examples/calculator_pratt/) | Expressions: Pratt precedence/associativity, typed actions, AST inspection, Build() |
+| [`examples/http_dsl`](examples/http_dsl/) | A full scripting DSL: lazy control flow, side effects done right, API testing (self-contained module) |
+| [`examples/scim`](examples/scim/) | Parsing a real-world standard (SCIM 2.0 filters): query DSL over data |
+
+The rest of [`examples/`](examples/) are additional recipes kept for reference.
+
+
+### 1. Accounting DSL
 
 ```go
 accounting := dslbuilder.New("Accounting")
