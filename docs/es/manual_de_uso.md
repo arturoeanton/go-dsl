@@ -576,7 +576,7 @@ func main() {
 
 **Problema Clásico**: Las gramáticas como `A → A B` causan stack overflow en parsers descendentes.
 
-**Solución go-dsl**: Usa ImprovedParser automáticamente cuando detecta recursión.
+**Solución go-dsl**: el motor detecta la recursión izquierda (directa e indirecta) y usa el algoritmo de semilla creciente automáticamente.
 
 ```go
 // ✅ Esto ahora funciona perfectamente
@@ -866,7 +866,7 @@ fmt.Printf("Token en posición %d: %+v\n", X, tokens[X])
 
 ### Error: Stack Overflow en Parsing
 
-**Causa**: Gramática recursiva por la izquierda sin ImprovedParser.
+**Causa**: símbolo desconocido o alternativa ensombrecida — corré `dsl.Validate()` para el análisis estático (la recursión izquierda está soportada automáticamente).
 
 **Solución**: go-dsl maneja esto automáticamente, pero si ocurre:
 ```go

@@ -6,6 +6,8 @@ Bienvenido a la documentación completa de go-dsl en español. Aquí encontrará
 
 ### 🚀 Comenzar
 - **[Guía Rápida](guia_rapida.md)** - Introducción completa, instalación y ejemplos prácticos
+- **[Referencia de API](referencia_api.md)** - Toda la API pública organizada por área (motor v2: AST, Pratt, Validate/Build, acciones tipadas, diagnósticos)
+- **[Tooling de Editor](tooling_editor.md)** - LSP (diagnósticos/completado/hover), documentos incrementales, gramáticas de atributos, dslgen, apiflow
   - Instalación y configuración
   - Conceptos básicos: tokens, reglas y acciones
   - Características avanzadas: precedencia, asociatividad y repetición

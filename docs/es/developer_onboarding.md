@@ -149,7 +149,15 @@ func (p *Parser) parseRule(ruleName string) (interface{}, error) {
 }
 ```
 
-#### ImprovedParser (Con Memoización)
+> **Nota (motor v2)**: la arquitectura actual es un motor en dos fases:
+> `astParser` (construye el AST sin ejecutar acciones, con memoización
+> packrat, recursión izquierda directa e indirecta, y Pratt para
+> expresiones) + `Eval` (ejecuta las acciones una sola vez sobre el árbol
+> final). `ImprovedParser` se mantiene solo por compatibilidad; el código
+> de referencia está en `pkg/dslbuilder/ast.go`. Lo que sigue describe la
+> arquitectura histórica.
+
+#### ImprovedParser (Con Memoización) — histórico
 ```go
 type ImprovedParser struct {
     grammar *Grammar
@@ -168,10 +176,9 @@ func (p *ImprovedParser) parseRule(ruleName string) (interface{}, error) {
 }
 ```
 
-**¿Cuándo usar cada uno?**
-- **Parser básico**: Gramáticas simples, mejor rendimiento
-- **ImprovedParser**: Gramáticas recursivas, casos complejos
-- **Selección automática**: El DSL decide internamente
+**Hoy**: `dsl.Parse()` siempre usa el motor de dos fases (`ParseAST` +
+`Eval`); no hay que elegir parser. Los tipos históricos siguen exportados
+por compatibilidad.
 
 ### 4. Sistema de Gramática (`grammar.go`)
 

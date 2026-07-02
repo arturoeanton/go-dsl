@@ -308,6 +308,8 @@ regresión viven en la suite.
 ## 📖 Documentación
 
 - [Guía Rápida](docs/es/guia_rapida.md)
+- [Referencia de API](docs/es/referencia_api.md) — toda la API pública por área
+- [Tooling de Editor](docs/es/tooling_editor.md) — LSP, documentos incrementales, atributos, dslgen, apiflow
 - [Skill para IAs/agentes](.claude/skills/go-dsl/SKILL.md) — guía lista para que agentes de código (Claude Code, etc.) usen go-dsl correctamente en proyectos Go
 - [Conceptos Avanzados](docs/es/introduccion_dsl_segunda_parte.md)
 - [Limitaciones](docs/es/limitaciones.md)

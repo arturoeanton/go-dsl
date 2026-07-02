@@ -1,11 +1,15 @@
 // Package dslbuilder - Incremental documents.
 //
 // Document keeps the parse state of one text buffer across edits and reuses
-// statement subtrees that the edit did not touch: statements entirely inside
-// the unchanged prefix are reused as-is, statements entirely inside the
-// unchanged suffix are reused with their spans shifted, and only the edited
-// middle region is re-parsed. Lexing is a full linear pass (it is cheap);
-// the savings are in parsing and tree construction.
+// subtrees the edit did not touch. The granularity is the TOP-LEVEL PARSE
+// UNIT — one match of the grammar's start rule (typically "a statement"):
+// units entirely inside the unchanged prefix are reused as-is, units
+// entirely inside the unchanged suffix are reused with their spans shifted,
+// and the edited unit(s) are re-parsed IN FULL. This is deliberate,
+// bounded incrementality — not arbitrary sub-tree magic: a grammar whose
+// whole document is a single start-rule match re-parses that unit on every
+// edit. Lexing is always a full linear pass (it is cheap); the savings are
+// in parsing and tree construction.
 //
 // This is the incremental engine behind cmd/lsp: hover needs a tree for the
 // whole document (NodeAt) and diagnostics need all errors, on every

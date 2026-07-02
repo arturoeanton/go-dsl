@@ -371,7 +371,10 @@ and their regression corpus live in the test suite.
 ## 📖 Documentation
 
 ### English
-- [API Reference](pkg/dslbuilder/)
+- [Quickstart](docs/en/quickstart.md) — zero to a working DSL on the v2 engine
+- [API Reference](docs/en/api-reference.md) — every public API, organized by area
+- [Editor Tooling](docs/en/editor-tooling.md) — LSP, incremental documents, completion, attribute grammars, codegen
+- [GoDoc](pkg/dslbuilder/)
 - [AI/agent skill for building DSLs with go-dsl](.claude/skills/go-dsl/SKILL.md) — drop-in guide so coding agents (Claude Code, etc.) use the library correctly
 - [Examples](examples/)
 - [Command-Line Tools](cmd/)

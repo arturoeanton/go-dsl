@@ -211,15 +211,23 @@ func (s *server) completionItems(uri string, pos lspPosition) []lspCompletionIte
 	comps := s.dsl.Completions(doc.Text(), offset)
 	items := make([]lspCompletionItem, 0, len(comps))
 	for _, c := range comps {
-		kind := 1 // Text (placeholder for free-form tokens)
-		if c.IsKeyword {
-			kind = 14 // Keyword
-		}
-		items = append(items, lspCompletionItem{
+		item := lspCompletionItem{
 			Label:  c.Label,
-			Kind:   kind,
 			Detail: c.Detail,
-		})
+		}
+		if c.IsKeyword {
+			// Keywords/literals insert as plain text.
+			item.Kind = 14 // Keyword
+			item.InsertText = c.Label
+			item.InsertTextFormat = 1 // plain
+		} else {
+			// Free-form tokens (NUMBER, STRING, ...) insert as a snippet
+			// with a tabstop placeholder the user overtypes.
+			item.Kind = 1 // Text
+			item.InsertText = "${1:" + c.Label + "}"
+			item.InsertTextFormat = 2 // snippet
+		}
+		items = append(items, item)
 	}
 	return items
 }

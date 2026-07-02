@@ -153,12 +153,19 @@ func TestLSPCompletionAndHover(t *testing.T) {
 		t.Errorf("completionProvider not advertised")
 	}
 
-	// Completion result contains a NUMBER suggestion.
+	// Completion result contains a NUMBER suggestion as a snippet.
 	items := messages[2]["result"].([]interface{})
 	var hasNumber bool
 	for _, it := range items {
-		if it.(map[string]interface{})["label"] == "NUMBER" {
+		item := it.(map[string]interface{})
+		if item["label"] == "NUMBER" {
 			hasNumber = true
+			if item["insertText"] != "${1:NUMBER}" {
+				t.Errorf("free-form token should insert as snippet placeholder, got %v", item["insertText"])
+			}
+			if item["insertTextFormat"].(float64) != 2 {
+				t.Errorf("free-form token should use snippet format, got %v", item["insertTextFormat"])
+			}
 		}
 	}
 	if !hasNumber {

@@ -105,36 +105,80 @@ func runScript(filename string, args []string, checkOnly bool) error {
 	return nil
 }
 
-// validateScript checks statement syntax line by line without executing.
+// validateScript checks the script without executing anything:
+//
+//  1. Block structure: if/endif and loop/endloop nesting must balance, and
+//     else/break/continue must appear inside the right construct.
+//  2. Statement syntax: every non-structural line is validated through the
+//     AST phase only (ValidateStatement), which by design runs no actions —
+//     so validation can never fire an HTTP request or mutate variables.
+//
+// Limitation: statements inside blocks are validated individually; cross-
+// statement semantics (e.g. a variable used before it is set at run time)
+// are not checked.
 func validateScript(dsl *universal.HTTPDSLv3, script string) error {
 	var errs []string
+	var blocks []string // stack of open constructs: "if" or "loop"
+
+	openLoop := func() bool {
+		for _, b := range blocks {
+			if b == "loop" {
+				return true
+			}
+		}
+		return false
+	}
+
 	for i, line := range strings.Split(script, "\n") {
+		lineNo := i + 1
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 			continue
 		}
-		// Block keywords are structural; the block handler validates them
-		// as a unit at run time.
-		if isBlockLine(trimmed) {
-			continue
-		}
-		if err := dsl.ValidateStatement(trimmed); err != nil {
-			errs = append(errs, fmt.Sprintf("line %d: %v", i+1, err))
+
+		switch {
+		case strings.HasPrefix(trimmed, "if ") && strings.HasSuffix(trimmed, "then"):
+			blocks = append(blocks, "if")
+		case trimmed == "else":
+			if len(blocks) == 0 || blocks[len(blocks)-1] != "if" {
+				errs = append(errs, fmt.Sprintf("line %d: 'else' without an open 'if'", lineNo))
+			}
+		case trimmed == "endif":
+			if len(blocks) == 0 || blocks[len(blocks)-1] != "if" {
+				errs = append(errs, fmt.Sprintf("line %d: 'endif' without an open 'if'", lineNo))
+			} else {
+				blocks = blocks[:len(blocks)-1]
+			}
+		case (strings.HasPrefix(trimmed, "while ") || strings.HasPrefix(trimmed, "foreach ") ||
+			strings.HasPrefix(trimmed, "repeat ")) && strings.HasSuffix(trimmed, "do"):
+			blocks = append(blocks, "loop")
+		case trimmed == "endloop":
+			if len(blocks) == 0 || blocks[len(blocks)-1] != "loop" {
+				errs = append(errs, fmt.Sprintf("line %d: 'endloop' without an open loop", lineNo))
+			} else {
+				blocks = blocks[:len(blocks)-1]
+			}
+		case trimmed == "break" || trimmed == "continue":
+			if !openLoop() {
+				errs = append(errs, fmt.Sprintf("line %d: '%s' outside of a loop", lineNo, trimmed))
+			}
+		default:
+			// Single-line block statements (if ... then <stmt> [else <stmt>],
+			// while ... do ... endloop on one line) parse as one unit.
+			if err := dsl.ValidateStatement(trimmed); err != nil {
+				errs = append(errs, fmt.Sprintf("line %d: %v", lineNo, err))
+			}
 		}
 	}
+
+	for range blocks {
+		errs = append(errs, "unclosed block at end of script (missing 'endif' or 'endloop')")
+	}
+
 	if len(errs) > 0 {
 		return fmt.Errorf("invalid script:\n  %s", strings.Join(errs, "\n  "))
 	}
 	return nil
-}
-
-func isBlockLine(line string) bool {
-	for _, prefix := range []string{"if ", "else", "endif", "while ", "foreach ", "repeat ", "endloop", "break", "continue"} {
-		if line == strings.TrimSpace(prefix) || strings.HasPrefix(line, prefix) {
-			return true
-		}
-	}
-	return false
 }
 
 func usage() {

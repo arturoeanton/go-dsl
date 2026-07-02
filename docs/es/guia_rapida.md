@@ -1,4 +1,10 @@
-# Guía Rápida - go-dsl
+# Guía Rápida
+
+> **Motor v2**: esta guía cubre la API clásica, que sigue siendo 100%
+> compatible. Para lo nuevo (AST en dos fases, expresiones Pratt,
+> `Validate`/`Build`, acciones tipadas, diagnósticos multi-error, LSP)
+> ver la **[Referencia de API](referencia_api.md)** y
+> **[Tooling de Editor](tooling_editor.md)**. - go-dsl
 
 **Un potente constructor de lenguajes específicos de dominio (DSL) para Go con soporte completo para gramáticas recursivas por la izquierda y características de nivel empresarial.**
 
@@ -130,7 +136,7 @@ dsl.Rule("condicional", []string{"IF", "expresion", "THEN", "expresion"}, "si_en
 **💡 Mejores Prácticas para Reglas:**
 - **Reglas más específicas PRIMERO** (patrones más largos)
 - Las reglas recursivas por la izquierda ahora funcionan perfectamente
-- Usa el ImprovedParser automáticamente para manejar la recursión
+- El motor (dos fases: AST + evaluación) maneja la recursión izquierda directa e indirecta automáticamente
 
 ### 4. Definir Acciones
 
@@ -493,6 +499,10 @@ result, err := dsl.Use("get name", context)
 ```
 
 ### Método 2: SetContext() - Para valores persistentes
+
+> **Nota (motor v2)**: el contexto que pasás a `Use()` es *scoped a esa
+> llamada* y se descarta al terminar — no muta el contexto persistente.
+> `SetContext` sí persiste entre llamadas.
 
 ```go
 // Establecer contexto que persiste entre llamadas

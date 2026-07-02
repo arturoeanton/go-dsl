@@ -188,3 +188,41 @@ func ExampleGetDetailedError() {
 	// if then
 	//    ^
 }
+
+// AttributeGrammar evaluates inherited (top-down) and synthesized
+// (bottom-up) attributes over the AST. The initial Attrs passed to
+// Evaluate act as the root's parent context and propagate down.
+func ExampleAttributeGrammar() {
+	dsl := dslbuilder.New("calc")
+	dsl.Token("NUMBER", `[0-9]+`)
+	dsl.Token("PLUS", `\+`)
+	dsl.Expression("expr").
+		Atom("NUMBER", "number").
+		InfixLeft("PLUS", 10, "add")
+
+	root, _ := dsl.ParseAST("1 + 2")
+
+	ag := dslbuilder.NewAttributeGrammar()
+
+	// Inherited: the environment flows from the initial context to every node.
+	ag.Inherited("env", func(parent dslbuilder.Attrs, n *dslbuilder.Node, i int) interface{} {
+		return parent["env"]
+	})
+
+	// Synthesized: compute each expr's value bottom-up.
+	ag.Synthesized("value", "expr", func(n *dslbuilder.Node, children []dslbuilder.Attrs) (interface{}, error) {
+		switch n.Action {
+		case "number":
+			return strconv.Atoi(n.Child(0).Token.Value)
+		case "add":
+			return children[0]["value"].(int) + children[2]["value"].(int), nil
+		}
+		return nil, nil
+	})
+
+	// The initial context is the "parent" of the root.
+	attrs, _ := ag.Evaluate(root, dslbuilder.Attrs{"env": "prod"})
+
+	fmt.Println(attrs[root]["value"], attrs[root]["env"], attrs[root.Child(0)]["env"])
+	// Output: 3 prod prod
+}

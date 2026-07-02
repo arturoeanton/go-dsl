@@ -1,15 +1,23 @@
 // Command lsp is a minimal Language Server Protocol server for DSLs built
 // with go-dsl. Point it at a declarative grammar and connect it to any
-// LSP-capable editor: every open document is validated with the core
-// multi-error engine (DSL.Diagnostics) and syntax errors are published as
-// in-editor diagnostics.
+// LSP-capable editor:
+//
+//   - Diagnostics: every open document is re-parsed incrementally
+//     (dslbuilder.Document — only edited statements re-parse) and ALL
+//     syntax/lexical errors are published, not just the first.
+//   - Completion: textDocument/completion suggests what the parser itself
+//     expects at the cursor (keywords as text, free-form tokens as
+//     placeholder snippets).
+//   - Hover: textDocument/hover shows the AST node under the cursor
+//     (token, or rule + action + source snippet).
 //
 // Usage:
 //
 //	lsp -dsl grammar.yaml
 //
 // Wire it as a stdio language server in your editor. Implemented methods:
-// initialize, shutdown/exit, textDocument/didOpen, didChange, didClose.
+// initialize, shutdown/exit, textDocument/didOpen, didChange, didClose,
+// textDocument/completion, textDocument/hover.
 // No external dependencies — the JSON-RPC framing is implemented inline.
 package main
 
@@ -124,9 +132,11 @@ type textDocumentParams struct {
 }
 
 type lspCompletionItem struct {
-	Label  string `json:"label"`
-	Kind   int    `json:"kind"` // 14 = Keyword, 1 = Text
-	Detail string `json:"detail,omitempty"`
+	Label            string `json:"label"`
+	Kind             int    `json:"kind"` // 14 = Keyword, 1 = Text
+	Detail           string `json:"detail,omitempty"`
+	InsertText       string `json:"insertText,omitempty"`
+	InsertTextFormat int    `json:"insertTextFormat,omitempty"` // 1 = plain, 2 = snippet
 }
 
 type lspHover struct {

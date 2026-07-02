@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased
+## v1.4.0 — editor tooling
 
 ### Editor tooling (P1)
 - **LSP completion** — `textDocument/completion` backed by the new core API
   `Completions(text, offset)`: suggestions are the parser's own expectations
-  at the cursor (keywords/literals as insertable text, free-form tokens as
-  placeholders).
+  at the cursor. Keywords/literals insert as plain text; free-form tokens
+  insert as snippet placeholders (`${1:NUMBER}`).
 - **LSP hover** — `textDocument/hover` shows the AST node under the cursor
   (rule, action, source span) via `Document.NodeAt`.
 
@@ -24,8 +24,10 @@
 
 ### Product & CI (P2)
 - **apiflow** — product CLI for the HTTP DSL (`examples/http_dsl/cmd/apiflow`):
-  `run`, `check` (syntax-validates via the AST phase, zero side effects),
-  `version`.
+  `run`, `check`, `version`. `check` validates statement syntax via the AST
+  phase (zero side effects) and block structure (if/endif, loop/endloop
+  balance, else/break/continue placement); cross-statement semantics are
+  documented as out of scope.
 - **Manual benchmark job** — `workflow_dispatch` job compares HEAD vs main
   with benchstat on the same runner.
 - **Release automation** — pushing a `v*` tag runs the full gate and
