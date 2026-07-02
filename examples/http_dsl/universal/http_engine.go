@@ -39,12 +39,12 @@ const (
 
 // RequestHistory stores request/response pairs
 type RequestHistory struct {
-	Request     *http.Request
-	Response    *http.Response
-	RequestBody string
+	Request      *http.Request
+	Response     *http.Response
+	RequestBody  string
 	ResponseBody string
-	Duration    time.Duration
-	Timestamp   time.Time
+	Duration     time.Duration
+	Timestamp    time.Time
 }
 
 // RetryPolicy defines retry behavior
@@ -87,11 +87,11 @@ type HTTPEngine struct {
 
 // Session represents a named HTTP session with its own state
 type Session struct {
-	Name     string
-	Cookies  *cookiejar.Jar
-	Headers  map[string]string
+	Name      string
+	Cookies   *cookiejar.Jar
+	Headers   map[string]string
 	Variables map[string]interface{}
-	History  []RequestHistory
+	History   []RequestHistory
 }
 
 // OAuth2Config holds OAuth 2.0 configuration
@@ -111,21 +111,21 @@ type OAuth2Config struct {
 func NewHTTPEngine() *HTTPEngine {
 	jar, _ := cookiejar.New(nil)
 	transport := &http.Transport{
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 10,
-		IdleConnTimeout:     90 * time.Second,
-		TLSHandshakeTimeout: 10 * time.Second,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-	
+
 	return &HTTPEngine{
 		client: &http.Client{
 			Jar:       jar,
 			Timeout:   30 * time.Second,
 			Transport: transport,
 		},
-		cookies:        jar,
-		headers:        make(map[string]string),
+		cookies:       jar,
+		headers:       make(map[string]string),
 		logs:          make([]string, 0),
 		logLevel:      LogInfo,
 		history:       make([]RequestHistory, 0),
@@ -141,7 +141,7 @@ func NewHTTPEngine() *HTTPEngine {
 func (he *HTTPEngine) Request(method, urlStr string, options map[string]interface{}) (interface{}, error) {
 	// Enforce rate limiting
 	he.enforceRateLimit()
-	
+
 	// Combine with base URL if it's a relative path
 	if he.baseURL != "" && !strings.HasPrefix(urlStr, "http") {
 		urlStr = he.baseURL + urlStr
@@ -282,7 +282,7 @@ func (he *HTTPEngine) Request(method, urlStr string, options map[string]interfac
 		he.logResponse(resp, string(bodyBytes))
 	}
 
-	he.LogInfo("%s %s - Status: %d, Time: %.2fms, Size: %d bytes", 
+	he.LogInfo("%s %s - Status: %d, Time: %.2fms, Size: %d bytes",
 		method, urlStr, resp.StatusCode, he.lastResponseTime, len(bodyBytes))
 
 	// Return response data
@@ -365,11 +365,11 @@ func (he *HTTPEngine) extractJSONPath(path string) interface{} {
 							// Compare values
 							match := false
 							fieldStr := fmt.Sprintf("%v", fieldValue)
-							
+
 							// Try numeric comparison
 							fieldNum, fieldErr := strconv.ParseFloat(fieldStr, 64)
 							compareNum, compareErr := strconv.ParseFloat(compareValue, 64)
-							
+
 							if fieldErr == nil && compareErr == nil {
 								switch operator {
 								case "==":
@@ -390,7 +390,7 @@ func (he *HTTPEngine) extractJSONPath(path string) interface{} {
 									match = fieldStr != compareValue
 								}
 							}
-							
+
 							if match {
 								// Check if there's a field selector after the filter
 								if filterEnd+2 < len(path) && path[filterEnd+2] == '.' {
@@ -405,7 +405,7 @@ func (he *HTTPEngine) extractJSONPath(path string) interface{} {
 						}
 					}
 				}
-				
+
 				// Return single value if only one result, otherwise return array
 				if len(results) == 1 {
 					return results[0]
@@ -487,14 +487,14 @@ func mustMarshalJSON(v interface{}) string {
 func (he *HTTPEngine) extractXPath(path string) interface{} {
 	// This is a simplified implementation for demonstration
 	// In a real implementation, you'd use a proper HTML/XML parser
-	
+
 	// Extract text between tags
 	if strings.HasPrefix(path, "//") {
 		tagName := strings.TrimPrefix(path, "//")
 		if strings.Contains(tagName, "/") {
 			tagName = tagName[:strings.Index(tagName, "/")]
 		}
-		
+
 		pattern := fmt.Sprintf("<%s[^>]*>(.*?)</%s>", tagName, tagName)
 		re := regexp.MustCompile(pattern)
 		matches := re.FindStringSubmatch(he.lastResponseBody)
@@ -710,13 +710,13 @@ func (he *HTTPEngine) AddCookie(urlStr, name, value string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	cookie := &http.Cookie{
 		Name:  name,
 		Value: value,
 		Path:  "/",
 	}
-	
+
 	he.cookies.SetCookies(u, []*http.Cookie{cookie})
 	return nil
 }
@@ -760,7 +760,7 @@ func (he *HTTPEngine) DeleteCookie(urlStr, name string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	cookies := he.cookies.Cookies(u)
 	newCookies := make([]*http.Cookie, 0)
 	for _, cookie := range cookies {
@@ -768,13 +768,13 @@ func (he *HTTPEngine) DeleteCookie(urlStr, name string) error {
 			newCookies = append(newCookies, cookie)
 		}
 	}
-	
+
 	// Clear and reset cookies
 	jar, _ := cookiejar.New(nil)
 	jar.SetCookies(u, newCookies)
 	he.cookies = jar
 	he.client.Jar = jar
-	
+
 	return nil
 }
 
@@ -784,7 +784,7 @@ func (he *HTTPEngine) GetCookie(urlStr, name string) (*http.Cookie, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for _, cookie := range cookies {
 		if cookie.Name == name {
 			return cookie, nil
@@ -820,7 +820,7 @@ func (he *HTTPEngine) LogWithLevel(level LogLevel, format string, args ...interf
 		levelStr := []string{"ERROR", "WARN", "INFO", "DEBUG", "VERBOSE"}[level]
 		logEntry := fmt.Sprintf("[%s] [%s] %s", timestamp, levelStr, message)
 		he.logs = append(he.logs, logEntry)
-		
+
 		if he.debug || level <= LogWarn {
 			fmt.Println(logEntry)
 		}
@@ -868,7 +868,7 @@ func (he *HTTPEngine) SetInsecureSkipVerify(skip bool) {
 		he.tlsConfig = &tls.Config{}
 	}
 	he.tlsConfig.InsecureSkipVerify = skip
-	
+
 	if transport, ok := he.client.Transport.(*http.Transport); ok {
 		transport.TLSClientConfig = he.tlsConfig
 	}
@@ -880,16 +880,16 @@ func (he *HTTPEngine) SetClientCertificate(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if he.tlsConfig == nil {
 		he.tlsConfig = &tls.Config{}
 	}
 	he.tlsConfig.Certificates = []tls.Certificate{cert}
-	
+
 	if transport, ok := he.client.Transport.(*http.Transport); ok {
 		transport.TLSClientConfig = he.tlsConfig
 	}
-	
+
 	return nil
 }
 
@@ -899,19 +899,19 @@ func (he *HTTPEngine) SetCustomCA(caFile string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
-	
+
 	if he.tlsConfig == nil {
 		he.tlsConfig = &tls.Config{}
 	}
 	he.tlsConfig.RootCAs = caCertPool
-	
+
 	if transport, ok := he.client.Transport.(*http.Transport); ok {
 		transport.TLSClientConfig = he.tlsConfig
 	}
-	
+
 	return nil
 }
 
@@ -920,16 +920,16 @@ func (he *HTTPEngine) SetCustomCA(caFile string) error {
 // SetProxy sets HTTP/HTTPS proxy
 func (he *HTTPEngine) SetProxy(proxyURL string) error {
 	he.proxy = proxyURL
-	
+
 	parsedURL, err := url.Parse(proxyURL)
 	if err != nil {
 		return err
 	}
-	
+
 	if transport, ok := he.client.Transport.(*http.Transport); ok {
 		transport.Proxy = http.ProxyURL(parsedURL)
 	}
-	
+
 	return nil
 }
 
@@ -939,13 +939,13 @@ func (he *HTTPEngine) SetSOCKS5Proxy(host string, auth *proxy.Auth) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if transport, ok := he.client.Transport.(*http.Transport); ok {
 		transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return dialer.Dial(network, addr)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -965,7 +965,7 @@ func (he *HTTPEngine) RequestWithFile(method, urlStr string, files map[string]st
 	// Create multipart writer
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
-	
+
 	// Add files
 	for fieldName, filePath := range files {
 		file, err := os.Open(filePath)
@@ -973,50 +973,50 @@ func (he *HTTPEngine) RequestWithFile(method, urlStr string, files map[string]st
 			return nil, err
 		}
 		defer file.Close()
-		
+
 		part, err := writer.CreateFormFile(fieldName, filepath.Base(filePath))
 		if err != nil {
 			return nil, err
 		}
-		
+
 		_, err = io.Copy(part, file)
 		if err != nil {
 			return nil, err
 		}
 	}
-	
+
 	// Add fields
 	for key, value := range fields {
 		writer.WriteField(key, value)
 	}
-	
+
 	err := writer.Close()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Create request
 	req, err := http.NewRequest(method, urlStr, &buf)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	// Apply headers
 	for key, value := range he.headers {
 		req.Header.Set(key, value)
 	}
-	
+
 	// Execute request
 	resp, err := he.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	return map[string]interface{}{
 		"status":  resp.StatusCode,
 		"body":    string(body),
@@ -1054,22 +1054,22 @@ func (he *HTTPEngine) RequestWithRetry(method, urlStr string, options map[string
 	if he.retryPolicy == nil {
 		return he.Request(method, urlStr, options)
 	}
-	
+
 	var lastErr error
 	backoff := he.retryPolicy.InitialBackoff
-	
+
 	for attempt := 0; attempt <= he.retryPolicy.MaxRetries; attempt++ {
 		if attempt > 0 {
 			he.LogInfo("Retry attempt %d/%d after %v", attempt, he.retryPolicy.MaxRetries, backoff)
 			time.Sleep(backoff)
-			
+
 			// Calculate next backoff
 			backoff = time.Duration(float64(backoff) * he.retryPolicy.Multiplier)
 			if backoff > he.retryPolicy.MaxBackoff {
 				backoff = he.retryPolicy.MaxBackoff
 			}
 		}
-		
+
 		result, err := he.Request(method, urlStr, options)
 		if err == nil {
 			// Check if status code requires retry
@@ -1088,10 +1088,10 @@ func (he *HTTPEngine) RequestWithRetry(method, urlStr string, options map[string
 				}
 			}
 		}
-		
+
 		lastErr = err
 	}
-	
+
 	return nil, fmt.Errorf("max retries exceeded: %v", lastErr)
 }
 
@@ -1140,7 +1140,7 @@ func (he *HTTPEngine) addToHistory(req *http.Request, resp *http.Response, reqBo
 	if he.maxHistory <= 0 {
 		return
 	}
-	
+
 	history := RequestHistory{
 		Request:      req,
 		Response:     resp,
@@ -1149,9 +1149,9 @@ func (he *HTTPEngine) addToHistory(req *http.Request, resp *http.Response, reqBo
 		Duration:     duration,
 		Timestamp:    time.Now(),
 	}
-	
+
 	he.history = append(he.history, history)
-	
+
 	// Trim history if needed
 	if len(he.history) > he.maxHistory {
 		he.history = he.history[len(he.history)-he.maxHistory:]
@@ -1165,7 +1165,7 @@ func (he *HTTPEngine) CreateSession(name string) error {
 	if _, exists := he.sessions[name]; exists {
 		return fmt.Errorf("session %s already exists", name)
 	}
-	
+
 	jar, _ := cookiejar.New(nil)
 	session := &Session{
 		Name:      name,
@@ -1174,7 +1174,7 @@ func (he *HTTPEngine) CreateSession(name string) error {
 		Variables: make(map[string]interface{}),
 		History:   make([]RequestHistory, 0),
 	}
-	
+
 	he.sessions[name] = session
 	return nil
 }
@@ -1185,7 +1185,7 @@ func (he *HTTPEngine) SwitchSession(name string) error {
 	if !exists {
 		return fmt.Errorf("session %s not found", name)
 	}
-	
+
 	// Save current session if exists
 	if he.currentSession != "" {
 		if current, ok := he.sessions[he.currentSession]; ok {
@@ -1194,14 +1194,14 @@ func (he *HTTPEngine) SwitchSession(name string) error {
 			current.History = he.history
 		}
 	}
-	
+
 	// Load new session
 	he.currentSession = name
 	he.cookies = session.Cookies
 	he.client.Jar = session.Cookies
 	he.headers = session.Headers
 	he.history = session.History
-	
+
 	return nil
 }
 
@@ -1210,7 +1210,7 @@ func (he *HTTPEngine) DeleteSession(name string) error {
 	if name == he.currentSession {
 		return fmt.Errorf("cannot delete active session")
 	}
-	
+
 	delete(he.sessions, name)
 	return nil
 }
@@ -1236,12 +1236,12 @@ func (he *HTTPEngine) enforceRateLimit() {
 	if he.rateLimit <= 0 {
 		return
 	}
-	
+
 	elapsed := time.Since(he.lastRequestTime)
 	if elapsed < he.rateLimit {
 		time.Sleep(he.rateLimit - elapsed)
 	}
-	
+
 	he.lastRequestTime = time.Now()
 }
 
@@ -1251,7 +1251,7 @@ func (he *HTTPEngine) enforceRateLimit() {
 func (he *HTTPEngine) GetMetrics() map[string]interface{} {
 	he.metricsLock.RLock()
 	defer he.metricsLock.RUnlock()
-	
+
 	metrics := make(map[string]interface{})
 	for k, v := range he.metrics {
 		metrics[k] = v
@@ -1263,7 +1263,7 @@ func (he *HTTPEngine) GetMetrics() map[string]interface{} {
 func (he *HTTPEngine) RecordMetric(name string, value interface{}) {
 	he.metricsLock.Lock()
 	defer he.metricsLock.Unlock()
-	
+
 	he.metrics[name] = value
 }
 
@@ -1272,12 +1272,12 @@ func (he *HTTPEngine) GetAverageResponseTime() float64 {
 	if len(he.history) == 0 {
 		return 0
 	}
-	
+
 	var total time.Duration
 	for _, h := range he.history {
 		total += h.Duration
 	}
-	
+
 	return float64(total.Milliseconds()) / float64(len(he.history))
 }
 
@@ -1293,13 +1293,13 @@ func (he *HTTPEngine) OAuth2Authorize() string {
 	if he.oauth2Config == nil {
 		return ""
 	}
-	
+
 	params := url.Values{}
 	params.Set("client_id", he.oauth2Config.ClientID)
 	params.Set("redirect_uri", he.oauth2Config.RedirectURL)
 	params.Set("response_type", "code")
 	params.Set("scope", strings.Join(he.oauth2Config.Scopes, " "))
-	
+
 	return he.oauth2Config.AuthURL + "?" + params.Encode()
 }
 
@@ -1308,38 +1308,38 @@ func (he *HTTPEngine) OAuth2ExchangeCode(code string) error {
 	if he.oauth2Config == nil {
 		return fmt.Errorf("OAuth2 not configured")
 	}
-	
+
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
 	data.Set("client_id", he.oauth2Config.ClientID)
 	data.Set("client_secret", he.oauth2Config.ClientSecret)
 	data.Set("redirect_uri", he.oauth2Config.RedirectURL)
-	
+
 	resp, err := http.PostForm(he.oauth2Config.TokenURL, data)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return err
 	}
-	
+
 	if token, ok := result["access_token"].(string); ok {
 		he.oauth2Config.AccessToken = token
 		he.SetBearerToken(token)
 	}
-	
+
 	if refresh, ok := result["refresh_token"].(string); ok {
 		he.oauth2Config.RefreshToken = refresh
 	}
-	
+
 	if expiresIn, ok := result["expires_in"].(float64); ok {
 		he.oauth2Config.Expiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
 	}
-	
+
 	return nil
 }
 
@@ -1348,33 +1348,33 @@ func (he *HTTPEngine) OAuth2RefreshToken() error {
 	if he.oauth2Config == nil || he.oauth2Config.RefreshToken == "" {
 		return fmt.Errorf("refresh token not available")
 	}
-	
+
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
 	data.Set("refresh_token", he.oauth2Config.RefreshToken)
 	data.Set("client_id", he.oauth2Config.ClientID)
 	data.Set("client_secret", he.oauth2Config.ClientSecret)
-	
+
 	resp, err := http.PostForm(he.oauth2Config.TokenURL, data)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return err
 	}
-	
+
 	if token, ok := result["access_token"].(string); ok {
 		he.oauth2Config.AccessToken = token
 		he.SetBearerToken(token)
 	}
-	
+
 	if expiresIn, ok := result["expires_in"].(float64); ok {
 		he.oauth2Config.Expiry = time.Now().Add(time.Duration(expiresIn) * time.Second)
 	}
-	
+
 	return nil
 }
 
@@ -1385,16 +1385,16 @@ func (he *HTTPEngine) GraphQLQuery(endpoint, query string, variables map[string]
 	payload := map[string]interface{}{
 		"query": query,
 	}
-	
+
 	if variables != nil {
 		payload["variables"] = variables
 	}
-	
+
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return he.Request("POST", endpoint, map[string]interface{}{
 		"body": string(jsonData),
 		"header": map[string]string{
@@ -1420,18 +1420,18 @@ func (he *HTTPEngine) StreamRequest(method, urlStr string, callback func([]byte)
 	if err != nil {
 		return err
 	}
-	
+
 	// Apply headers
 	for key, value := range he.headers {
 		req.Header.Set(key, value)
 	}
-	
+
 	resp, err := he.client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	buffer := make([]byte, 4096)
 	for {
 		n, err := resp.Body.Read(buffer)
@@ -1447,7 +1447,7 @@ func (he *HTTPEngine) StreamRequest(method, urlStr string, callback func([]byte)
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -1458,14 +1458,13 @@ func (he *HTTPEngine) DownloadFile(urlStr, filepath string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	file, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	
+
 	_, err = io.Copy(file, resp.Body)
 	return err
 }
-

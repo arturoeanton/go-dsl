@@ -150,8 +150,14 @@ func (v *ASTViewer) visualize(input string) error {
 		return fmt.Errorf("parsing error: %v", err)
 	}
 
-	// Build AST representation
-	ast := v.buildAST(result)
+	// Build AST representation from the real parse tree when available
+	// (Result.AST is a *dslbuilder.Node since the two-phase engine).
+	var ast ASTNode
+	if node := result.GetAST(); node != nil {
+		ast = v.buildFromNode(node)
+	} else {
+		ast = v.buildAST(result)
+	}
 
 	// Output based on format
 	switch v.format {
@@ -168,6 +174,26 @@ func (v *ASTViewer) visualize(input string) error {
 
 func (v *ASTViewer) buildAST(result interface{}) ASTNode {
 	return v.buildASTRecursive(result, "root", 0)
+}
+
+// buildFromNode converts a real parse tree (*dslbuilder.Node) into the
+// viewer's display structure.
+func (v *ASTViewer) buildFromNode(node *dslbuilder.Node) ASTNode {
+	if node.IsToken() {
+		return ASTNode{
+			Type:  node.Token.TokenType,
+			Value: node.Token.Value,
+		}
+	}
+
+	out := ASTNode{Type: node.Rule}
+	if node.Action != "" {
+		out.Type = fmt.Sprintf("%s (%s)", node.Rule, node.Action)
+	}
+	for _, child := range node.Children {
+		out.Children = append(out.Children, v.buildFromNode(child))
+	}
+	return out
 }
 
 func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth int) ASTNode {

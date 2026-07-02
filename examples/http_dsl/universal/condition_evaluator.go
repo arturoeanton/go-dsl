@@ -17,7 +17,7 @@ func (hd *HTTPDSLv3) EvaluateCondition(conditionStr string) bool {
 		}
 		return false
 	}
-	
+
 	// Handle AND operator (higher precedence)
 	if strings.Contains(conditionStr, " AND ") {
 		parts := strings.Split(conditionStr, " AND ")
@@ -28,7 +28,7 @@ func (hd *HTTPDSLv3) EvaluateCondition(conditionStr string) bool {
 		}
 		return true
 	}
-	
+
 	// Evaluate simple condition
 	return hd.EvaluateSimpleCondition(conditionStr)
 }
@@ -37,7 +37,7 @@ func (hd *HTTPDSLv3) EvaluateCondition(conditionStr string) bool {
 func (hd *HTTPDSLv3) EvaluateSimpleCondition(conditionStr string) bool {
 	// Parse the condition (e.g., "$x > 3" or "$status == 200")
 	parts := strings.Fields(conditionStr)
-	
+
 	// Handle single variable check (e.g., "if $var then")
 	if len(parts) == 1 {
 		varName := strings.TrimPrefix(parts[0], "$")
@@ -58,16 +58,16 @@ func (hd *HTTPDSLv3) EvaluateSimpleCondition(conditionStr string) bool {
 		}
 		return false
 	}
-	
+
 	// Handle comparison (e.g., "$x > 3")
 	if len(parts) != 3 {
 		return false
 	}
-	
+
 	leftSide := parts[0]
 	operator := parts[1]
 	rightSide := parts[2]
-	
+
 	// Get left value
 	var leftVal interface{}
 	if strings.HasPrefix(leftSide, "$") {
@@ -80,7 +80,7 @@ func (hd *HTTPDSLv3) EvaluateSimpleCondition(conditionStr string) bool {
 	} else {
 		leftVal = leftSide
 	}
-	
+
 	// Get right value
 	var rightVal interface{}
 	if strings.HasPrefix(rightSide, "$") {
@@ -93,7 +93,7 @@ func (hd *HTTPDSLv3) EvaluateSimpleCondition(conditionStr string) bool {
 	} else {
 		rightVal = rightSide
 	}
-	
+
 	// Perform comparison
 	return hd.CompareValues(leftVal, operator, rightVal)
 }
@@ -103,7 +103,7 @@ func (hd *HTTPDSLv3) CompareValues(left interface{}, operator string, right inte
 	// Try numeric comparison first
 	var leftNum, rightNum float64
 	var leftIsNum, rightIsNum bool
-	
+
 	// Convert left to number
 	switch v := left.(type) {
 	case int:
@@ -117,7 +117,7 @@ func (hd *HTTPDSLv3) CompareValues(left interface{}, operator string, right inte
 			leftIsNum = true
 		}
 	}
-	
+
 	// Convert right to number
 	switch v := right.(type) {
 	case int:
@@ -131,7 +131,7 @@ func (hd *HTTPDSLv3) CompareValues(left interface{}, operator string, right inte
 			rightIsNum = true
 		}
 	}
-	
+
 	// If both are numbers, do numeric comparison
 	if leftIsNum && rightIsNum {
 		switch operator {
@@ -149,11 +149,11 @@ func (hd *HTTPDSLv3) CompareValues(left interface{}, operator string, right inte
 			return leftNum != rightNum
 		}
 	}
-	
+
 	// Otherwise do string comparison
 	leftStr := fmt.Sprintf("%v", left)
 	rightStr := fmt.Sprintf("%v", right)
-	
+
 	switch operator {
 	case "==":
 		return leftStr == rightStr
@@ -168,6 +168,6 @@ func (hd *HTTPDSLv3) CompareValues(left interface{}, operator string, right inte
 	case "<=":
 		return leftStr <= rightStr
 	}
-	
+
 	return false
 }

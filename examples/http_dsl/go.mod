@@ -9,4 +9,4 @@ require (
 
 require gopkg.in/yaml.v3 v3.0.1 // indirect
 
-replace github.com/arturoeanton/go-dsl => /Users/arturoeliasanton/github.com/arturoeanton/go-dsl
+replace github.com/arturoeanton/go-dsl => ../..

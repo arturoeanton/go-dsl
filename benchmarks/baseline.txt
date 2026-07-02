@@ -1,0 +1,42 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/arturoeanton/go-dsl/pkg/dslbuilder
+cpu: Apple M4
+BenchmarkExpressionParse-10        	  132829	      7600 ns/op	   11631 B/op	     186 allocs/op
+BenchmarkExpressionParse-10        	  156811	      8327 ns/op	   11642 B/op	     186 allocs/op
+BenchmarkExpressionParse-10        	  145627	      7939 ns/op	   11641 B/op	     186 allocs/op
+BenchmarkExpressionParse-10        	  151740	      7856 ns/op	   11633 B/op	     186 allocs/op
+BenchmarkExpressionParse-10        	  150778	      7882 ns/op	   11632 B/op	     186 allocs/op
+BenchmarkExpressionParse-10        	  152498	      7925 ns/op	   11633 B/op	     186 allocs/op
+BenchmarkExpressionParseLong-10    	    1844	    652077 ns/op	  971800 B/op	   14488 allocs/op
+BenchmarkExpressionParseLong-10    	    1818	    655880 ns/op	  971992 B/op	   14488 allocs/op
+BenchmarkExpressionParseLong-10    	    1831	    654941 ns/op	  971711 B/op	   14488 allocs/op
+BenchmarkExpressionParseLong-10    	    1830	    659022 ns/op	  972975 B/op	   14489 allocs/op
+BenchmarkExpressionParseLong-10    	    1812	    660984 ns/op	  972202 B/op	   14488 allocs/op
+BenchmarkExpressionParseLong-10    	    1813	    664728 ns/op	  973529 B/op	   14489 allocs/op
+BenchmarkLeftRecursion-10          	    6604	    181802 ns/op	  452181 B/op	    8037 allocs/op
+BenchmarkLeftRecursion-10          	    6559	    181653 ns/op	  452190 B/op	    8037 allocs/op
+BenchmarkLeftRecursion-10          	    6681	    183512 ns/op	  452197 B/op	    8037 allocs/op
+BenchmarkLeftRecursion-10          	    6610	    182898 ns/op	  452194 B/op	    8037 allocs/op
+BenchmarkLeftRecursion-10          	    6652	    182471 ns/op	  452198 B/op	    8037 allocs/op
+BenchmarkLeftRecursion-10          	    6626	    182791 ns/op	  452195 B/op	    8037 allocs/op
+BenchmarkParseASTOnly-10           	  167032	      7132 ns/op	   10415 B/op	     134 allocs/op
+BenchmarkParseASTOnly-10           	  169830	      7142 ns/op	   10421 B/op	     134 allocs/op
+BenchmarkParseASTOnly-10           	  166243	      7140 ns/op	   10423 B/op	     134 allocs/op
+BenchmarkParseASTOnly-10           	  169152	      7175 ns/op	   10421 B/op	     134 allocs/op
+BenchmarkParseASTOnly-10           	  168402	      7169 ns/op	   10418 B/op	     134 allocs/op
+BenchmarkParseASTOnly-10           	  167809	      7154 ns/op	   10414 B/op	     134 allocs/op
+BenchmarkEvalOnly-10               	 1402975	       860.7 ns/op	    1176 B/op	      51 allocs/op
+BenchmarkEvalOnly-10               	 1397774	       862.7 ns/op	    1176 B/op	      51 allocs/op
+BenchmarkEvalOnly-10               	 1392679	       873.7 ns/op	    1176 B/op	      51 allocs/op
+BenchmarkEvalOnly-10               	 1391622	       869.4 ns/op	    1176 B/op	      51 allocs/op
+BenchmarkEvalOnly-10               	 1397650	       854.4 ns/op	    1176 B/op	      51 allocs/op
+BenchmarkEvalOnly-10               	 1405477	       948.2 ns/op	    1176 B/op	      51 allocs/op
+BenchmarkTokenizer-10              	    2772	    434546 ns/op	  354120 B/op	    2014 allocs/op
+BenchmarkTokenizer-10              	    2731	    547856 ns/op	  354087 B/op	    2014 allocs/op
+BenchmarkTokenizer-10              	    2874	    422578 ns/op	  354761 B/op	    2015 allocs/op
+BenchmarkTokenizer-10              	    2846	    422033 ns/op	  354877 B/op	    2015 allocs/op
+BenchmarkTokenizer-10              	    2875	    420145 ns/op	  354799 B/op	    2015 allocs/op
+BenchmarkTokenizer-10              	    2866	    420952 ns/op	  355044 B/op	    2015 allocs/op
+PASS
+ok  	github.com/arturoeanton/go-dsl/pkg/dslbuilder	50.878s

@@ -34,7 +34,7 @@ func NewHTTPRunner(verbose, stopOnFail, dryRun, validate bool) *HTTPRunner {
 // SetScriptArguments sets command-line arguments for the script
 func (hr *HTTPRunner) SetScriptArguments(args []string) {
 	hr.scriptArgs = args
-	
+
 	// Set arguments as DSL variables
 	for i, arg := range args {
 		hr.dsl.SetVariable(fmt.Sprintf("ARG%d", i+1), arg)
@@ -82,9 +82,9 @@ func (hr *HTTPRunner) RunFile(filename string) error {
 				if str, ok := res.(string); ok {
 					// Print outputs from the DSL (like print statements)
 					// Filter out internal status messages
-					if !strings.HasPrefix(str, "HTTP ") && 
-					   !strings.HasPrefix(str, "Variable set:") &&
-					   !strings.HasPrefix(str, "Condition evaluated") {
+					if !strings.HasPrefix(str, "HTTP ") &&
+						!strings.HasPrefix(str, "Variable set:") &&
+						!strings.HasPrefix(str, "Condition evaluated") {
 						fmt.Println(str)
 					}
 				}
@@ -164,11 +164,11 @@ func main() {
 	runner := NewHTTPRunner(verboseMode, *stopOnFail, *dryRun, *validate)
 
 	filename := flag.Arg(0)
-	
+
 	// Pass command-line arguments to the DSL engine
 	scriptArgs := flag.Args()[1:] // Get all args after the script filename
 	runner.SetScriptArguments(scriptArgs)
-	
+
 	if err := runner.RunFile(filename); err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
 		os.Exit(1)

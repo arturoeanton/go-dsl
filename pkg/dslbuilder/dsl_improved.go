@@ -5,7 +5,6 @@ package dslbuilder
 
 import (
 	"fmt"
-	"strings"
 )
 
 // ImprovedParser represents an improved DSL parser that handles left recursion.
@@ -127,59 +126,14 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 // Token matching priority:
 //  1. Higher priority value wins (keywords > regular)
 //  2. For same priority, longest match wins
-//  3. Whitespace is automatically skipped
+//  3. For same priority and length, first declared token wins (deterministic)
+//  4. Whitespace is automatically skipped
 func (p *ImprovedParser) tokenize(code string) error {
-	code = strings.TrimSpace(code)
-	pos := 0
-
-	for pos < len(code) {
-		// Skip whitespace
-		if code[pos] == ' ' || code[pos] == '\t' || code[pos] == '\n' || code[pos] == '\r' {
-			pos++
-			continue
-		}
-
-		matched := false
-		bestMatch := TokenMatch{}
-		bestLength := 0
-		bestPriority := -1
-
-		// Find best matching token
-		for _, token := range p.grammar.tokens {
-			if matches := token.regex.FindStringIndex(code[pos:]); matches != nil && matches[0] == 0 {
-				matchLength := matches[1]
-
-				// Higher priority or longer match wins
-				shouldReplace := false
-				if token.priority > bestPriority {
-					shouldReplace = true
-				} else if token.priority == bestPriority && matchLength > bestLength {
-					shouldReplace = true
-				}
-
-				if shouldReplace {
-					bestLength = matchLength
-					bestPriority = token.priority
-					bestMatch = TokenMatch{
-						TokenType: token.name,
-						Value:     code[pos : pos+matchLength],
-						Start:     pos,
-						End:       pos + matchLength,
-					}
-					matched = true
-				}
-			}
-		}
-
-		if matched {
-			p.tokens = append(p.tokens, bestMatch)
-			pos += bestLength
-		} else {
-			message := fmt.Sprintf("unexpected character: %c", code[pos])
-			return createParseError(message, pos, string(code[pos]), p.input)
-		}
+	tokens, err := tokenizeInput(p.grammar, code, p.input)
+	if err != nil {
+		return err
 	}
-
+	p.tokens = tokens
 	return nil
 }
 
@@ -276,7 +230,7 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 	}
 
 	startPos := p.pos
-	
+
 	// Mark this rule as growing to prevent infinite recursion
 	growKey := fmt.Sprintf("%s_%d", ruleName, startPos)
 	if p.growing[growKey] {
@@ -330,7 +284,7 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 
 			// Reset position for this attempt
 			p.pos = startPos
-			
+
 			// Temporarily install the seed in memo for this rule
 			if p.memo[ruleName] == nil {
 				p.memo[ruleName] = make(map[int]memoEntry)
@@ -348,7 +302,7 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 			// Parse remaining symbols after the recursive call
 			p.pos = seedPos // Start after the seed
 			success := true
-			
+
 			for i := 1; i < len(alt.sequence); i++ {
 				symbol := alt.sequence[i]
 

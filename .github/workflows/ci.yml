@@ -1,0 +1,44 @@
+# Hyper-simple CI: one job, one runner, no matrix — the whole quality gate
+# in a few minutes of (free for public repos) compute. The same checks run
+# locally with ./scripts/check.sh at zero cost.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build, vet, test (root module)
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...
+
+      - name: Race detector (core)
+        run: go test -race ./pkg/...
+
+      - name: Build, vet, test (examples/http_dsl module)
+        working-directory: examples/http_dsl
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...

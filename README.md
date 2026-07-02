@@ -6,28 +6,39 @@
 
 **A powerful and flexible Domain Specific Language (DSL) builder for Go that enables you to create custom programming languages with enterprise-grade features.**
 
-go-dsl allows you to quickly build domain-specific languages with custom syntax, grammar rules, and semantic actions. Perfect for business rules, accounting systems, query languages, calculators, and complex enterprise applications. **Now with full left-recursive grammar support and production-ready stability.**
+go-dsl allows you to quickly build domain-specific languages with custom syntax, grammar rules, and semantic actions. Perfect for business rules, accounting systems, query languages, calculators, and complex enterprise applications. **Now with a two-phase parse/eval engine, a real AST, and a Pratt expression parser.**
 
 ## ✨ Features
 
+### Engine (new)
+- 🌳 **Two-Phase Engine**: `Parse()` first builds a real AST (`ParseAST`), then executes actions exactly once (`Eval`). Actions can never run on rejected alternatives or during backtracking — side effects are safe by construction
+- 🧾 **Real AST**: `*Node` trees with rule, action, children, token, and source `Span`; pretty-printing via `node.Pretty()`
+- 🎯 **Deterministic Tokenizer**: token matching resolves by priority → longest match → declaration order; tokens that can match the empty string are rejected at definition time
+- 🎚️ **Pratt Expression Parser**: declare operators with binding power and associativity via `Expression()` — no grammar gymnastics for precedence
+- 🧭 **Farthest-Failure Errors**: syntax errors report the farthest failure point, the expected tokens, and the rule stack
+- 🧊 **Freezable Builder**: `Build()` validates the grammar once and returns an immutable `CompiledDSL`, safe for concurrent use
+- ✅ **Integrated Validator**: `dsl.Validate()` detects unknown symbols, unreachable rules, unregistered actions, non-productive cycles, and indirect left recursion (which is unsupported by design — see below)
+- 🦥 **Lazy Node Actions**: `NodeAction()` receives the unevaluated AST node, enabling real control flow (if/else branches that don't execute unless taken)
+- 🧰 **Typed Action Helpers**: `Action1/Action2/Action3` generics and the `Args` accessor remove type-assertion boilerplate
+- 🔒 **Per-Parse Context**: `Use(code, ctx)` scopes the context to that call — it no longer mutates the DSL's persistent context; `Set/Get/SetContext/GetContext` are mutex-protected
+- 🩺 **Multi-Error Diagnostics**: `Diagnostics(code)` recovers after each failure and reports every syntax/lexical error in one pass (powers the LSP server)
+- 💬 **Per-Rule Error Hints**: `RuleWithError(...)` attaches a domain-specific message shown when that alternative is the farthest failure
+- 🔁 **Indirect Left Recursion**: multi-rule leftmost cycles (`a → b …`, `b → a …`) parse via a generalized growing algorithm
+- 🌊 **Streaming**: `ParseStream(io.Reader, handler)` processes line-oriented scripts without loading them into memory
+- 🖨️ **Code Generation**: `cmd/dslgen` turns a YAML/JSON grammar into checked-in Go code
+- 🧿 **LSP Server**: `cmd/lsp` publishes live diagnostics for your DSL in any LSP-capable editor
+
+### Core
 - 🚀 **Dynamic DSL Creation**: Build custom languages at runtime
-- 🎯 **Advanced Grammar System**: Full left-recursive grammar support with growing seed algorithm
-- 🔄 **Context Support**: Pass dynamic data like r2lang's `q.use()` method
-- 🧠 **Production-Ready Parser**: Handles complex enterprise scenarios with stability
-- 📝 **Rich Examples**: Accounting systems, multi-country tax calculations, LINQ-like syntax
-- 🔧 **Easy Integration**: Simple API for embedding in your applications
-- ⚡ **High Performance**: Efficient parsing with intelligent token prioritization
-- 🌍 **Enterprise Features**: Multi-language support, complex business rules, tax calculations
-- 🏗️ **Left-Recursive Rules**: Handle complex patterns like `movements -> movements movement`
-- 🎨 **KeywordToken Priority**: Solve token conflicts with priority-based matching
-- 🔨 **Builder Pattern API**: Fluent interface for DSL construction
-- 📄 **Declarative Syntax**: Define DSLs using YAML/JSON configuration files
-- 🛠️ **Developer Tools**: AST viewer, grammar validator, and interactive REPL
-- 🎚️ **Operator Precedence**: Configurable precedence and associativity for operators
-- 🔁 **Repetition Rules**: Kleene star (*) and plus (+) for zero/one or more patterns
-- 📐 **Multiline Support**: NEW! ParseMultiline(), ParseAuto(), ParseWithBlocks()
-- 🔲 **Block Parsing**: NEW! Support for if/then/endif and other block structures
-- ✅ **100% Backward Compatible**: All improvements maintain full compatibility
+- 🏗️ **Direct Left Recursion**: `movements -> movements movement` handled with the growing seed algorithm (direct only; use `Expression()` for operators)
+- ⚡ **Memoization (Packrat)**: linear-time parsing even with backtracking
+- 🎨 **KeywordToken Priority**: keywords win over generic identifiers
+- 🔨 **Builder Pattern API**: fluent interface, plus a high-level `Tokens()`/`Expr()` layer
+- 📄 **Declarative Syntax**: define DSLs in YAML/JSON files
+- 🛠️ **Developer Tools**: AST viewer (real parse trees), grammar validator (core-powered), interactive REPL
+- 🔁 **Repetition Rules**: Kleene star (*) and plus (+)
+- 📐 **Multiline Support**: `ParseMultiline()`, `ParseAuto()`, `ParseWithBlocks()`
+- ✅ **Backward Compatible**: the classic `Parse`/`Rule`/`Action` API is unchanged
 
 ## 🚀 Quick Start
 
@@ -49,229 +60,211 @@ import (
 )
 
 func main() {
-    // Option 1: Traditional API
     dsl := dslbuilder.New("HelloDSL")
     dsl.KeywordToken("HELLO", "hello")
     dsl.KeywordToken("WORLD", "world")
-    
-    // Option 2: Fluent Builder API
-    dsl = dslbuilder.New("HelloDSL").
-        WithKeywordToken("HELLO", "hello").
-        WithKeywordToken("WORLD", "world").
-        WithRule("greeting", []string{"HELLO", "WORLD"}, "greet").
-        WithAction("greet", func(args []interface{}) (interface{}, error) {
-            return "Hello, World!", nil
-        })
-        
-    // Option 3: Load from YAML
-    dsl, _ = dslbuilder.LoadFromYAMLFile("hello.yaml")
-    
-    // Define grammar rule
     dsl.Rule("greeting", []string{"HELLO", "WORLD"}, "greet")
-    
-    // Define action
     dsl.Action("greet", func(args []interface{}) (interface{}, error) {
         return "Hello, World!", nil
     })
-    
-    // Parse and execute
+
     result, err := dsl.Parse("hello world")
     if err != nil {
         log.Fatal(err)
     }
-    
     fmt.Println(result.GetOutput()) // Output: Hello, World!
 }
+```
+
+### Calculator with the High-Level API (new)
+
+```go
+calc, err := dslbuilder.New("calc").
+    Tokens(func(t *dslbuilder.TokenSet) {
+        t.Regex("NUMBER", `\d+`)
+        t.Literal("PLUS", "+")     // literal text, no regex escaping needed
+        t.Literal("MINUS", "-")
+        t.Literal("STAR", "*")
+        t.Literal("SLASH", "/")
+        t.Literal("POW", "^")
+        t.Literal("LPAREN", "(")
+        t.Literal("RPAREN", ")")
+    }).
+    Expr("expr", func(e *dslbuilder.ExpressionBuilder) {
+        e.Atom("NUMBER", "number")
+        e.Group("LPAREN", "expr", "RPAREN")
+        e.Prefix("MINUS", 70, "neg")
+        e.InfixLeft("PLUS", 10, "add")
+        e.InfixLeft("MINUS", 10, "sub")
+        e.InfixLeft("STAR", 20, "mul")
+        e.InfixLeft("SLASH", 20, "div")
+        e.InfixRight("POW", 30, "pow")
+    }).
+    WithAction("number", dslbuilder.Action1(strconv.Atoi)).
+    WithAction("add", dslbuilder.Action3(func(l int, _ string, r int) (int, error) { return l + r, nil })).
+    // ... sub, mul, div, neg, pow ...
+    Build() // validates and freezes the grammar
+
+result, _ := calc.Parse("1 + 2 * 3")   // 7
+result, _  = calc.Parse("(1 + 2) * 3") // 9
+result, _  = calc.Parse("10 - 3 - 2")  // 5  (left associative)
+result, _  = calc.Parse("2 ^ 3 ^ 2")   // 512 (right associative)
+result, _  = calc.Parse("-1 * 2")      // -2 (prefix operator)
+```
+
+### Two-Phase Parsing: AST first, actions after (new)
+
+```go
+// Phase 1: parse only — no action runs, no side effects possible
+node, err := dsl.ParseAST(`GET "https://api.example.com" header "X" "Y"`)
+if err != nil { /* rich syntax error */ }
+
+fmt.Println(node.Pretty())
+// http_request (httpWithOptions)
+// ├─ http_method (methodType)
+// │  └─ GET "GET"
+// ...
+
+// Phase 2: evaluate the final tree exactly once
+result, err := dsl.Eval(node)
+```
+
+`dsl.Parse()` does both phases for you — but because they are separate, an
+alternative that is tried and rejected during parsing can never fire an HTTP
+call, write a file, or mutate your context.
+
+### Lazy Control Flow with NodeAction (new)
+
+```go
+// Regular actions receive evaluated children. For control flow you want the
+// opposite: evaluate ONLY the branch that is taken.
+dsl.NodeAction("ifElse", func(ctx *dslbuilder.EvalContext, n *dslbuilder.Node) (interface{}, error) {
+    cond, err := ctx.Eval(n.Child(1))
+    if err != nil {
+        return nil, err
+    }
+    if cond.(bool) {
+        return ctx.Eval(n.Child(3)) // then-branch only
+    }
+    return ctx.Eval(n.Child(5))     // else-branch only
+})
+```
+
+### Better Errors (new)
+
+```go
+_, err := dsl.Parse("if status == then")
+fmt.Println(dslbuilder.GetDetailedError(err))
+// no alternative matched for rule condition: expected IDENT or NUMBER, got THEN "then"
+// rule stack: if_stmt > condition > value at line 1, column 14:
+// if status == then
+//              ^
+```
+
+The parser tracks the *farthest* failure (not the last local one) and reports
+what it expected there, plus the rule stack that led to it.
+
+### Grammar Validation (new)
+
+```go
+warnings, err := dsl.Validate()
+// err      -> structural problems: unknown symbols, no rules, invalid tokens
+// warnings -> unreachable rules, unregistered actions, non-productive cycles,
+//             indirect left recursion (unsupported), ...
+
+compiled, err := dsl.Build() // Validate + freeze; mutations are rejected afterwards
 ```
 
 ## 📚 Examples
 
 ### 1. Enterprise Accounting DSL (Production Ready)
 
-Create a complete accounting system with tax calculations:
-
 ```go
 accounting := dslbuilder.New("Accounting")
 
-// Define tokens with KeywordToken for priority
 accounting.KeywordToken("VENTA", "venta")
 accounting.KeywordToken("DE", "de")
 accounting.KeywordToken("CON", "con")
 accounting.KeywordToken("IVA", "iva")
 accounting.Token("IMPORTE", "[0-9]+\\.?[0-9]*")
-accounting.Token("STRING", "\"[^\"]*\"")
 
-// Left-recursive rules for complex entries
+// Most specific alternatives first (ordered choice)
 accounting.Rule("command", []string{"VENTA", "DE", "IMPORTE", "CON", "IVA"}, "saleWithTax")
 accounting.Rule("command", []string{"VENTA", "DE", "IMPORTE"}, "simpleSale")
-accounting.Rule("movements", []string{"movement"}, "singleMovement")
-accounting.Rule("movements", []string{"movements", "movement"}, "multipleMovements") // Left-recursive!
 
-// Actions with business logic
+// Direct left recursion is supported
+accounting.Rule("movements", []string{"movement"}, "singleMovement")
+accounting.Rule("movements", []string{"movements", "movement"}, "multipleMovements")
+
 accounting.Action("saleWithTax", func(args []interface{}) (interface{}, error) {
     amount, _ := strconv.ParseFloat(args[2].(string), 64)
-    tax := amount * 0.16 // 16% IVA
+    tax := amount * 0.16
     return Transaction{Amount: amount, Tax: tax, Total: amount + tax}, nil
 })
-
-// Usage: Parse complex accounting entries
 // "venta de 5000 con iva" → Transaction{Amount: 5000, Tax: 800, Total: 5800}
-// "asiento debe 1101 10000 debe 1401 1600 haber 2101 11600" → Balanced accounting entry
 ```
 
-### 2. Multi-Country Tax System DSL
-
-Build a flexible tax calculation system:
+### 2. Context-Scoped Evaluation
 
 ```go
-accounting := dslbuilder.New("TaxSystem")
-
-// Define tokens with KeywordToken for priority
-accounting.KeywordToken("REGISTRAR", "registrar")
-accounting.KeywordToken("CREAR", "crear")
-accounting.KeywordToken("VENTA", "venta")
-accounting.KeywordToken("COMPRA", "compra")
-accounting.KeywordToken("DE", "de")
-accounting.KeywordToken("CON", "con")
-accounting.KeywordToken("DESCRIPCION", "descripcion")
-
-// Most specific rules first
-accounting.Rule("transaction", []string{"REGISTRAR", "VENTA", "DE", "AMOUNT", "CON", "DESCRIPCION", "STRING"}, "fullTransaction")
-accounting.Rule("transaction", []string{"REGISTRAR", "VENTA", "DE", "AMOUNT"}, "simpleTransaction")
-
-// Multi-country tax calculation
-calcIVA := func(amount float64, country string) float64 {
-    rates := map[string]float64{"MX": 0.16, "COL": 0.19, "AR": 0.21, "PE": 0.18}
-    return amount * rates[country]
-}
-
-// Usage with context for different countries
+// The context passed to Use() lives ONLY for that call: it shadows the
+// persistent context and is discarded afterwards.
 mexContext := map[string]interface{}{"country": "MX"}
-result, _ := accounting.Use(`registrar venta de 5000 con descripcion "Laptops"`, mexContext)
-// → Transaction with 16% Mexican IVA
+result, _ := accounting.Use(`registrar venta de 5000`, mexContext)
 
-colContext := map[string]interface{}{"country": "COL"}  
-result, _ := accounting.Use(`crear compra de 3000`, colContext)
-// → Transaction with 19% Colombian IVA
+colContext := map[string]interface{}{"country": "COL"}
+result, _ = accounting.Use(`crear compra de 3000`, colContext)
+
+// accounting.GetContext("country") is unaffected between calls.
 ```
 
-### 3. LINQ-like DSL with Advanced Context
-
-Create powerful data querying with dynamic context:
-
-```go
-linq := dslbuilder.New("LINQ")
-
-// Define comprehensive LINQ-style syntax
-linq.KeywordToken("FROM", "from")
-linq.KeywordToken("WHERE", "where") 
-linq.KeywordToken("SELECT", "select")
-linq.KeywordToken("NAME", "name")
-linq.KeywordToken("AGE", "age")
-linq.KeywordToken("CITY", "city")
-
-// Advanced context-based data access (like r2lang's q.use())
-people := []Person{
-    {Name: "Juan García", Age: 28, City: "Madrid"},
-    {Name: "María López", Age: 35, City: "Barcelona"},
-    {Name: "Carlos Rodríguez", Age: 42, City: "Madrid"},
-}
-
-// Multiple contexts for different datasets
-context1 := map[string]interface{}{"data": people}
-context2 := map[string]interface{}{"users": people}
-
-// Execute queries with dynamic context switching
-result1, _ := linq.Use(`select name from data where age > 30`, context1)
-result2, _ := linq.Use(`select city from users where city == Madrid`, context2)
-// → Dynamic queries on different data sources
-```
-
-### 4. Declarative DSL Definition
-
-Define your DSL using YAML or JSON:
+### 3. Declarative DSL Definition
 
 ```yaml
 # calculator.yaml
 name: "Calculator"
 tokens:
   NUMBER: "[0-9]+"
-  PLUS: "+"
-  MINUS: "-"
-  MULTIPLY: "*"
-  DIVIDE: "/"
+  PLUS: "\\+"
 rules:
   - name: "expr"
     pattern: ["NUMBER", "PLUS", "NUMBER"]
     action: "add"
-  - name: "expr"
-    pattern: ["NUMBER", "MINUS", "NUMBER"]
-    action: "subtract"
 ```
 
 ```go
-// Load DSL from YAML
 calcDSL, _ := dslbuilder.LoadFromYAMLFile("calculator.yaml")
+calcDSL.Action("add", addFunc)
+warnings, err := calcDSL.Validate() // same checks as cmd/validator
+```
 
-// Register actions
-calcDSL.Action("add", func(args []interface{}) (interface{}, error) {
-    // Implementation
+### 4. Typed Actions (new)
+
+```go
+// Instead of casting args by hand:
+dsl.Action("add", dslbuilder.Action3(func(left int, _ string, right int) (int, error) {
+    return left + right, nil
+}))
+
+// Or with the Args helper:
+dsl.Action("add", func(raw []interface{}) (interface{}, error) {
+    args := dslbuilder.Args(raw)
+    return args.Int(0) + args.Int(2), nil
 })
-
-// Export DSL to JSON
-calcDSL.SaveToJSONFile("calculator.json")
 ```
 
-### 5. Advanced Grammar Features
+## 📏 Left Recursion: Scope and Guarantees
 
-go-dsl now supports advanced grammar features for building sophisticated DSLs:
+go-dsl supports **direct** left recursion (`expr -> expr PLUS term`) using the
+growing seed algorithm, and **indirect** left recursion (`a -> b ...`,
+`b -> a ...`) using a generalized growing algorithm. `Validate()` still flags
+indirect cycles as a warning because memoization is disabled while those
+rules parse — restructured grammars, or `Expression()` (Pratt parser) for
+operators, are usually clearer and faster.
 
-#### Operator Precedence and Associativity
-
-```go
-// Define rules with precedence (higher number = higher priority)
-calc := dslbuilder.New("Calculator")
-
-// Level 1: Addition/Subtraction (lowest precedence, left associative)
-calc.RuleWithPrecedence("expr", []string{"expr", "PLUS", "term"}, "add", 1, "left")
-calc.RuleWithPrecedence("expr", []string{"expr", "MINUS", "term"}, "subtract", 1, "left")
-
-// Level 2: Multiplication/Division (medium precedence, left associative)
-calc.RuleWithPrecedence("term", []string{"term", "MULTIPLY", "factor"}, "multiply", 2, "left")
-calc.RuleWithPrecedence("term", []string{"term", "DIVIDE", "factor"}, "divide", 2, "left")
-
-// Level 3: Exponentiation (highest precedence, right associative)
-calc.RuleWithPrecedence("factor", []string{"base", "POWER", "factor"}, "power", 3, "right")
-
-// Result: "2 + 3 * 4" = 14 (not 20)
-// Result: "2 ^ 3 ^ 2" = 512 (right associative: 2^(3^2))
-```
-
-#### Repetition Rules (Kleene Star/Plus)
-
-```go
-// Kleene Star (*) - Zero or more repetitions
-list := dslbuilder.New("ListDSL")
-list.RuleWithRepetition("items", "item", "items")  // items -> ε | items item
-
-// Kleene Plus (+) - One or more repetitions  
-list.RuleWithPlusRepetition("identifiers", "ID", "ids")  // ids -> ID | ids ID
-
-// Example: Parse "a b c d" as a list of identifiers
-```
-
-#### Priority-Based Token Matching
-
-```go
-// Keywords have higher priority than generic identifiers
-lang := dslbuilder.New("Language")
-lang.KeywordToken("IF", "if")        // Priority: 90
-lang.KeywordToken("WHILE", "while")  // Priority: 90
-lang.Token("ID", "[a-zA-Z]+")        // Priority: 0
-
-// "if" matches as IF token, not ID
-// "ifx" matches as ID token
-```
+Also note that rule alternatives use **ordered choice** (PEG-like): declare
+the most specific alternatives first. `Validate()` warns when a shorter
+alternative shadows a longer one with the same prefix (the classic mistake).
 
 ## 🎯 Use Cases
 
@@ -286,65 +279,81 @@ lang.Token("ID", "[a-zA-Z]+")        // Priority: 0
 
 go-dsl consists of several key components:
 
-- **Tokenizer**: Converts input text into tokens using regex patterns
-- **Parser**: Processes tokens according to grammar rules with left-recursion support
-- **Actions**: Execute semantic actions when grammar rules match
-- **Context System**: Provides dynamic data access during parsing
-- **Builder API**: Fluent interface for DSL construction
+- **Tokenizer**: Deterministic lexer (priority → length → declaration order)
+- **AST Parser**: Packrat parser that builds `*Node` trees; direct left recursion; Pratt parsing for expression rules
+- **Evaluator**: Executes actions exactly once over the final AST; supports lazy `NodeAction`s
+- **Validator**: Static analysis of the grammar (`Validate()` / `Build()`)
+- **Context System**: Persistent context + per-call scoped context (`Use`)
+- **Builder API**: Fluent interface, high-level `Tokens()`/`Expr()` layer
 - **Declarative Loader**: YAML/JSON configuration support
-
-### Key Concepts
-
-1. **Tokens**: Define the vocabulary of your language using regex patterns
-2. **Rules**: Specify how tokens combine to form valid expressions
-3. **Actions**: Define what happens when rules are matched
-4. **Context**: Pass dynamic data to your DSL operations
-5. **Builder Pattern**: Chain methods for fluent DSL construction
-6. **Declarative Syntax**: Define DSLs externally in YAML/JSON
 
 ## 🛠️ Command-Line Tools
 
-go-dsl includes powerful command-line tools to help you develop and debug your DSLs:
-
 ### AST Viewer
-Visualize the Abstract Syntax Tree of your DSL parsing results:
+Visualize the real parse tree of your DSL input:
 
 ```bash
-# Install
 go install github.com/arturoeanton/go-dsl/cmd/ast_viewer@latest
-
-# Usage
 ast_viewer -dsl calculator.yaml -input "10 + 20 * 30" -format tree
 ```
 
 ### Grammar Validator
-Validate your DSL grammar and detect potential issues:
+Runs the same checks as `dsl.Validate()`:
 
 ```bash
-# Install
 go install github.com/arturoeanton/go-dsl/cmd/validator@latest
-
-# Usage
 validator -dsl mydsl.yaml -verbose -info
+validator -dsl mydsl.yaml -test "some input"   # parses without needing actions
 ```
 
 ### Interactive REPL
-Test and explore your DSL interactively:
 
 ```bash
-# Install
 go install github.com/arturoeanton/go-dsl/cmd/repl@latest
-
-# Usage
 repl -dsl calculator.yaml -context data.json
 ```
 
+### Code Generator
+Turn a declarative grammar into checked-in Go code (constructor + action stubs):
+
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/dslgen@latest
+dslgen -dsl grammar.yaml -package mydsl -func NewMyDSL -o mydsl_gen.go
+```
+
+### LSP Server
+Live diagnostics for your DSL in any LSP-capable editor, powered by
+`Diagnostics()` (multi-error recovery):
+
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/lsp@latest
+lsp -dsl grammar.yaml    # wire as a stdio language server
+```
+
 See the [cmd/](cmd/) directory for detailed documentation of each tool.
+
+## 🧪 Testing & CI
+
+```bash
+./scripts/check.sh              # the full quality gate, locally and free
+go test ./...                   # main module
+go test -race ./pkg/...         # the core is race-clean
+cd examples/http_dsl && go test ./...  # HTTP DSL module
+
+# Performance regression guard (same machine as the baseline):
+./scripts/bench_baseline.sh     # (re)generate benchmarks/baseline.txt
+./scripts/bench_guard.sh        # compare current benchmarks via benchstat
+```
+
+CI runs the same gate in a single GitHub Actions job (`.github/workflows/ci.yml`),
+free for public repositories. Fuzz targets (`go test -fuzz FuzzExpressionParse ./pkg/dslbuilder`)
+and their regression corpus live in the test suite.
 
 ## 📖 Documentation
 
 ### English
 - [API Reference](pkg/dslbuilder/)
+- [AI/agent skill for building DSLs with go-dsl](.claude/skills/go-dsl/SKILL.md) — drop-in guide so coding agents (Claude Code, etc.) use the library correctly
 - [Examples](examples/)
 - [Command-Line Tools](cmd/)
 

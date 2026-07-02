@@ -1,10 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"encoding/json"
 	"time"
 
 	"github.com/arturoeanton/go-dsl/examples/http_dsl/universal"
@@ -16,7 +16,7 @@ func main() {
 	time.Sleep(100 * time.Millisecond) // Give server time to start
 
 	fmt.Println("HTTP DSL Examples")
-	fmt.Println("=================\n")
+	fmt.Println("=================")
 
 	// Create DSL instance
 	dsl := universal.NewHTTPDSL()
@@ -84,25 +84,25 @@ func main() {
 	// Example 10: Complex workflow
 	fmt.Println("\nExample 10: Complex Workflow - User Registration and Profile Update")
 	fmt.Println("--------------------------------------------------------------------")
-	
+
 	// Reset for clean state
 	runExample(dsl, `reset`)
 	runExample(dsl, `base url "http://localhost:8080"`)
-	
+
 	// Register new user
 	runExample(dsl, `POST "/api/register" json "{"username":"newuser","password":"pass123","email":"new@example.com"}"`)
 	runExample(dsl, `extract jsonpath "$.userId" as $new_user_id`)
 	runExample(dsl, `extract jsonpath "$.token" as $auth_token`)
-	
+
 	// Get user profile
 	runExample(dsl, `GET "/api/users/$new_user_id" header "Authorization" "Bearer $auth_token"`)
 	runExample(dsl, `extract jsonpath "$.email" as $current_email`)
 	runExample(dsl, `print $current_email`)
-	
+
 	// Update profile
 	runExample(dsl, `PATCH "/api/users/$new_user_id" header "Authorization" "Bearer $auth_token" json "{"bio":"Software Developer"}"`)
 	runExample(dsl, `assert status 200`)
-	
+
 	// Verify update
 	runExample(dsl, `GET "/api/users/$new_user_id" header "Authorization" "Bearer $auth_token"`)
 	runExample(dsl, `assert response contains "Software Developer"`)
@@ -119,7 +119,7 @@ func main() {
 	fmt.Println("--------------------------------")
 	runExample(dsl, `set $total_time 0`)
 	runExample(dsl, `repeat 5 times do GET "http://localhost:8080/api/ping" endloop`)
-	
+
 	fmt.Println("\n✅ All examples completed!")
 }
 
@@ -173,9 +173,9 @@ func startDemoServer() {
 			"email": "john@example.com",
 		},
 	}
-	
+
 	tokens := map[string]string{
-		"token123": "user1",
+		"token123":       "user1",
 		"auth-token-456": "newuser",
 	}
 
@@ -215,7 +215,7 @@ func startDemoServer() {
 	// User by ID endpoint
 	mux.HandleFunc("/api/users/", func(w http.ResponseWriter, r *http.Request) {
 		userId := r.URL.Path[len("/api/users/"):]
-		
+
 		switch r.Method {
 		case "GET":
 			if user, ok := users[userId]; ok {
@@ -234,17 +234,17 @@ func startDemoServer() {
 				w.WriteHeader(http.StatusNotFound)
 				json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
 			}
-			
+
 		case "PUT", "PATCH":
 			auth := r.Header.Get("Authorization")
 			if auth == "" {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			
+
 			var updates map[string]interface{}
 			json.NewDecoder(r.Body).Decode(&updates)
-			
+
 			if user, ok := users[userId]; ok {
 				for k, v := range updates {
 					user[k] = v
@@ -254,7 +254,7 @@ func startDemoServer() {
 			} else {
 				w.WriteHeader(http.StatusNotFound)
 			}
-			
+
 		case "DELETE":
 			if _, ok := users[userId]; ok {
 				delete(users, userId)
@@ -262,7 +262,7 @@ func startDemoServer() {
 			} else {
 				w.WriteHeader(http.StatusNotFound)
 			}
-			
+
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -284,11 +284,11 @@ func startDemoServer() {
 	mux.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
 		var creds map[string]string
 		json.NewDecoder(r.Body).Decode(&creds)
-		
+
 		if creds["username"] == "admin" && creds["password"] == "secret" {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]string{
-				"token": "auth-token-123",
+				"token":  "auth-token-123",
 				"userId": "admin",
 			})
 		} else {
@@ -301,18 +301,18 @@ func startDemoServer() {
 	mux.HandleFunc("/api/register", func(w http.ResponseWriter, r *http.Request) {
 		var newUser map[string]interface{}
 		json.NewDecoder(r.Body).Decode(&newUser)
-		
+
 		userId := "newuser"
 		newUser["id"] = userId
 		users[userId] = newUser
-		
+
 		token := "auth-token-456"
 		tokens[token] = userId
-		
+
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{
 			"userId": userId,
-			"token": token,
+			"token":  token,
 		})
 	})
 

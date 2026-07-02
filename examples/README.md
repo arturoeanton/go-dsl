@@ -18,6 +18,12 @@ Advanced context usage with the LINQ-like query DSL, demonstrating data filterin
 ### [calculator](calculator/)
 A calculator DSL supporting arithmetic operations with proper operator precedence.
 
+### [calculator_pratt](calculator_pratt/)
+The modern engine in one file: high-level fluent API (Tokens/Expr), Pratt
+expression parser with precedence and associativity, typed actions,
+Build() validation, two-phase ParseAST+Eval with AST pretty-printing, and
+farthest-failure error messages. **Start here for new DSLs.**
+
 ### [accounting](accounting/)
 Multi-country accounting DSL with support for different Latin American tax systems (Mexico, Colombia, Argentina, Peru).
 

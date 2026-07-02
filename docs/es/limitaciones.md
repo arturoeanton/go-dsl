@@ -43,56 +43,56 @@ dsl.Rule("measurement", []string{"NUMBER", "PX"}, "numberWithUnit")
 
 ### 2. Sistema de Tipos
 
-#### Limitación: No hay genéricos para versiones < Go 1.18
-Para mantener compatibilidad con Go 1.18+, go-dsl usa `interface{}`:
+#### Limitación: La firma base de acciones usa `interface{}`
+Por compatibilidad, la firma clásica sigue siendo:
 
 ```go
-// API actual
 func (d *DSL) Action(name string, fn func(args []interface{}) (interface{}, error))
-
-// Con genéricos sería más seguro:
-// func (d *DSL) Action[T any](name string, fn func(args []T) (T, error))
 ```
 
-**Impacto**: 
-- Necesidad de type assertions
-- Posibles errores en runtime
-- Menos ayuda del compilador
+**✅ RESUELTO con helpers genéricos integrados** (`Action1/Action2/Action3` y `Args`):
 
-**Mitigación**:
 ```go
-// Funciones helper para conversión segura
-func toInt(v interface{}) int {
-    switch n := v.(type) {
-    case int:
-        return n
-    case string:
-        i, _ := strconv.Atoi(n)
-        return i
-    default:
-        return 0
-    }
-}
+// Adaptadores tipados: convierten y validan los argumentos por vos
+dsl.Action("number", dslbuilder.Action1(strconv.Atoi))
+dsl.Action("add", dslbuilder.Action3(func(l int, _ string, r int) (int, error) {
+    return l + r, nil
+}))
+
+// O el helper Args para acceso tipado posicional
+dsl.Action("add", func(raw []interface{}) (interface{}, error) {
+    args := dslbuilder.Args(raw)
+    return args.Int(0) + args.Int(2), nil
+})
 ```
+
+La firma cruda sigue disponible si preferís manejar los tipos manualmente.
 
 ## Limitaciones de Diseño
 
 ### 1. Gramáticas Ambiguas
 
-#### Limitación: No detecta ambigüedades automáticamente
-go-dsl no analiza estáticamente la gramática para detectar ambigüedades:
+#### Limitación: Detección de ambigüedades parcial
+Las alternativas usan elección ordenada (estilo PEG), así que una gramática
+"ambigua" se resuelve determinísticamente por orden de declaración — pero eso
+puede sorprender si declarás la alternativa corta primero.
+
+**✅ Mitigado con el validador integrado en el core**:
 
 ```go
-// Gramática ambigua - go-dsl la acepta sin advertencias
-dsl.Rule("expr", []string{"expr", "PLUS", "expr"}, "add")
-dsl.Rule("expr", []string{"expr", "MINUS", "expr"}, "subtract")
-// Sin precedencia, "1 + 2 - 3" es ambiguo
+warnings, err := dsl.Validate()
+// err      -> símbolos desconocidos, tokens inválidos, reglas vacías
+// warnings -> reglas inalcanzables, acciones sin registrar,
+//             ciclos no productivos, recursión izquierda indirecta
 ```
 
-**Solución**: Usar el validador de gramática:
 ```bash
-validator -dsl grammar.yaml -strict
+validator -dsl grammar.yaml -strict   # mismo análisis desde la CLI
 ```
+
+**Regla práctica**: declarar siempre las alternativas más específicas primero,
+y usar `Expression()` (Pratt) para precedencia de operadores en vez de reglas
+ambiguas.
 
 ### 2. Análisis Sintáctico
 
@@ -112,18 +112,28 @@ dsl.Rule("A", []string{"B", "C", "G", "H"}, "a3")
 
 ### 3. Manejo de Errores
 
-#### Limitación: Mensajes de error genéricos en gramáticas complejas
-Para gramáticas muy anidadas, los mensajes pueden ser poco específicos:
+#### ✅ RESUELTO: Farthest-failure tracking
+Los errores de sintaxis ya no son genéricos: el parser registra el punto más
+lejano alcanzado, qué tokens esperaba ahí y el stack de reglas:
 
 ```
-Error: no alternative matched for rule expr at line 1, column 15
+no alternative matched for rule condition: expected IDENT or NUMBER, got THEN "then"
+rule stack: if_stmt > condition > value at line 1, column 14:
+if status == then
+             ^
 ```
 
-**Mejora propuesta** (no implementada):
 ```go
-// Errores personalizados por regla
-dsl.RuleWithError("expr", pattern, action, "Expected expression after operator")
+if dslbuilder.IsParseError(err) {
+    fmt.Println(dslbuilder.GetDetailedError(err)) // posición + expected + puntero
+}
 ```
+
+**También resuelto**:
+- `RuleWithError(name, pattern, action, msg)` agrega mensajes personalizados
+  por regla (aparecen como `hint:` en el error).
+- `Diagnostics(code)` recupera tras cada fallo y reporta TODOS los errores
+  de una pasada (es lo que usa `cmd/lsp`).
 
 ## Limitaciones de Performance
 
@@ -184,12 +194,17 @@ dsl.Action("add", func(args []interface{}) (interface{}, error) {
 })
 ```
 
-### 2. Características Avanzadas No Soportadas
+### 2. Características Avanzadas
 
-#### No hay soporte para:
+#### ✅ Ahora soportadas:
+- **Recuperación de errores**: `Diagnostics(code)` reporta todos los errores de una pasada (con resincronización por FIRST-set)
+- **Streaming**: `ParseStream(io.Reader, handler)` procesa scripts línea a línea sin cargar todo en memoria
+- **Generación de código**: `cmd/dslgen` convierte la gramática declarativa en Go versionable
+- **LSP**: `cmd/lsp` publica diagnósticos en vivo en el editor
+
+#### Sin soporte:
 - **Gramáticas de atributos**: No hay síntesis/herencia automática de atributos
-- **Parsing incremental**: Todo el texto debe parsearse completamente
-- **Recuperación de errores**: El parsing se detiene en el primer error
+- **Parsing incremental real**: no se reusan árboles entre ediciones (el LSP re-parsea el documento completo, que para DSLs es barato)
 - **Múltiples archivos**: No hay sistema de módulos/imports integrado
 
 ### 3. Debugging Limitado
@@ -232,9 +247,9 @@ dsl.Action("rule", func(args []interface{}) (interface{}, error) {
 ### vs PEG (Parsing Expression Grammars)
 | Característica | go-dsl | PEG |
 |----------------|---------|-----|
-| Ambigüedad | Posible | ❌ No ambiguo por diseño |
-| Recursión izquierda | ✅ Soportada | ❌ No directamente |
-| Backtracking | Limitado | ✅ Completo |
+| Ambigüedad | Elección ordenada (determinista) | ❌ No ambiguo por diseño |
+| Recursión izquierda | ✅ Directa (indirecta NO — usar `Expression()`) | ❌ No directamente |
+| Backtracking | ✅ Con memoización (packrat) | ✅ Completo |
 
 ## Soluciones y Alternativas
 
@@ -280,9 +295,25 @@ Para la mayoría de casos de uso (DSLs de configuración, lenguajes de dominio e
 
 ## Roadmap de Mejoras
 
-Algunas limitaciones podrían abordarse en futuras versiones:
-- [ ] Soporte para streaming/parsing incremental
-- [ ] Mejor recuperación de errores
-- [ ] Optimizaciones de rendimiento
-- [ ] Debugger integrado
-- [ ] Generación de código opcional
+Resueltas en la versión actual:
+- [x] ✅ Mensajes de error específicos (farthest-failure con expected + rule stack)
+- [x] ✅ Acciones tipadas (`Action1/2/3`, `Args`)
+- [x] ✅ Validador integrado en el core (`dsl.Validate()` / `Build()`)
+- [x] ✅ AST real inspeccionable (`ParseAST` + `node.Pretty()`)
+- [x] ✅ Precedencia confiable de operadores (parser Pratt vía `Expression()`)
+- [x] ✅ Tokenizer determinista y lineal (patrones anclados, orden de declaración)
+- [x] ✅ Límites de profundidad (sin stack overflow con input hostil)
+- [x] ✅ Fuzzing y benchmarks en la suite
+
+Resueltas también en esta versión:
+- [x] ✅ Recuperación de errores: `Diagnostics()` reporta múltiples errores por pasada
+- [x] ✅ Mensajes de error personalizados por regla: `RuleWithError()`
+- [x] ✅ Recursión izquierda indirecta: growing generalizado (el validador aún la señala como candidata a refactor)
+- [x] ✅ Streaming orientado a líneas: `ParseStream(io.Reader, handler)`
+- [x] ✅ Generación de código: `cmd/dslgen`
+- [x] ✅ Servidor LSP mínimo: `cmd/lsp` (diagnósticos en vivo)
+- [x] ✅ Detección de alternativas ensombrecidas (elección ordenada PEG) en `Validate()`
+
+Pendientes para futuras versiones:
+- [ ] Parsing incremental real (reuso de árboles entre ediciones)
+- [ ] Autocompletado/hover en el LSP (hoy: solo diagnósticos)

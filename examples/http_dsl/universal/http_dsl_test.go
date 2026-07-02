@@ -21,7 +21,7 @@ func TestHTTPDSLBasicRequests(t *testing.T) {
 			"path":    r.URL.Path,
 			"headers": r.Header,
 		}
-		
+
 		// Handle different methods
 		switch r.Method {
 		case "GET":
@@ -43,7 +43,7 @@ func TestHTTPDSLBasicRequests(t *testing.T) {
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
-		
+
 		json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
@@ -103,17 +103,17 @@ func TestHTTPDSLBasicRequests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := dsl.Parse(tt.input)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error but got none")
 				return
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if err == nil {
 				if response, ok := result.(map[string]interface{}); ok {
 					if status, ok := response["status"].(int); ok {
@@ -167,7 +167,7 @@ func TestHTTPDSLWithHeaders(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if response, ok := result.(map[string]interface{}); ok {
 				if body, ok := response["body"].(string); ok {
 					if !strings.Contains(body, tt.expected) {
@@ -186,10 +186,10 @@ func TestHTTPDSLWithBody(t *testing.T) {
 		if r.Body != nil {
 			body, _ = io.ReadAll(r.Body)
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"received": string(body),
+			"received":    string(body),
 			"contentType": r.Header.Get("Content-Type"),
 		})
 	}))
@@ -224,14 +224,23 @@ func TestHTTPDSLWithBody(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if response, ok := result.(map[string]interface{}); ok {
 				if body, ok := response["body"].(string); ok {
-					if !strings.Contains(body, tt.expectedBody) {
-						t.Errorf("Response doesn't contain expected body: %s", tt.expectedBody)
+					// The echo server JSON-encodes what it received, so
+					// decode it before comparing (quotes inside the sent
+					// body arrive escaped otherwise).
+					var echo map[string]interface{}
+					if err := json.Unmarshal([]byte(body), &echo); err != nil {
+						t.Fatalf("Response body is not valid JSON: %v", err)
 					}
-					if tt.expectedType != "" && !strings.Contains(body, tt.expectedType) {
-						t.Errorf("Response doesn't contain expected content type: %s", tt.expectedType)
+					received, _ := echo["received"].(string)
+					if !strings.Contains(received, tt.expectedBody) {
+						t.Errorf("Received body %q doesn't contain expected body: %s", received, tt.expectedBody)
+					}
+					contentType, _ := echo["contentType"].(string)
+					if tt.expectedType != "" && !strings.Contains(contentType, tt.expectedType) {
+						t.Errorf("Content type %q doesn't contain expected: %s", contentType, tt.expectedType)
 					}
 				}
 			}
@@ -276,7 +285,7 @@ func TestHTTPDSLVariables(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if val, ok := dsl.GetVariable(tt.varName); ok {
 				if val != tt.expected {
 					t.Errorf("Expected variable value %v, got %v", tt.expected, val)
@@ -291,16 +300,16 @@ func TestHTTPDSLVariables(t *testing.T) {
 // TestHTTPDSLPrintVariable tests variable printing
 func TestHTTPDSLPrintVariable(t *testing.T) {
 	dsl := NewHTTPDSL()
-	
+
 	// Set a variable first
 	dsl.SetVariable("test_var", "Hello World")
-	
+
 	result, err := dsl.Parse(`print $test_var`)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
 	}
-	
+
 	if resultStr, ok := result.(string); ok {
 		if !strings.Contains(resultStr, "Hello World") {
 			t.Errorf("Print output doesn't contain variable value: %s", resultStr)
@@ -317,8 +326,8 @@ func TestHTTPDSLExtraction(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"user": map[string]interface{}{
-				"id":   123,
-				"name": "John Doe",
+				"id":    123,
+				"name":  "John Doe",
 				"email": "john@example.com",
 			},
 			"token": "abc123xyz",
@@ -361,7 +370,7 @@ func TestHTTPDSLExtraction(t *testing.T) {
 		},
 		{
 			name:     "Extract with regex",
-			input:    `extract regex "token.*:.*\"([^\"]+)" as $token`,
+			input:    `extract regex "token\":\"([^\"]+)" as $token`,
 			varName:  "token",
 			expected: "abc123xyz",
 		},
@@ -374,7 +383,7 @@ func TestHTTPDSLExtraction(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if val, ok := dsl.GetVariable(tt.varName); ok {
 				if fmt.Sprintf("%v", val) != fmt.Sprintf("%v", tt.expected) {
 					t.Errorf("Expected extracted value %v, got %v", tt.expected, val)
@@ -428,7 +437,7 @@ func TestHTTPDSLConditionals(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			// Check if expected variables were set based on conditions
 			if tt.shouldMatch {
 				// Verify that the conditional action was executed
@@ -475,7 +484,7 @@ func TestHTTPDSLLoops(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if strings.Contains(fmt.Sprintf("%v", result), fmt.Sprintf("%d times", tt.expected)) {
 				// Loop executed correctly
 			} else {
@@ -504,9 +513,9 @@ func TestHTTPDSLAssertions(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		input       string
-		shouldPass  bool
+		name       string
+		input      string
+		shouldPass bool
 	}{
 		{
 			name:       "Assert correct status code",
@@ -538,11 +547,11 @@ func TestHTTPDSLAssertions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := dsl.Parse(tt.input)
-			
+
 			if tt.shouldPass && err != nil {
 				t.Errorf("Expected assertion to pass but got error: %v", err)
 			}
-			
+
 			if !tt.shouldPass && err == nil {
 				t.Errorf("Expected assertion to fail but it passed: %v", result)
 			}
@@ -603,7 +612,7 @@ func TestHTTPDSLUtilities(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if resultStr, ok := result.(string); ok {
 				if !strings.Contains(resultStr, strings.Split(tt.expected, ":")[0]) {
 					t.Errorf("Expected result to contain '%s', got '%s'", tt.expected, resultStr)
@@ -650,7 +659,7 @@ func TestHTTPDSLAuthentication(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if response, ok := result.(map[string]interface{}); ok {
 				if body, ok := response["body"].(string); ok {
 					if !strings.Contains(body, tt.expected) {
@@ -693,11 +702,11 @@ func TestHTTPDSLTimeout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := dsl.Parse(tt.input)
-			
+
 			if tt.shouldError && err == nil {
 				t.Errorf("Expected timeout error but got none")
 			}
-			
+
 			if !tt.shouldError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
@@ -714,10 +723,10 @@ func TestHTTPDSLComplexScenario(t *testing.T) {
 			// Return auth token
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]string{
-				"token": "auth-token-123",
+				"token":  "auth-token-123",
 				"userId": "user-456",
 			})
-			
+
 		case "/user/user-456":
 			// Check auth header
 			if r.Header.Get("Authorization") != "Bearer auth-token-123" {
@@ -726,12 +735,12 @@ func TestHTTPDSLComplexScenario(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"id": "user-456",
-				"name": "John Doe",
+				"id":    "user-456",
+				"name":  "John Doe",
 				"email": "john@example.com",
 				"posts": []string{"post-1", "post-2", "post-3"},
 			})
-			
+
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -757,7 +766,7 @@ func TestHTTPDSLComplexScenario(t *testing.T) {
 		if cmd == "" {
 			continue
 		}
-		
+
 		_, err := dsl.Parse(cmd)
 		if err != nil {
 			t.Errorf("Command failed: %s, Error: %v", cmd, err)
@@ -768,11 +777,11 @@ func TestHTTPDSLComplexScenario(t *testing.T) {
 	if token, ok := dsl.GetVariable("token"); !ok || token != "auth-token-123" {
 		t.Errorf("Token extraction failed")
 	}
-	
+
 	if userId, ok := dsl.GetVariable("userId"); !ok || userId != "user-456" {
 		t.Errorf("UserID extraction failed")
 	}
-	
+
 	if username, ok := dsl.GetVariable("username"); !ok || username != "John Doe" {
 		t.Errorf("Username extraction failed")
 	}
@@ -826,4 +835,3 @@ func TestHTTPDSLEngineFeatures(t *testing.T) {
 		t.Errorf("Regex matching failed")
 	}
 }
-

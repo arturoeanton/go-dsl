@@ -24,14 +24,14 @@ import (
 func (d *DSL) ParseMultiline(code string) ([]interface{}, error) {
 	lines := strings.Split(code, "\n")
 	var results []interface{}
-	
+
 	for lineNum, line := range lines {
 		// Skip empty lines and comments
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "//") {
 			continue
 		}
-		
+
 		// Parse the line
 		result, err := d.Parse(trimmed)
 		if err != nil {
@@ -41,17 +41,17 @@ func (d *DSL) ParseMultiline(code string) ([]interface{}, error) {
 				return results, parseErr
 			}
 			return results, &ParseError{
-				Message:  err.Error(),
-				Line:     lineNum + 1,
-				Column:   1,
-				Token:    trimmed,
-				Input:    code,
+				Message: err.Error(),
+				Line:    lineNum + 1,
+				Column:  1,
+				Token:   trimmed,
+				Input:   code,
 			}
 		}
-		
+
 		results = append(results, result)
 	}
-	
+
 	return results, nil
 }
 
@@ -71,19 +71,19 @@ func (d *DSL) ParseMultiline(code string) ([]interface{}, error) {
 func (d *DSL) ParseAuto(code string) (interface{}, error) {
 	// First, try parsing as a single statement
 	result, err := d.Parse(code)
-	
+
 	// If successful or no newlines, return as-is
 	if err == nil || !strings.Contains(code, "\n") {
 		return result, err
 	}
-	
+
 	// If failed and has newlines, try multiline parsing
 	results, multiErr := d.ParseMultiline(code)
 	if multiErr != nil {
 		// Return original error if multiline also fails
 		return nil, err
 	}
-	
+
 	// Return results from multiline parsing
 	if len(results) == 1 {
 		return results[0], nil
@@ -104,7 +104,7 @@ func (d *DSL) ParseAuto(code string) (interface{}, error) {
 //
 //	// With semicolons
 //	code := "set $x 10; set $y 20; print $x"
-//	
+//
 //	// With newlines
 //	code := `
 //	set $x 10
@@ -117,13 +117,13 @@ func (d *DSL) ParseStatements(code string) ([]interface{}, error) {
 		// Split by semicolon and process each
 		statements := strings.Split(code, ";")
 		var results []interface{}
-		
+
 		for i, stmt := range statements {
 			trimmed := strings.TrimSpace(stmt)
 			if trimmed == "" {
 				continue
 			}
-			
+
 			result, err := d.Parse(trimmed)
 			if err != nil {
 				// Add position context
@@ -136,7 +136,7 @@ func (d *DSL) ParseStatements(code string) ([]interface{}, error) {
 		}
 		return results, nil
 	}
-	
+
 	// Otherwise use newline separation
 	return d.ParseMultiline(code)
 }

@@ -155,7 +155,7 @@ func main() {
 	})
 
 	fmt.Println("Accounting DSL Demo")
-	fmt.Println("===================\n")
+	fmt.Println("===================")
 
 	// Test DSL with different contexts
 	testCases := []struct {

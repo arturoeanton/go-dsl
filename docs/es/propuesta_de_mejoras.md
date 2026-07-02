@@ -229,6 +229,29 @@ lang.Token("ID", "[a-zA-Z]+")        // Prioridad: 0
 // "if" se reconoce como IF, no como ID
 ```
 
+### ✅ IMPLEMENTADO — Motor v2 (esta versión)
+
+Mejoras estructurales completadas sobre el parser y la API:
+
+- [x] **Separación parse/eval**: `ParseAST()` construye un AST real (`*Node`) sin ejecutar acciones; `Eval()` las ejecuta exactamente una vez. Fin de los efectos secundarios en alternativas rechazadas.
+- [x] **Tokenizer determinista y lineal**: desempate por prioridad → longitud → orden de declaración; patrones anclados (`\A`) — se eliminó un comportamiento O(n²); tokens que matchean vacío se rechazan.
+- [x] **Parser Pratt para expresiones**: `Expression()` con `Atom/Group/Prefix/InfixLeft/InfixRight` — precedencia y asociatividad confiables.
+- [x] **Errores farthest-failure**: tokens esperados + rule stack + posición exacta.
+- [x] **Validador en el core**: `dsl.Validate()` (cmd/validator ahora delega en él).
+- [x] **Builder congelable**: `Build()` → `CompiledDSL` validado, inmutable y seguro para concurrencia.
+- [x] **Acciones tipadas**: `Action1/2/3` (genéricos) y helper `Args`.
+- [x] **NodeAction (lazy)**: control de flujo real — la rama no tomada no se ejecuta.
+- [x] **Contexto por parse**: `Use()` ya no muta el contexto persistente; API protegida con mutex (race-clean).
+- [x] **Endurecimiento**: límites de profundidad de parseo/evaluación, 3 targets de fuzzing con corpus, 6 benchmarks.
+- [x] **Recursión izquierda directa e indirecta**: directa con semilla creciente; indirecta con growing generalizado (ciclos multi-regla). `ImprovedParserV2` (con bug conocido) eliminado.
+- [x] **Recuperación de errores**: `Diagnostics()` con resincronización por FIRST-set — múltiples errores por pasada.
+- [x] **Errores personalizados por regla**: `RuleWithError()` (hint en el farthest failure).
+- [x] **Detección de alternativas ensombrecidas** (prefijos en elección ordenada) en `Validate()`.
+- [x] **Streaming**: `ParseStream(io.Reader, handler)` para scripts orientados a líneas.
+- [x] **Generación de código**: `cmd/dslgen` (gramática YAML/JSON → Go versionable).
+- [x] **LSP Server**: `cmd/lsp` con diagnósticos en vivo (initialize/didOpen/didChange).
+- [x] **CI + guardia de benchmarks**: `.github/workflows/ci.yml`, `scripts/check.sh`, `scripts/bench_guard.sh` con baseline.
+
 ### 🔧 PRIORIDAD BAJA (Funcionalidades Avanzadas)
 
 #### 7. Extensiones del Lenguaje
@@ -244,10 +267,10 @@ lang.Token("ID", "[a-zA-Z]+")        // Prioridad: 0
 **Esfuerzo**: Medio (5-7 días)  
 **Impacto**: Medio - Adopción
 
-- [ ] **Code Generation**: Generar structs Go desde DSL
+- [x] **Code Generation**: `cmd/dslgen` genera el constructor Go desde la gramática → **✅ IMPLEMENTADO**
 - [ ] **Plugins**: Sistema de plugins para extender funcionalidad
 - [ ] **Integración con go:generate**: Para generar código en tiempo de compilación
-- [ ] **LSP Server**: Soporte para editores (autocompletado, etc.)
+- [x] **LSP Server**: `cmd/lsp` con diagnósticos en vivo (autocompletado pendiente) → **✅ IMPLEMENTADO (diagnósticos)**
 
 #### 9. Documentación y Ejemplos
 **Esfuerzo**: Medio (4-6 días)  

@@ -277,7 +277,7 @@ endloop`,
 		},
 		{
 			name: "Foreach loop",
-			input: `set $items ["a", "b", "c"]
+			input: `set $items "[\"a\", \"b\", \"c\"]"
 foreach $item in $items do
 print $item
 endloop`,
@@ -287,9 +287,10 @@ endloop`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := dsl.Parse(tt.input)
+			// Multi-statement scripts with loop blocks require block support.
+			result, err := dsl.ParseWithBlockSupport(tt.input)
 			if err != nil {
-				t.Errorf("Parse() error = %v", err)
+				t.Errorf("ParseWithBlockSupport() error = %v", err)
 				return
 			}
 
@@ -309,10 +310,10 @@ func TestHTTPDSLv3Conditionals(t *testing.T) {
 	dsl.SetVariable("error", "")
 
 	tests := []struct {
-		name         string
-		input        string
-		expectedVar  string
-		expectedVal  interface{}
+		name        string
+		input       string
+		expectedVar string
+		expectedVal interface{}
 	}{
 		{
 			name:        "Simple if/then without else",
@@ -373,7 +374,7 @@ func TestHTTPDSLv3ExtractWithoutResponse(t *testing.T) {
 	_, err := dsl.Parse(`extract jsonpath "$.data" as $value`)
 
 	if err == nil {
-		t.Errorf("Expected error when extracting without response, but got none")
+		t.Fatalf("Expected error when extracting without response, but got none")
 	}
 
 	if !strings.Contains(err.Error(), "no response") && !strings.Contains(err.Error(), "No response") {
@@ -526,8 +527,8 @@ func TestHTTPDSLv3CompleteScenario(t *testing.T) {
 			if creds["username"] == "admin" && creds["password"] == "secret" {
 				w.WriteHeader(http.StatusOK)
 				json.NewEncoder(w).Encode(map[string]interface{}{
-					"token":  "jwt-token-12345",
-					"userId": "user-789",
+					"token":   "jwt-token-12345",
+					"userId":  "user-789",
 					"expires": 3600,
 				})
 			} else {
@@ -563,32 +564,32 @@ func TestHTTPDSLv3CompleteScenario(t *testing.T) {
 	scenario := []string{
 		// Set base URL
 		fmt.Sprintf(`base url "%s"`, server.URL),
-		
+
 		// Login with credentials
 		`set $username "admin"`,
 		`set $password "secret"`,
 		fmt.Sprintf(`POST "%s/auth/login" json {"username":"admin","password":"secret"}`, server.URL),
-		
+
 		// Assert successful login
 		`assert status 200`,
-		
+
 		// Extract token
 		`extract jsonpath "$.token" as $token`,
 		`extract jsonpath "$.userId" as $userId`,
-		
+
 		// Use token for authenticated request
 		fmt.Sprintf(`GET "%s/api/profile" header "Authorization" "Bearer jwt-token-12345"`, server.URL),
-		
+
 		// Assert successful profile fetch
 		`assert status 200`,
-		
+
 		// Extract profile data
 		`extract jsonpath "$.email" as $email`,
 		`extract jsonpath "$.role" as $role`,
-		
+
 		// Conditional based on role
 		`if $role == "admin" then set $access_level "full"`,
-		
+
 		// Print results
 		`print "User $userId has $access_level access"`,
 	}
@@ -619,5 +620,53 @@ func TestHTTPDSLv3CompleteScenario(t *testing.T) {
 		} else {
 			t.Errorf("Variable %s not found", name)
 		}
+	}
+}
+
+// TestHTTPDSLv3LazyBranches verifies that the non-taken branch of a
+// conditional never executes its side effects (lazy NodeAction semantics).
+func TestHTTPDSLv3LazyBranches(t *testing.T) {
+	dsl := NewHTTPDSLv3()
+	dsl.SetVariable("status", 200)
+
+	// Single-line if/else: only the taken branch may set its variable.
+	_, err := dsl.Parse(`if $status == 200 then set $taken "yes" else set $nottaken "leaked"`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if val, ok := dsl.GetVariable("taken"); !ok || val != "yes" {
+		t.Errorf("taken branch did not execute: %v", val)
+	}
+	if _, ok := dsl.GetVariable("nottaken"); ok {
+		t.Errorf("NON-taken else branch executed its side effect (eager evaluation bug)")
+	}
+
+	// Block form: same guarantee.
+	_, err = dsl.Parse(`if $status == 500 then
+set $blockleak "leaked"
+endif`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if _, ok := dsl.GetVariable("blockleak"); ok {
+		t.Errorf("NON-taken if-block executed its side effect (eager evaluation bug)")
+	}
+}
+
+// TestHTTPDSLv3RealWhileLoop verifies the while loop re-evaluates its
+// condition and body per iteration (single-statement grammar form).
+func TestHTTPDSLv3RealWhileLoop(t *testing.T) {
+	dsl := NewHTTPDSLv3()
+	dsl.SetVariable("count", 0)
+
+	result, err := dsl.Parse(`while $count < 3 do set $count $count + 1 endloop`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if val, _ := dsl.GetVariable("count"); fmt.Sprintf("%v", val) != "3" {
+		t.Errorf("count = %v, expected 3 (loop body must run per iteration)", val)
+	}
+	if !strings.Contains(fmt.Sprintf("%v", result), "3 times") {
+		t.Errorf("unexpected loop result: %v", result)
 	}
 }

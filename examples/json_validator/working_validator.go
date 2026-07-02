@@ -148,7 +148,7 @@ func toNumber(value interface{}) (float64, bool) {
 }
 
 func main() {
-	fmt.Println("=== Generic JSON Data Validator ===\n")
+	fmt.Println("=== Generic JSON Data Validator ===")
 	
 	// Example 1: User Registration
 	fmt.Println("Example 1: User Registration Validation")
@@ -219,7 +219,7 @@ func main() {
 	fmt.Println(validUser)
 	valid, errors := userValidator.Validate(validUser)
 	if valid {
-		fmt.Println("✓ Validation passed!\n")
+		fmt.Println("✓ Validation passed!")
 	} else {
 		fmt.Println("✗ Validation failed:")
 		for _, err := range errors {
@@ -240,7 +240,7 @@ func main() {
 	fmt.Println(invalidUser)
 	valid, errors = userValidator.Validate(invalidUser)
 	if valid {
-		fmt.Println("✓ Validation passed!\n")
+		fmt.Println("✓ Validation passed!")
 	} else {
 		fmt.Println("✗ Validation failed:")
 		for _, err := range errors {
@@ -326,7 +326,7 @@ func main() {
 	fmt.Println(validProduct)
 	valid, errors = productValidator.Validate(validProduct)
 	if valid {
-		fmt.Println("✓ Validation passed!\n")
+		fmt.Println("✓ Validation passed!")
 	} else {
 		fmt.Println("✗ Validation failed:")
 		for _, err := range errors {
@@ -348,7 +348,7 @@ func main() {
 	fmt.Println(invalidProduct)
 	valid, errors = productValidator.Validate(invalidProduct)
 	if valid {
-		fmt.Println("✓ Validation passed!\n")
+		fmt.Println("✓ Validation passed!")
 	} else {
 		fmt.Println("✗ Validation failed:")
 		for _, err := range errors {
@@ -425,7 +425,7 @@ func main() {
 	fmt.Println(validAPI)
 	valid, errors = apiValidator.Validate(validAPI)
 	if valid {
-		fmt.Println("✓ Validation passed!\n")
+		fmt.Println("✓ Validation passed!")
 	} else {
 		fmt.Println("✗ Validation failed:")
 		for _, err := range errors {
@@ -445,7 +445,7 @@ func main() {
 	fmt.Println(invalidAPI)
 	valid, errors = apiValidator.Validate(invalidAPI)
 	if valid {
-		fmt.Println("✓ Validation passed!\n")
+		fmt.Println("✓ Validation passed!")
 	} else {
 		fmt.Println("✗ Validation failed:")
 		for _, err := range errors {

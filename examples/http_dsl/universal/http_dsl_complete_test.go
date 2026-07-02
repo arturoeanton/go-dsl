@@ -1,7 +1,10 @@
 package universal
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -54,16 +57,34 @@ print "Weather in $city: $temp degrees"`,
 				t.Fatalf("ParseWithBlockSupport failed: %v", err)
 			}
 
-			output := captureOutput(func() {
-				hd.ParseWithBlockSupport(tt.script)
-			})
+			// print statements return their text as results; the script
+			// runner is responsible for writing them to stdout.
+			output := collectResults(result)
 
 			if tt.contains && !strings.Contains(output, tt.expected) {
 				t.Errorf("Expected output to contain '%s', got '%s'", tt.expected, output)
 			}
-			_ = result
 		})
 	}
+}
+
+// collectResults flattens the results of a script run into one string.
+func collectResults(result interface{}) string {
+	var sb strings.Builder
+	var walk func(v interface{})
+	walk = func(v interface{}) {
+		switch val := v.(type) {
+		case nil:
+		case []interface{}:
+			for _, item := range val {
+				walk(item)
+			}
+		default:
+			sb.WriteString(fmt.Sprintf("%v\n", val))
+		}
+	}
+	walk(result)
+	return sb.String()
 }
 
 // TestControlFlow tests if/then/else and loop constructs
@@ -216,14 +237,14 @@ print "Item: $item"`,
 		t.Run(tt.name, func(t *testing.T) {
 			hd := NewHTTPDSLv3()
 			result, err := hd.ParseWithBlockSupport(tt.script)
-			
+
 			if tt.hasError && err == nil {
 				t.Errorf("Expected error but got none")
 			}
 			if !tt.hasError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			
+
 			_ = result
 		})
 	}
@@ -436,7 +457,7 @@ endloop`,
 		t.Run(tt.name, func(t *testing.T) {
 			hd := NewHTTPDSLv3()
 			_, err := hd.ParseWithBlockSupport(tt.script)
-			
+
 			if tt.hasError && err == nil {
 				t.Errorf("Expected error but got none")
 			}
@@ -447,10 +468,26 @@ endloop`,
 	}
 }
 
-// Helper function to capture output (would need implementation)
+// captureOutput runs f while redirecting os.Stdout, returning what was printed.
 func captureOutput(f func()) string {
-	// This would capture stdout/stderr during function execution
-	// For testing purposes, we're using a placeholder
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		f()
+		return ""
+	}
+	os.Stdout = w
+
+	done := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		done <- buf.String()
+	}()
+
 	f()
-	return ""
+
+	w.Close()
+	os.Stdout = old
+	return <-done
 }

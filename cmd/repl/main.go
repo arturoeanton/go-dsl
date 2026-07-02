@@ -428,7 +428,8 @@ func (r *REPL) displayAST(result interface{}) {
 	// Simplified AST display
 	data, _ := json.MarshalIndent(result, "", "  ")
 	fmt.Println(string(data))
-	fmt.Println("--- End AST ---\n")
+	fmt.Println("--- End AST ---")
+	fmt.Println()
 }
 
 func (r *REPL) showHistory() {
