@@ -23,7 +23,10 @@
 //	    Build()
 package dslbuilder
 
-import "regexp"
+import (
+	"fmt"
+	"regexp"
+)
 
 // TokenSet declares tokens inside a Tokens() block. Errors (invalid
 // regexes, empty-matching patterns, frozen grammar) are deferred and
@@ -35,7 +38,7 @@ type TokenSet struct {
 // Regex declares a token from a regular expression.
 func (t *TokenSet) Regex(name, pattern string) *TokenSet {
 	if err := t.dsl.Token(name, pattern); err != nil {
-		t.dsl.deferredErrors = append(t.dsl.deferredErrors, err)
+		t.dsl.addDeferredError(err)
 	}
 	return t
 }
@@ -43,8 +46,8 @@ func (t *TokenSet) Regex(name, pattern string) *TokenSet {
 // Literal declares a token that matches an exact text (no regex semantics):
 // t.Literal("PLUS", "+") matches the character '+' literally.
 func (t *TokenSet) Literal(name, text string) *TokenSet {
-	if err := t.dsl.Token(name, regexp.QuoteMeta(text)); err != nil {
-		t.dsl.deferredErrors = append(t.dsl.deferredErrors, err)
+	if err := t.dsl.LiteralToken(name, text); err != nil {
+		t.dsl.addDeferredError(err)
 	}
 	return t
 }
@@ -53,9 +56,48 @@ func (t *TokenSet) Literal(name, text string) *TokenSet {
 // high matching priority (same as KeywordToken).
 func (t *TokenSet) Keyword(name, keyword string) *TokenSet {
 	if err := t.dsl.KeywordToken(name, keyword); err != nil {
-		t.dsl.deferredErrors = append(t.dsl.deferredErrors, err)
+		t.dsl.addDeferredError(err)
 	}
 	return t
+}
+
+// Skip declares a token whose matches are skipped during normal parsing and
+// captured as trivia in TokenizeWithTrivia / Format.
+func (t *TokenSet) Skip(name, pattern string) *TokenSet {
+	if err := t.dsl.SkipToken(name, pattern); err != nil {
+		t.dsl.addDeferredError(err)
+	}
+	return t
+}
+
+// LineComment declares a line-comment trivia token starting with prefix
+// (for example, "//" or "#") and running until the end of the line.
+func (t *TokenSet) LineComment(prefix string) *TokenSet {
+	if prefix == "" {
+		t.dsl.addDeferredError(fmt.Errorf("line comment prefix cannot be empty"))
+		return t
+	}
+	name := "LINE_COMMENT"
+	if _, exists := t.dsl.grammar.tokens[name]; exists {
+		name = "LINE_COMMENT_" + regexp.QuoteMeta(prefix)
+	}
+	pattern := regexp.QuoteMeta(prefix) + `[^\r\n]*`
+	return t.Skip(name, pattern)
+}
+
+// BlockComment declares a delimited block-comment trivia token (for example,
+// open="/*", close="*/") that may span multiple lines.
+func (t *TokenSet) BlockComment(open, close string) *TokenSet {
+	if open == "" || close == "" {
+		t.dsl.addDeferredError(fmt.Errorf("block comment delimiters cannot be empty"))
+		return t
+	}
+	name := "BLOCK_COMMENT"
+	if _, exists := t.dsl.grammar.tokens[name]; exists {
+		name = "BLOCK_COMMENT_" + regexp.QuoteMeta(open)
+	}
+	pattern := `(?s)` + regexp.QuoteMeta(open) + `.*?` + regexp.QuoteMeta(close)
+	return t.Skip(name, pattern)
 }
 
 // Tokens declares a batch of tokens with a TokenSet and returns the DSL

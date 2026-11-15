@@ -7,8 +7,57 @@ package dslbuilder
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
+	"sync/atomic"
 )
+
+// reentrantMutex serializes concurrent goroutines while allowing the owning
+// goroutine to re-enter CompiledDSL.Parse / Use / Eval from inside actions
+// without deadlocking.
+type reentrantMutex struct {
+	mu        sync.Mutex
+	owner     atomic.Int64
+	recursion int
+}
+
+func currentGoroutineID() int64 {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	const prefix = "goroutine "
+	if n <= len(prefix) {
+		return -1
+	}
+	var id int64
+	for i := len(prefix); i < n; i++ {
+		b := buf[i]
+		if b < '0' || b > '9' {
+			break
+		}
+		id = id*10 + int64(b-'0')
+	}
+	return id
+}
+
+func (m *reentrantMutex) Lock() {
+	gid := currentGoroutineID()
+	if gid > 0 && m.owner.Load() == gid {
+		m.recursion++
+		return
+	}
+	m.mu.Lock()
+	m.owner.Store(gid)
+	m.recursion = 1
+}
+
+func (m *reentrantMutex) Unlock() {
+	m.recursion--
+	if m.recursion > 0 {
+		return
+	}
+	m.owner.Store(0)
+	m.mu.Unlock()
+}
 
 // CompiledDSL is a validated, frozen DSL ready for parsing.
 //
@@ -36,7 +85,7 @@ type CompiledDSL struct {
 	dsl         *DSL
 	warnings    []string
 	lateActions bool
-	mu          sync.Mutex
+	mu          reentrantMutex
 }
 
 // Build validates the DSL and freezes its grammar and actions.
@@ -105,6 +154,18 @@ func (c *CompiledDSL) NodeAction(name string, fn NodeActionFunc) error {
 	return nil
 }
 
+// ContextAction registers a context-aware action on a compiled DSL built with
+// BuildAllowLateActions. It returns an error on a fully frozen build.
+func (c *CompiledDSL) ContextAction(name string, fn ContextActionFunc) error {
+	if !c.lateActions {
+		return fmt.Errorf("DSL %s was built with Build(): actions are frozen — register actions before Build, or build with BuildAllowLateActions", c.dsl.name)
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.dsl.ContextAction(name, fn)
+	return nil
+}
+
 // Warnings returns the validation warnings collected by Build.
 func (c *CompiledDSL) Warnings() []string {
 	return c.warnings
@@ -148,4 +209,59 @@ func (c *CompiledDSL) Eval(node *Node) (interface{}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.dsl.Eval(node)
+}
+
+// ParseWithOptions parses and evaluates code under sandbox quotas, cancellation,
+// and call-scoped variables. Safe for concurrent and reentrant use.
+func (c *CompiledDSL) ParseWithOptions(code string, opts EvalOptions) (*Result, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.dsl.ParseWithOptions(code, opts)
+}
+
+// EvalWithOptions evaluates an AST node under sandbox quotas, cancellation,
+// and call-scoped variables. Safe for concurrent and reentrant use.
+func (c *CompiledDSL) EvalWithOptions(node *Node, opts EvalOptions) (interface{}, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.dsl.EvalWithOptions(node, opts)
+}
+
+// ParseTrace parses, evaluates, and returns a structured execution trace.
+func (c *CompiledDSL) ParseTrace(code string, opts ...EvalOptions) (*Result, *EvalTrace, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.dsl.ParseTrace(code, opts...)
+}
+
+// EvalTrace evaluates an AST node and returns a structured execution trace.
+func (c *CompiledDSL) EvalTrace(node *Node, opts ...EvalOptions) (*EvalTrace, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.dsl.EvalTrace(node, opts...)
+}
+
+// Diagnostics returns all lexical and syntax errors in code. Safe for concurrent use.
+func (c *CompiledDSL) Diagnostics(code string) []*ParseError {
+	return c.dsl.Diagnostics(code)
+}
+
+// Completions returns valid token/keyword completions at byte offset. Safe for concurrent use.
+func (c *CompiledDSL) Completions(code string, offset int) []Completion {
+	return c.dsl.Completions(code, offset)
+}
+
+// NewDocument creates an incremental Document bound to this grammar.
+func (c *CompiledDSL) NewDocument() *Document {
+	return c.dsl.NewDocument()
+}
+
+// Format formats DSL source code canonically, preserving comments.
+func (c *CompiledDSL) Format(code string) (string, error) {
+	return c.dsl.Format(code)
+}
+
+// ToGBNF exports the compiled grammar in GBNF format for constrained LLM decoding.
+func (c *CompiledDSL) ToGBNF() string {
+	return c.dsl.ToGBNF()
 }

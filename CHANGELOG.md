@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.5.0 — AI guardrails, sandbox, full Pratt engine, WASM, formatter, fuzzer & full audit hardening
+
+### New Capabilities
+- **DSL Studio (`cmd/studio`)** — single-binary local-first visual IDE & Language Engineering Lab (`embed.FS`) with live YAML v2 + Visual Grammar Map, token/trivia stream, interactive span-linked AST & `EvalTrace` inspector, declarative test/fuzz runner, 1-click Go & VS Code `.zip` exporter, and native **Ollama** (`:11434`) + **LM Studio** (`:1234`) Copilot powered by `ToGBNF()` constrained decoding and closed-loop `RepairPrompt()` self-healing.
+- **AI Guardrails & MCP Server (`cmd/mcp`)** — `ToGBNF()` for constrained decoding in Ollama / LM Studio / llama.cpp, `AIPromptSpec()`, `RepairPrompt()`, and a zero-dependency stdio MCP server.
+- **WebAssembly Playground Bridge (`pkg/wasm`, `cmd/wasm`)** — browser/Studio JSON engine supporting live diagnostics, AST, trace, formatting, completions, and GBNF export under `GOOS=js GOARCH=wasm`.
+- **Declarative Grammar Testing & Fuzzing (`cmd/dsltest`)** — `DSLTestCase` suites embedded in YAML/JSON (`RunConfigTests`, `RunTestSuite`), grammar-driven sample synthesis (`GenerateSamples`), and panic/hang fuzzing (`FuzzGrammar`).
+- **Trivia / Comments & Significant Newlines** — `SkipToken`, `LiteralToken`, `TokenSet.Skip`/`LineComment`/`BlockComment`, `SetSignificantNewlines`, and `TokenizeWithTrivia`.
+- **Full Pratt Expression Engine** — `Postfix`, `InfixNonAssoc`, `Call` (`fn(a, b)`), `Index` (`arr[i]`), `Member` (`obj.prop`), `Ternary` (`c ? a : b`), and `GroupWithAction`.
+- **Lossless Declarative Schema v2 & Typed `dslgen`** — round-trip preservation of `token_defs`, `expressions`, `start_rule`, `significant_newlines`, `error_hint`, `layouts`, and `tests`, plus `dslgen -typed` and `dslgen -vscode <dir>`.
+- **Execution Sandbox & Trace (`EvalOptions`, `EvalTrace`)** — `Context`, `MaxSteps`, `MaxDepth`, isolated `Vars`, `ContextAction`, and `ParseTrace`/`EvalTrace` (including `[SKIPPED]` lazy `NodeAction` branches).
+- **Universal AST Formatter (`DSL.Format`, `cmd/dslfmt`)** — idempotent source formatting with `RuleLayout` customization and full comment preservation.
+- **LSP Pro (`cmd/lsp`)** — UTF-16 position accuracy, line-clamped offsets, `textDocument/formatting`, and `textDocument/semanticTokens/full`.
+
+### Security & Bug Fixes
+- Resolved all 21 audit findings in `BUG.report.md` across incremental `Document.Update`, UTF-8 lexing, Packrat memoization during indirect left recursion, reentrant `CompiledDSL`, `cmd/dslgen` identifier validation, `cmd/lsp` UTF-16 ranges, `cmd/repl` & `cmd/ast_viewer`, `examples/liveview` XSS escaping, and `examples/http_dsl` bounded reads / SSRF guard.
+
 ## v1.4.0 — editor tooling
 
 ### Editor tooling (P1)

@@ -25,10 +25,14 @@ go-dsl lets you define tokens, grammar rules, and semantic actions at runtime an
 - 💬 **Per-Rule Error Hints**: `RuleWithError(...)` attaches a domain-specific message shown when that alternative is the farthest failure
 - 🔁 **Indirect Left Recursion**: multi-rule leftmost cycles (`a → b …`, `b → a …`) parse via a generalized growing algorithm
 - 🌊 **Streaming**: `ParseStream(io.Reader, handler)` processes line-oriented scripts without loading them into memory
-- 🖨️ **Code Generation**: `cmd/dslgen` turns a YAML/JSON grammar into checked-in Go code
-- 🧿 **LSP Server**: `cmd/lsp` gives any LSP editor live diagnostics, **completion** (parser expectations at the cursor), and **hover** (AST node under the cursor)
+- 🖨️ **Code Generation & VS Code Extension**: `cmd/dslgen` turns a YAML/JSON grammar into checked-in Go code (`-typed` action interface) or a ready-to-launch VS Code extension (`-vscode`)
+- 🧿 **LSP Server**: `cmd/lsp` gives any LSP editor UTF-16 accurate diagnostics, **completion**, **hover**, **formatting** (`textDocument/formatting`), and **semantic tokens** (`textDocument/semanticTokens/full`)
 - ⚡ **Incremental Documents**: `NewDocument()` re-parses only the statements an edit touched, reusing untouched subtrees (this is what the LSP runs per keystroke)
 - 🧮 **Attribute Grammars**: `NewAttributeGrammar()` evaluates inherited (top-down) and synthesized (bottom-up) attributes over the AST
+- 🧪 **DSL Studio (`cmd/studio`)**: single-binary visual Language Lab (`embed.FS`) with live YAML v2 + Visual Grammar Map, interactive AST & `EvalTrace` inspector, fuzzer, Go/VS Code `.zip` export, and native **Ollama** (`:11434`) + **LM Studio** (`:1234`) GBNF integration
+- 🧬 **GBNF Constrained Decoding & MCP (`cmd/mcp`)**: `ToGBNF()`, `AIPromptSpec()`, `RepairPrompt()`, and a stdio Model Context Protocol server
+- 🛡️ **Execution Sandbox & Trace**: `ParseWithOptions` / `ParseTrace` enforce `Context`, `MaxSteps`, `MaxDepth`, and isolated `Vars` while recording per-node timings and `[SKIPPED]` lazy branches
+- ✨ **Comments, Formatter & Declarative Testing**: `SkipToken` trivia, `SetSignificantNewlines`, idempotent `DSL.Format` (`cmd/dslfmt`), embedded YAML `tests:` + `FuzzGrammar` (`cmd/dsltest`), and `GOOS=js GOARCH=wasm` bridge (`pkg/wasm`)
 
 ### Core
 - 🚀 **Dynamic DSL Creation**: Build custom languages at runtime
@@ -172,7 +176,7 @@ what it expected there, plus the rule stack that led to it.
 warnings, err := dsl.Validate()
 // err      -> structural problems: unknown symbols, no rules, invalid tokens
 // warnings -> unreachable rules, unregistered actions, non-productive cycles,
-//             indirect left recursion (unsupported), ...
+//             shadowed alternatives, ...
 
 compiled, err := dsl.Build() // Validate + freeze; mutations are rejected afterwards
 ```
@@ -326,19 +330,44 @@ go install github.com/arturoeanton/go-dsl/cmd/repl@latest
 repl -dsl calculator.yaml -context data.json
 ```
 
-### Code Generator
-Turn a declarative grammar into checked-in Go code (constructor + action stubs):
+### Code Generator & 1-Click VS Code Extension
+Turn a declarative grammar into checked-in Go code (constructor + optional strongly-typed `Actions` interface) or generate a complete VS Code / Cursor extension bundle:
 
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/dslgen@latest
-dslgen -dsl grammar.yaml -package mydsl -func NewMyDSL -o mydsl_gen.go
+dslgen -dsl grammar.yaml -package mydsl -func NewMyDSL -typed -o mydsl_gen.go
+dslgen -dsl grammar.yaml -vscode ./vscode-mydsl
+```
+
+### Universal Formatter (`dslfmt`) & Declarative Test/Fuzz Runner (`dsltest`)
+
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/dslfmt@latest
+dslfmt -dsl grammar.yaml -w program.dsl
+
+go install github.com/arturoeanton/go-dsl/cmd/dsltest@latest
+dsltest -dsl grammar.yaml -fuzz 250 -samples 5
+```
+
+### AI Guardrails, GBNF Constrained Decoding & MCP Server
+Export GBNF grammars (`dsl.ToGBNF()`), system prompt specs (`dsl.AIPromptSpec()`), and diagnostic self-repair prompts (`dsl.RepairPrompt(code)`), or expose your DSL directly to AI agents via Model Context Protocol:
+
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/mcp@latest
+mcp -dsl grammar.yaml    # stdio MCP server (dsl_grammar_info, dsl_validate_code, dsl_complete, dsl_format, dsl_gbnf)
+```
+
+### DSL Studio — Visual Language Lab + Local AI (Ollama & LM Studio)
+Launch the local-first visual IDE to design v2 YAML grammars, inspect live ASTs & step-by-step execution traces, fuzz your grammar, export Go / VS Code extensions, and co-design or self-repair DSL scripts with **Ollama** (`127.0.0.1:11434`) and **LM Studio** (`127.0.0.1:1234`) using `ToGBNF()` constrained decoding:
+
+```bash
+go run ./cmd/studio -open
+# Or edit an existing grammar file in place:
+go run ./cmd/studio -dsl grammar.yaml -port 8420 -open
 ```
 
 ### LSP Server
-Live diagnostics, completion, and hover for your DSL in any LSP-capable
-editor. Documents re-parse incrementally (only edited statements), completion
-comes from the parser's own expectations at the cursor, and hover shows the
-AST node (rule, action, source span) under it:
+Live diagnostics (UTF-16 accurate), completion, hover, formatting (`textDocument/formatting`), and semantic highlighting (`textDocument/semanticTokens/full`) for your DSL in any LSP-capable editor:
 
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/lsp@latest
@@ -374,14 +403,16 @@ and their regression corpus live in the test suite.
 - [Quickstart](docs/en/quickstart.md) — zero to a working DSL on the v2 engine
 - [API Reference](docs/en/api-reference.md) — every public API, organized by area
 - [Editor Tooling](docs/en/editor-tooling.md) — LSP, incremental documents, completion, attribute grammars, codegen
+- [DSL Studio](docs/en/dsl-studio.md) — visual Language Lab + local Ollama & LM Studio workbench
 - [GoDoc](pkg/dslbuilder/)
-- [AI/agent skill for building DSLs with go-dsl](.claude/skills/go-dsl/SKILL.md) — drop-in guide so coding agents (Claude Code, etc.) use the library correctly
 - [Examples](examples/)
 - [Command-Line Tools](cmd/)
 
 ### Español
 - [Guía Rápida](docs/es/guia_rapida.md) - Introducción completa y ejemplos
-- [Conceptos Avanzados de DSL](docs/es/introduccion_dsl_segunda_parte.md) - Teoría de gramáticas y conceptos avanzados
+- [Referencia de API](docs/es/referencia_api.md) - Toda la API pública por área
+- [Tooling de Editor](docs/es/tooling_editor.md) - LSP, documentos incrementales, dslgen, dslfmt, dsltest, mcp
+- [DSL Studio](docs/es/dsl_studio.md) - Laboratorio visual e integración local con Ollama y LM Studio
 - [Limitaciones](docs/es/limitaciones.md) - Limitaciones conocidas y soluciones
 - [Propuesta de Mejoras](docs/es/propuesta_de_mejoras.md) - Roadmap y mejoras implementadas
 

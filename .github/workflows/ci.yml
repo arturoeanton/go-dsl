@@ -28,14 +28,15 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build, vet, test (root module)
+      - name: Build, vet, test (root module + js/wasm)
         run: |
           go build ./...
+          GOOS=js GOARCH=wasm go build ./cmd/wasm
           go vet ./...
           go test ./...
 
-      - name: Race detector (core)
-        run: go test -race ./pkg/...
+      - name: Race detector (core + cli)
+        run: go test -race ./pkg/... ./cmd/...
 
       - name: Build, vet, test (examples/http_dsl module)
         working-directory: examples/http_dsl

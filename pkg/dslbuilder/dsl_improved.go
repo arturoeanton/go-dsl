@@ -35,6 +35,7 @@ type ImprovedParser struct {
 	input        string                       // Original input for error reporting
 	leftRecStack []string                     // Stack to detect left recursion
 	growing      map[string]bool              // Rules currently being grown
+	depth        int                          // Recursion depth guard
 }
 
 // memoEntry stores the cached result of parsing a rule at a specific position.
@@ -95,6 +96,7 @@ func (p *ImprovedParser) Parse(code string) (interface{}, error) {
 	// Reset parser state
 	p.tokens = []TokenMatch{}
 	p.pos = 0
+	p.depth = 0
 	p.memo = make(map[string]map[int]memoEntry)
 	p.input = code // Store input for error reporting
 	p.leftRecStack = []string{}
@@ -154,6 +156,12 @@ func (p *ImprovedParser) tokenize(code string) error {
 //
 // Returns the parsed result and updates the position.
 func (p *ImprovedParser) parseRuleWithMemo(ruleName string) (interface{}, error) {
+	if p.depth >= maxParseDepth {
+		return nil, errParseDepthExceeded
+	}
+	p.depth++
+	defer func() { p.depth-- }()
+
 	// Check memo table
 	if ruleMemo, exists := p.memo[ruleName]; exists {
 		if entry, exists := ruleMemo[p.pos]; exists {
@@ -306,13 +314,12 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 			for i := 1; i < len(alt.sequence); i++ {
 				symbol := alt.sequence[i]
 
-				if p.pos >= len(p.tokens) {
-					success = false
-					break
-				}
-
 				// Check if symbol is a token
-				if _, isToken := p.grammar.tokens[symbol]; isToken {
+				if p.grammar.isToken(symbol) {
+					if p.pos >= len(p.tokens) {
+						success = false
+						break
+					}
 					if p.tokens[p.pos].TokenType == symbol {
 						results = append(results, p.tokens[p.pos].Value)
 						p.pos++
@@ -324,6 +331,9 @@ func (p *ImprovedParser) parseLeftRecursive(ruleName string) (interface{}, error
 					// Symbol is a rule - parse it
 					result, err := p.parseRuleWithMemo(symbol)
 					if err != nil {
+						if err == errParseDepthExceeded {
+							return nil, err
+						}
 						success = false
 						break
 					}
@@ -390,6 +400,9 @@ func (p *ImprovedParser) parseRuleRegular(ruleName string) (interface{}, error) 
 		if err == nil {
 			return result, nil
 		}
+		if err == errParseDepthExceeded {
+			return nil, err
+		}
 		// Restore position if failed
 		p.pos = savedPos
 	}
@@ -431,14 +444,13 @@ func (p *ImprovedParser) parseAlternative(alt *Alternative) (interface{}, error)
 	var results []interface{}
 
 	for _, symbol := range alt.sequence {
-		if p.pos >= len(p.tokens) {
-			message := "unexpected end of input"
-			position := len(p.input)
-			return nil, createParseError(message, position, "<end of input>", p.input)
-		}
-
 		// Check if symbol is a token
-		if _, isToken := p.grammar.tokens[symbol]; isToken {
+		if p.grammar.isToken(symbol) {
+			if p.pos >= len(p.tokens) {
+				message := "unexpected end of input"
+				position := len(p.input)
+				return nil, createParseError(message, position, "<end of input>", p.input)
+			}
 			if p.tokens[p.pos].TokenType == symbol {
 				results = append(results, p.tokens[p.pos].Value)
 				p.pos++

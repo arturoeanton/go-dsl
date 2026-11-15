@@ -2,6 +2,8 @@ package universal
 
 import (
 	"fmt"
+	"html"
+	htmltmpl "html/template"
 	"reflect"
 	"strings"
 )
@@ -221,14 +223,18 @@ func (hg *UniversalHTMLGenerator) GenerateForm(entity interface{}, action string
 		fieldName := hg.getFieldName(field)
 		fieldType := hg.getInputType(field.Type.Kind())
 
-		// Generate input field
+		// Generate input field (HTML-escaped to prevent XSS)
+		escapedName := html.EscapeString(fieldName)
+		escapedLabel := html.EscapeString(strings.Title(fieldName))
+		escapedType := html.EscapeString(fieldType)
+		escapedVal := html.EscapeString(fmt.Sprintf("%v", value))
 		input := fmt.Sprintf(`
 			<div class="form-group">
 				<label for="%s" class="form-label">%s</label>
-				<input type="%s" name="%s" value="%v" class="form-input" 
+				<input type="%s" name="%s" value="%s" class="form-input" 
 				       phx-blur="validate_field" phx-value-field="%s" />
 			</div>`,
-			fieldName, strings.Title(fieldName), fieldType, fieldName, value, fieldName)
+			escapedName, escapedLabel, escapedType, escapedName, escapedVal, escapedName)
 
 		formFields = append(formFields, input)
 	}
@@ -240,7 +246,7 @@ func (hg *UniversalHTMLGenerator) GenerateForm(entity interface{}, action string
 				<button type="submit" class="btn btn-primary">Submit</button>
 				<button type="button" phx-click="cancel" class="btn btn-secondary">Cancel</button>
 			</div>
-		</form>`, action, strings.Join(formFields, "\n"))
+		</form>`, html.EscapeString(action), strings.Join(formFields, "\n"))
 
 	return formHTML, nil
 }
@@ -264,7 +270,7 @@ func (hg *UniversalHTMLGenerator) GenerateTable(data interface{}, options map[st
 	headerHTML := "<thead><tr>"
 	for _, header := range headers {
 		headerHTML += fmt.Sprintf("<th class='table-header sortable' phx-click='sort' phx-value-field='%s'>%s</th>",
-			strings.ToLower(header), strings.Title(header))
+			html.EscapeString(strings.ToLower(header)), html.EscapeString(strings.Title(header)))
 	}
 	headerHTML += "<th class='table-header'>Actions</th></tr></thead>"
 
@@ -361,7 +367,7 @@ func (hg *UniversalHTMLGenerator) GeneratePage(template string, data interface{}
 		return "", fmt.Errorf("template '%s' not found", template)
 	}
 
-	return hg.processTemplate(templateStr, data)
+	return hg.processTemplateMode(templateStr, data, true)
 }
 
 // AddComponent adds a custom component template
@@ -429,12 +435,12 @@ func (hg *UniversalHTMLGenerator) generateTableRow(item interface{}, headers []s
 
 	var cells []string
 
-	// Generate data cells
+	// Generate data cells (HTML-escaped to prevent XSS)
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		if field.IsExported() {
 			value := v.Field(i).Interface()
-			cells = append(cells, fmt.Sprintf("<td class='table-cell'>%v</td>", value))
+			cells = append(cells, fmt.Sprintf("<td class='table-cell'>%s</td>", html.EscapeString(fmt.Sprintf("%v", value))))
 		}
 	}
 
@@ -450,9 +456,40 @@ func (hg *UniversalHTMLGenerator) generateTableRow(item interface{}, headers []s
 	return fmt.Sprintf("<tr class='table-row' id='row-%d'>%s</tr>", index, strings.Join(cells, ""))
 }
 
+// trustedLayoutSlots lists container slot keys in page/component templates that
+// intentionally receive pre-rendered HTML fragments. All other values are
+// HTML-escaped unless explicitly typed as html/template.HTML.
+var trustedLayoutSlots = map[string]bool{
+	"content":       true,
+	"search_form":   true,
+	"data_table":    true,
+	"pagination":    true,
+	"modal_form":    true,
+	"stats_cards":   true,
+	"charts":        true,
+	"activity_list": true,
+}
+
+func formatSafeSlotValue(key string, raw interface{}, allowLayoutSlots bool) string {
+	if safe, ok := raw.(htmltmpl.HTML); ok {
+		return string(safe)
+	}
+	s := fmt.Sprintf("%v", raw)
+	if allowLayoutSlots && trustedLayoutSlots[key] {
+		return s
+	}
+	return html.EscapeString(s)
+}
+
 func (hg *UniversalHTMLGenerator) processTemplate(template string, data interface{}) (string, error) {
-	// Simple template processing - replace {{.field}} with values
+	return hg.processTemplateMode(template, data, false)
+}
+
+func (hg *UniversalHTMLGenerator) processTemplateMode(template string, data interface{}, allowLayoutSlots bool) (string, error) {
 	result := template
+	if data == nil {
+		return result, nil
+	}
 
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
@@ -460,14 +497,15 @@ func (hg *UniversalHTMLGenerator) processTemplate(template string, data interfac
 	// Handle map[string]interface{}
 	if v.Kind() == reflect.Map {
 		for _, key := range v.MapKeys() {
-			placeholder := fmt.Sprintf("{{.%s}}", key.String())
-			value := fmt.Sprintf("%v", v.MapIndex(key).Interface())
+			k := key.String()
+			placeholder := fmt.Sprintf("{{.%s}}", k)
+			value := formatSafeSlotValue(k, v.MapIndex(key).Interface(), allowLayoutSlots)
 			result = strings.ReplaceAll(result, placeholder, value)
 		}
 		return result, nil
 	}
 
-	// Handle structs
+	// Handle structs (struct fields are user data, always escaped unless html/template.HTML)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		t = t.Elem()
@@ -479,7 +517,7 @@ func (hg *UniversalHTMLGenerator) processTemplate(template string, data interfac
 			if field.IsExported() {
 				fieldName := hg.getFieldName(field)
 				placeholder := fmt.Sprintf("{{.%s}}", fieldName)
-				value := fmt.Sprintf("%v", v.Field(i).Interface())
+				value := formatSafeSlotValue(fieldName, v.Field(i).Interface(), false)
 				result = strings.ReplaceAll(result, placeholder, value)
 			}
 		}

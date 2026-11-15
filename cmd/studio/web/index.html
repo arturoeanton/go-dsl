@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>go-dsl Studio — Organic Language Engineering Lab</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-glyph">✦</div>
+        <div class="brand-meta">
+          <div class="brand-title">go-dsl <span class="brand-accent">Studio</span></div>
+          <div class="brand-sub">Deterministic Language Lab · Local AI Guardrails</div>
+        </div>
+      </div>
+
+      <div class="topbar-center">
+        <label class="preset-picker" title="Plantillas curadas de gramáticas v2">
+          <span class="picker-label">Plantilla</span>
+          <select id="presetSelect"></select>
+        </label>
+
+        <div id="grammarStatusPill" class="status-pill ok">
+          <span class="dot"></span>
+          <span id="grammarStatusText">Gramática válida</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button id="ollamaBadge" class="ai-radar-pill" title="Estado de Ollama local — clic para abrir AI Copilot">
+          <span class="dot"></span>
+          <span>Ollama</span>
+          <strong id="ollamaCount">—</strong>
+        </button>
+        <button id="lmstudioBadge" class="ai-radar-pill" title="Estado de LM Studio local — clic para abrir AI Copilot">
+          <span class="dot"></span>
+          <span>LM Studio</span>
+          <strong id="lmstudioCount">—</strong>
+        </button>
+
+        <div class="divider-v"></div>
+
+        <button id="btnSample" class="btn ghost" title="Sintetizar ejemplo válido desde la gramática">
+          🎲 Ejemplo
+        </button>
+        <button id="btnFormat" class="btn ghost" title="Formatear código DSL preservando comentarios (Shift+Alt+F)">
+          ✨ Formatear
+        </button>
+        <button id="btnSaveGrammar" class="btn ghost" title="Guardar o descargar gramática YAML">
+          💾 Guardar YAML
+        </button>
+        <button id="btnRun" class="btn primary" title="Parsear y evaluar con traza en sandbox (⌘+Enter / Ctrl+Enter)">
+          ▶ Evaluar <kbd>⌘↵</kbd>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main 3-Pane Workspace -->
+    <main class="workspace">
+      <!-- LEFT PANE: Grammar Architect -->
+      <section class="pane pane-grammar">
+        <div class="pane-header">
+          <div class="pane-title-group">
+            <span class="pane-kicker">01 · ARQUITECTURA</span>
+            <h2 class="pane-title">Gramática Declarativa <span id="filePathBadge" class="subtle-badge">v2 YAML</span></h2>
+          </div>
+          <div class="seg-toggle" role="tablist">
+            <button class="seg-btn active" data-gview="yaml">YAML</button>
+            <button class="seg-btn" data-gview="visual">Mapa Visual</button>
+          </div>
+        </div>
+
+        <div id="grammarYamlView" class="editor-wrap">
+          <div id="grammarGutter" class="gutter">1</div>
+          <textarea id="grammarEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+        </div>
+
+        <div id="grammarVisualView" class="visual-map hidden"></div>
+
+        <div id="grammarIssuesBar" class="issues-tray hidden"></div>
+      </section>
+
+      <!-- CENTER PANE: Live DSL Sandbox -->
+      <section class="pane pane-code">
+        <div class="pane-header">
+          <div class="pane-title-group">
+            <span class="pane-kicker">02 · SANDBOX DETERMINISTA</span>
+            <h2 class="pane-title">Script DSL en Vivo</h2>
+          </div>
+          <div class="sandbox-controls">
+            <label class="step-budget" title="Presupuesto máximo de pasos (EvalOptions.MaxSteps) contra bucles infinitos">
+              <span>MaxSteps</span>
+              <input id="maxStepsInput" type="number" min="50" max="1000000" step="500" value="10000" />
+            </label>
+            <span id="cursorPosLabel" class="mono-meta">Ln 1, Col 1</span>
+          </div>
+        </div>
+
+        <div class="editor-wrap code-editor-wrap">
+          <div id="codeGutter" class="gutter">1</div>
+          <textarea id="codeEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+        </div>
+
+        <!-- Parser-driven Completions Strip -->
+        <div class="completions-bar">
+          <span class="comp-label">Autocompletado Parser:</span>
+          <div id="completionsList" class="comp-chips"></div>
+        </div>
+
+        <!-- Token & Trivia Ribbon -->
+        <div class="token-ribbon-wrap">
+          <div class="ribbon-header">
+            <span>Stream Léxico (<strong id="tokenCountLabel">0</strong> tokens)</span>
+            <span class="ribbon-hint">Clic en un token para resaltar su span</span>
+          </div>
+          <div id="tokenRibbon" class="token-ribbon"></div>
+        </div>
+
+        <!-- Live Diagnostics & 1-Click Local AI Repair -->
+        <div id="diagnosticsPanel" class="diagnostics-banner hidden">
+          <div class="diag-header">
+            <span id="diagSummary" class="diag-title">Errores detectados</span>
+            <button id="btnQuickRepair" class="btn accent-sm">🔧 Reparar con IA Local</button>
+          </div>
+          <div id="diagList" class="diag-items"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT PANE: Deep Inspector & Local AI Copilot -->
+      <section class="pane pane-inspector">
+        <div class="inspector-tabs" role="tablist">
+          <button class="itab active" data-tab="trace">⚡ Salida & Trace</button>
+          <button class="itab" data-tab="ast">🌳 AST</button>
+          <button class="itab" data-tab="ai">🤖 IA Local</button>
+          <button class="itab" data-tab="tests">🧪 Tests & Fuzz</button>
+          <button class="itab" data-tab="gbnf">🧬 GBNF</button>
+          <button class="itab" data-tab="export">📦 Exportar</button>
+        </div>
+
+        <!-- TAB: Trace & Output -->
+        <div id="tab-trace" class="tab-body active">
+          <div class="output-hero">
+            <div class="output-meta-row">
+              <span class="section-label">RESULTADO DE EVALUACIÓN</span>
+              <span id="traceMetrics" class="mono-meta">0 pasos · 0 µs</span>
+            </div>
+            <pre id="outputValue" class="output-value">—</pre>
+          </div>
+
+          <div class="section-block">
+            <div class="section-header-row">
+              <span class="section-label">TRAZA DE EJECUCIÓN PASO A PASO (`EvalTrace`)</span>
+              <span class="subtle-hint">Ramas perezosas muestran [SKIPPED]</span>
+            </div>
+            <div id="traceTree" class="tree-container"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Interactive AST -->
+        <div id="tab-ast" class="tab-body">
+          <div class="section-header-row">
+            <span class="section-label">ÁRBOL SINTÁCTICO ABSTRACTO (`*dslbuilder.Node`)</span>
+            <button id="btnTogglePrettyAST" class="btn ghost-xs">Ver texto Pretty()</button>
+          </div>
+          <p class="panel-hint">Haz clic en cualquier nodo o token para seleccionar su span exacto de bytes en el editor.</p>
+          <div id="astTree" class="tree-container"></div>
+          <pre id="astPrettyBox" class="code-box hidden"></pre>
+        </div>
+
+        <!-- TAB: Local AI Copilot (Ollama & LM Studio) -->
+        <div id="tab-ai" class="tab-body">
+          <div class="ai-providers-grid">
+            <div id="cardOllama" class="provider-card active" data-provider="ollama">
+              <div class="pcard-top">
+                <strong>🦙 Ollama</strong>
+                <span id="ollamaCardStatus" class="mini-status">verificando...</span>
+              </div>
+              <input id="ollamaUrlInput" class="url-input" type="text" value="http://127.0.0.1:11434" placeholder="http://127.0.0.1:11434" />
+            </div>
+
+            <div id="cardLMStudio" class="provider-card" data-provider="lmstudio">
+              <div class="pcard-top">
+                <strong>🎛️ LM Studio</strong>
+                <span id="lmstudioCardStatus" class="mini-status">verificando...</span>
+              </div>
+              <input id="lmstudioUrlInput" class="url-input" type="text" value="http://127.0.0.1:1234" placeholder="http://127.0.0.1:1234" />
+            </div>
+          </div>
+
+          <div class="ai-model-row">
+            <label class="field-grow">
+              <span class="field-label">Modelo Local Activo</span>
+              <select id="aiModelSelect"></select>
+            </label>
+            <button id="btnRefreshAI" class="btn ghost" title="Volver a escanear Ollama y LM Studio">↻ Detectar</button>
+          </div>
+
+          <div id="aiSetupHint" class="ai-hint-box hidden"></div>
+
+          <div class="ai-mode-pills">
+            <button class="mode-pill active" data-aimode="generate_code">📝 Generar Código DSL</button>
+            <button class="mode-pill" data-aimode="repair_code">🔧 Auto-Reparar Script</button>
+            <button class="mode-pill" data-aimode="generate_grammar">✨ Diseñar Gramática v2</button>
+            <button class="mode-pill" data-aimode="generate_tests">🧪 Generar Tests</button>
+          </div>
+
+          <label class="gbnf-toggle-row">
+            <input id="chkUseGBNF" type="checkbox" checked />
+            <div>
+              <strong>Decodificación restringida GBNF (`dsl.ToGBNF()`)</strong>
+              <span>Fuerza tokens sintácticamente válidos en `llama.cpp` / LM Studio + fallback automático con `RepairPrompt`.</span>
+            </div>
+          </label>
+
+          <textarea id="aiPromptInput" class="ai-prompt-box" rows="3" placeholder="Describe la regla de negocio que quieres escribir en tu DSL (ej: aplicar 20% de descuento cuando el monto supere 5000)..."></textarea>
+
+          <div class="ai-actions-row">
+            <button id="btnRunAI" class="btn accent-full">✦ Ejecutar con Guardrails Deterministas</button>
+          </div>
+
+          <div id="aiResultCard" class="ai-result-card hidden">
+            <div class="ai-telemetry-header">
+              <span id="aiVerifyBadge" class="verify-pill">Verificado</span>
+              <span id="aiTelemetryMeta" class="mono-meta"></span>
+            </div>
+            <pre id="aiResultPreview" class="code-box"></pre>
+            <div id="aiGuardrailLog" class="ai-log-list"></div>
+            <div class="ai-apply-row">
+              <button id="btnApplyAIResult" class="btn primary">Aplicar al Estudio</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Declarative Tests & Fuzzer -->
+        <div id="tab-tests" class="tab-body">
+          <div class="tests-toolbar">
+            <button id="btnRunTests" class="btn primary">▶ Ejecutar `tests:`</button>
+            <button id="btnRunFuzz" class="btn ghost">🌪️ Fuzzing (300 mutaciones)</button>
+          </div>
+
+          <div id="fuzzSummaryBox" class="fuzz-card hidden"></div>
+          <div id="testResultsList" class="test-results-list"></div>
+        </div>
+
+        <!-- TAB: GBNF & AI Prompt Spec -->
+        <div id="tab-gbnf" class="tab-body">
+          <div class="section-header-row">
+            <div class="seg-toggle">
+              <button class="seg-btn active" data-specview="gbnf">Gramática GBNF</button>
+              <button class="seg-btn" data-specview="prompt">System Prompt Spec</button>
+            </div>
+            <button id="btnCopySpec" class="btn ghost-xs">📋 Copiar</button>
+          </div>
+          <p class="panel-hint">Usa esta gramática GBNF directamente en `llama.cpp`, Ollama o LM Studio para garantizar 0% de errores de sintaxis.</p>
+          <pre id="specViewer" class="code-box tall"></pre>
+        </div>
+
+        <!-- TAB: Export & Codegen -->
+        <div id="tab-export" class="tab-body">
+          <div class="export-controls">
+            <label>
+              <span class="field-label">Paquete Go</span>
+              <input id="pkgNameInput" class="text-input" type="text" value="mydsl" />
+            </label>
+            <label>
+              <span class="field-label">Constructor</span>
+              <input id="funcNameInput" class="text-input" type="text" value="NewMyDSL" />
+            </label>
+            <label class="chk-inline">
+              <input id="chkTypedCodegen" type="checkbox" checked />
+              <span>Interfaz tipada (`-typed`)</span>
+            </label>
+          </div>
+
+          <div class="export-buttons-row">
+            <button id="btnDownloadGo" class="btn primary">⬇ Código Go (`.go`)</button>
+            <button id="btnDownloadVSCode" class="btn accent">⬇ Extensión VS Code / Cursor (`.zip`)</button>
+          </div>
+
+          <div class="section-header-row">
+            <span class="section-label">VISTA PREVIA `dslgen`</span>
+            <button id="btnCopyGo" class="btn ghost-xs">📋 Copiar Go</button>
+          </div>
+          <pre id="codegenPreview" class="code-box tall"></pre>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

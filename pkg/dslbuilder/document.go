@@ -20,9 +20,10 @@ import "sort"
 
 // docStatement is one parsed statement of a Document.
 type docStatement struct {
-	node *Node // parse tree (nil when the statement failed to parse)
-	err  *ParseError
-	span Span // byte range of the statement (or of the error region)
+	node    *Node // parse tree (nil when the statement failed to parse)
+	err     *ParseError
+	span    Span // byte range of the statement (or of the error region)
+	depsEnd int  // byte offset limit of lookahead/delimiter dependency
 }
 
 // DocumentStats reports what the last Update did — useful to verify that
@@ -107,6 +108,17 @@ func (doc *Document) Update(text string) {
 	doc.text = text
 	doc.stats = DocumentStats{}
 
+	if text == oldText && (len(oldStmts) > 0 || text == "") {
+		reused := 0
+		for _, s := range oldStmts {
+			if s.node != nil {
+				reused++
+			}
+		}
+		doc.stats = DocumentStats{Reused: reused}
+		return
+	}
+
 	// Unchanged prefix/suffix (non-overlapping).
 	prefix := commonPrefix(oldText, text)
 	suffix := commonSuffix(oldText, text)
@@ -152,20 +164,27 @@ func (doc *Document) Update(text string) {
 	for pos < len(tokens) && errCount < maxDiagnostics {
 		tokStart := tokens[pos].Start
 
-		// Reuse from the unchanged prefix: identical offsets, tree as-is.
-		if old, ok := oldByStart[tokStart]; ok && old.span.End <= prefix && tokStart < prefix {
+		// Reuse from the unchanged prefix only when the statement AND any
+		// lookahead/delimiter byte it depended on lie inside the prefix.
+		if old, ok := oldByStart[tokStart]; ok && old.depsEnd <= prefix && tokStart < prefix {
 			doc.stmts = append(doc.stmts, old)
 			doc.stats.Reused++
 			pos = tokenAt(old.span.End)
 			continue
 		}
 
-		// Reuse from the unchanged suffix: same content shifted by delta.
+		// Reuse from the unchanged suffix only when at least one unchanged
+		// delimiter/character precedes the statement start (strict >).
 		if tokStart >= oldSuffixStart+delta && tokStart-delta >= 0 {
-			if old, ok := oldByStart[tokStart-delta]; ok && old.span.Start >= oldSuffixStart {
+			if old, ok := oldByStart[tokStart-delta]; ok && old.span.Start > oldSuffixStart {
+				newDepsEnd := old.depsEnd + delta
+				if old.depsEnd > len(oldText) {
+					newDepsEnd = len(text) + 1
+				}
 				shifted := docStatement{
-					node: shiftNode(old.node, delta),
-					span: Span{Start: old.span.Start + delta, End: old.span.End + delta},
+					node:    shiftNode(old.node, delta),
+					span:    Span{Start: old.span.Start + delta, End: old.span.End + delta},
+					depsEnd: newDepsEnd,
 				}
 				doc.stmts = append(doc.stmts, shifted)
 				doc.stats.Reused++
@@ -176,13 +195,29 @@ func (doc *Document) Update(text string) {
 
 		// Parse this statement from scratch.
 		parser.pos = pos
+		parser.memo = make(map[string]map[int]astMemoEntry)
 		parser.failure = parseFailure{tokenPos: -1}
 		parser.ruleStack = nil
 		parser.hintStack = nil
+		parser.steps = 0
+		parser.maxTokenPos = pos
+		parser.hitEOF = false
 
 		node, err := parser.parseRule(startRule)
 		if err == nil && parser.pos > pos {
-			doc.stmts = append(doc.stmts, docStatement{node: node, span: node.Span})
+			depEnd := node.Span.End
+			if parser.maxTokenPos >= 0 && parser.maxTokenPos < len(tokens) {
+				if tokens[parser.maxTokenPos].End > depEnd {
+					depEnd = tokens[parser.maxTokenPos].End
+				}
+			}
+			var depsEnd int
+			if parser.hitEOF || depEnd >= len(text) {
+				depsEnd = len(text) + 1
+			} else {
+				depsEnd = depEnd + 1
+			}
+			doc.stmts = append(doc.stmts, docStatement{node: node, span: node.Span, depsEnd: depsEnd})
 			doc.stats.Reparsed++
 			pos = parser.pos
 			continue
@@ -190,6 +225,12 @@ func (doc *Document) Update(text string) {
 		if err == nil {
 			pos++ // zero-width match: force progress
 			continue
+		}
+
+		if isFatalParseErr(err) {
+			perr := toParseError(err, text)
+			doc.stmts = append(doc.stmts, docStatement{err: perr, span: Span{Start: tokens[pos].Start, End: tokens[pos].End}})
+			break
 		}
 
 		perr, _ := parser.farthestError(startRule).(*ParseError)
@@ -223,10 +264,11 @@ func shiftNode(n *Node, delta int) *Node {
 		return n
 	}
 	out := &Node{
-		Rule:   n.Rule,
-		Action: n.Action,
-		Span:   Span{Start: n.Span.Start + delta, End: n.Span.End + delta},
-		group:  n.group,
+		Rule:     n.Rule,
+		Action:   n.Action,
+		Span:     Span{Start: n.Span.Start + delta, End: n.Span.End + delta},
+		group:    n.group,
+		callStep: n.callStep,
 	}
 	if n.Token != nil {
 		tok := *n.Token

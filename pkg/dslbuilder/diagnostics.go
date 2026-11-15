@@ -8,7 +8,10 @@
 // errors at once.
 package dslbuilder
 
-import "fmt"
+import (
+	"fmt"
+	"unicode/utf8"
+)
 
 // maxDiagnostics bounds how many errors a single Diagnostics pass reports,
 // so adversarial input cannot produce unbounded work or output.
@@ -54,9 +57,11 @@ func (d *DSL) Diagnostics(code string) []*ParseError {
 	pos := 0
 	for pos < len(tokens) && len(diags) < maxDiagnostics {
 		parser.pos = pos
+		parser.memo = make(map[string]map[int]astMemoEntry)
 		parser.failure = parseFailure{tokenPos: -1}
 		parser.ruleStack = nil
 		parser.hintStack = nil
+		parser.steps = 0
 
 		_, err := parser.parseRule(startRule)
 		if err == nil {
@@ -111,7 +116,7 @@ func firstTokens(g *Grammar, ruleName string) map[string]bool {
 		}
 		visited[name] = true
 
-		if _, isToken := g.tokens[name]; isToken {
+		if g.isToken(name) {
 			first[name] = true
 			return
 		}
@@ -141,7 +146,7 @@ func firstTokens(g *Grammar, ruleName string) map[string]bool {
 
 // tokenizeTolerant is the error-recovering variant of tokenizeInput: instead
 // of stopping at the first unmatchable character it records a diagnostic,
-// skips one byte, and keeps lexing.
+// skips one UTF-8 rune (or invalid byte), and keeps lexing.
 func tokenizeTolerant(grammar *Grammar, code string) ([]TokenMatch, []*ParseError) {
 	var tokens []TokenMatch
 	var errs []*ParseError
@@ -149,22 +154,50 @@ func tokenizeTolerant(grammar *Grammar, code string) ([]TokenMatch, []*ParseErro
 	pos := 0
 	for pos < len(code) {
 		c := code[pos]
-		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+		if c == ' ' || c == '\t' {
+			pos++
+			continue
+		}
+		if !grammar.significantNewlines && (c == '\n' || c == '\r') {
 			pos++
 			continue
 		}
 
-		match, ok := grammar.matchTokenAt(code, pos)
+		meta, match, ok := grammar.matchTokenAtWithMeta(code, pos)
 		if !ok {
-			if len(errs) < maxDiagnostics {
-				message := fmt.Sprintf("unexpected character: %c", c)
-				errs = append(errs, createParseError(message, pos, string(c), code))
+			if grammar.significantNewlines && (c == '\n' || c == '\r') {
+				nlLen := 1
+				if c == '\r' && pos+1 < len(code) && code[pos+1] == '\n' {
+					nlLen = 2
+				}
+				tokens = append(tokens, TokenMatch{
+					TokenType: "NEWLINE",
+					Value:     code[pos : pos+nlLen],
+					Start:     pos,
+					End:       pos + nlLen,
+				})
+				pos += nlLen
+				continue
 			}
-			pos++
+
+			r, size := utf8.DecodeRuneInString(code[pos:])
+			if len(errs) < maxDiagnostics {
+				if r == utf8.RuneError && size == 1 {
+					message := fmt.Sprintf("unexpected byte: 0x%02x", code[pos])
+					errs = append(errs, createParseError(message, pos, fmt.Sprintf("0x%02x", code[pos]), code))
+				} else {
+					tokStr := code[pos : pos+size]
+					message := fmt.Sprintf("unexpected character: %c", r)
+					errs = append(errs, createParseError(message, pos, tokStr, code))
+				}
+			}
+			pos += size
 			continue
 		}
 
-		tokens = append(tokens, match)
+		if meta == nil || !meta.skip {
+			tokens = append(tokens, match)
+		}
 		pos = match.End
 	}
 

@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/arturoeanton/go-dsl/pkg/dslbuilder"
@@ -61,10 +62,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  %s -dsl calculator.yaml\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -dsl query.json -verbose -info\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -dsl accounting.yaml -test \"venta de 1000\" -strict\n", os.Args[0])
 	}
 
 	flag.Parse()
@@ -100,11 +97,10 @@ func validateDSLFile(filename, testInput string, strict bool) ValidationResult {
 		return failure(result, fmt.Sprintf("Failed to read file: %v", err))
 	}
 
-	// Parse config for the info summary.
 	var config dslbuilder.DSLConfig
 	var dsl *dslbuilder.DSL
 
-	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
 	switch ext {
 	case "yaml", "yml":
 		if err := yaml.Unmarshal(data, &config); err != nil {
@@ -117,24 +113,28 @@ func validateDSLFile(filename, testInput string, strict bool) ValidationResult {
 		}
 		dsl, err = dslbuilder.LoadFromJSON(data)
 	default:
+		if ext == "" {
+			return failure(result, fmt.Sprintf("Missing file extension in %q (expected .yaml, .yml, or .json)", filename))
+		}
 		return failure(result, fmt.Sprintf("Unsupported file format: %s", ext))
 	}
 
+	tokenCount := len(config.Tokens)
+	if len(config.TokenDefs) > tokenCount {
+		tokenCount = len(config.TokenDefs)
+	}
 	result.Info = DSLInfo{
 		Name:       config.Name,
-		TokenCount: len(config.Tokens),
-		RuleCount:  len(config.Rules),
+		TokenCount: tokenCount,
+		RuleCount:  len(config.Rules) + len(config.Expressions),
 		Tokens:     config.Tokens,
 		Rules:      config.Rules,
 	}
 
 	if err != nil {
-		// Token-level problems (invalid regex, empty-matching patterns, ...)
-		// surface while loading the configuration.
 		return failure(result, fmt.Sprintf("Failed to create DSL: %v", err))
 	}
 
-	// Core grammar analysis.
 	warnings, err := dsl.Validate()
 	if err != nil {
 		result.Valid = false
@@ -145,8 +145,6 @@ func validateDSLFile(filename, testInput string, strict bool) ValidationResult {
 		}
 	}
 	for _, w := range warnings {
-		// Actions are registered in Go code, not in the config file, so
-		// "unregistered action" is expected here; keep it informational.
 		result.Warnings = append(result.Warnings, ValidationIssue{Message: w})
 	}
 
@@ -154,7 +152,6 @@ func validateDSLFile(filename, testInput string, strict bool) ValidationResult {
 		result.Valid = false
 	}
 
-	// Optional test input: parsing to an AST does not require actions.
 	if testInput != "" {
 		if _, err := dsl.ParseAST(testInput); err != nil {
 			result.Valid = false

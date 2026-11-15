@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -56,33 +55,37 @@ type RetryPolicy struct {
 	RetryOn        []int // Status codes to retry on
 }
 
+const defaultMaxResponseBytes int64 = 32 << 20 // 32 MiB default cap against unbounded response OOM
+
 // HTTPEngine handles HTTP requests and responses
 type HTTPEngine struct {
-	client           *http.Client
-	baseURL          string
-	lastResponse     *http.Response
-	lastResponseBody string
-	lastStatusCode   int
-	lastResponseTime float64
-	cookies          *cookiejar.Jar
-	headers          map[string]string
-	debug            bool
-	logs             []string
-	logLevel         LogLevel
-	history          []RequestHistory
-	maxHistory       int
-	retryPolicy      *RetryPolicy
-	proxy            string
-	tlsConfig        *tls.Config
-	requestHooks     []func(*http.Request) error
-	responseHooks    []func(*http.Response) error
-	rateLimit        time.Duration
-	lastRequestTime  time.Time
-	metrics          map[string]interface{}
-	metricsLock      sync.RWMutex
-	sessions         map[string]*Session
-	currentSession   string
-	oauth2Config     *OAuth2Config
+	client               *http.Client
+	baseURL              string
+	lastResponse         *http.Response
+	lastResponseBody     string
+	lastStatusCode       int
+	lastResponseTime     float64
+	cookies              *cookiejar.Jar
+	headers              map[string]string
+	debug                bool
+	logs                 []string
+	logLevel             LogLevel
+	history              []RequestHistory
+	maxHistory           int
+	maxResponseBytes     int64
+	blockPrivateNetworks bool
+	retryPolicy          *RetryPolicy
+	proxy                string
+	tlsConfig            *tls.Config
+	requestHooks         []func(*http.Request) error
+	responseHooks        []func(*http.Response) error
+	rateLimit            time.Duration
+	lastRequestTime      time.Time
+	metrics              map[string]interface{}
+	metricsLock          sync.RWMutex
+	sessions             map[string]*Session
+	currentSession       string
+	oauth2Config         *OAuth2Config
 }
 
 // Session represents a named HTTP session with its own state
@@ -118,23 +121,72 @@ func NewHTTPEngine() *HTTPEngine {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	return &HTTPEngine{
+	he := &HTTPEngine{
 		client: &http.Client{
 			Jar:       jar,
 			Timeout:   30 * time.Second,
 			Transport: transport,
 		},
-		cookies:       jar,
-		headers:       make(map[string]string),
-		logs:          make([]string, 0),
-		logLevel:      LogInfo,
-		history:       make([]RequestHistory, 0),
-		maxHistory:    100,
-		metrics:       make(map[string]interface{}),
-		sessions:      make(map[string]*Session),
-		requestHooks:  make([]func(*http.Request) error, 0),
-		responseHooks: make([]func(*http.Response) error, 0),
+		cookies:          jar,
+		headers:          make(map[string]string),
+		logs:             make([]string, 0),
+		logLevel:         LogInfo,
+		history:          make([]RequestHistory, 0),
+		maxHistory:       100,
+		maxResponseBytes: defaultMaxResponseBytes,
+		metrics:          make(map[string]interface{}),
+		sessions:         make(map[string]*Session),
+		requestHooks:     make([]func(*http.Request) error, 0),
+		responseHooks:    make([]func(*http.Response) error, 0),
 	}
+	transport.DialContext = he.safeDialContext
+	return he
+}
+
+func (he *HTTPEngine) responseLimit() int64 {
+	if he.maxResponseBytes <= 0 {
+		return defaultMaxResponseBytes
+	}
+	return he.maxResponseBytes
+}
+
+// SetMaxResponseBytes configures the maximum response body size read into memory.
+func (he *HTTPEngine) SetMaxResponseBytes(limit int64) {
+	he.maxResponseBytes = limit
+}
+
+// SetBlockPrivateNetworks enables or disables SSRF protection blocking loopback,
+// link-local (e.g. 169.254.169.254), and private RFC1918/ULA IP addresses.
+func (he *HTTPEngine) SetBlockPrivateNetworks(block bool) {
+	he.blockPrivateNetworks = block
+}
+
+func isDisallowedPrivateIP(ip net.IP) bool {
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified()
+}
+
+func (he *HTTPEngine) safeDialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
+	if !he.blockPrivateNetworks {
+		return dialer.DialContext(ctx, network, addr)
+	}
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, err
+	}
+	ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil {
+		return nil, err
+	}
+	for _, ipAddr := range ips {
+		if isDisallowedPrivateIP(ipAddr.IP) {
+			return nil, fmt.Errorf("SSRF guard blocked connection to private/internal address %s (%s)", host, ipAddr.IP.String())
+		}
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("no IP addresses resolved for %s", host)
+	}
+	return dialer.DialContext(ctx, network, net.JoinHostPort(ips[0].IP.String(), port))
 }
 
 // Request performs an HTTP request with the given method, URL, and options
@@ -218,9 +270,11 @@ func (he *HTTPEngine) Request(method, urlStr string, options map[string]interfac
 			}
 		}
 
-		// Timeout
-		if timeout, ok := options["timeout"].(int); ok {
-			he.client.Timeout = time.Duration(timeout) * time.Millisecond
+		// Per-request timeout (scoped via context so shared client.Timeout is not mutated)
+		if timeout, ok := options["timeout"].(int); ok && timeout > 0 {
+			ctx, cancel := context.WithTimeout(req.Context(), time.Duration(timeout)*time.Millisecond)
+			defer cancel()
+			req = req.WithContext(ctx)
 		}
 	}
 
@@ -257,11 +311,15 @@ func (he *HTTPEngine) Request(method, urlStr string, options map[string]interfac
 		}
 	}
 
-	// Read response body
-	bodyBytes, err := io.ReadAll(resp.Body)
+	// Read response body with bounded LimitReader to prevent OOM
+	limit := he.responseLimit()
+	bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
 	if err != nil {
 		he.LogError("Failed to read response: %s", err)
 		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	if int64(len(bodyBytes)) > limit {
+		return nil, fmt.Errorf("response body exceeded maximum size of %d bytes", limit)
 	}
 
 	// Store response data
@@ -488,15 +546,21 @@ func (he *HTTPEngine) extractXPath(path string) interface{} {
 	// This is a simplified implementation for demonstration
 	// In a real implementation, you'd use a proper HTML/XML parser
 
-	// Extract text between tags
+	// Extract text between tags safely without regexp.MustCompile panic on untrusted input
 	if strings.HasPrefix(path, "//") {
 		tagName := strings.TrimPrefix(path, "//")
 		if strings.Contains(tagName, "/") {
 			tagName = tagName[:strings.Index(tagName, "/")]
 		}
-
-		pattern := fmt.Sprintf("<%s[^>]*>(.*?)</%s>", tagName, tagName)
-		re := regexp.MustCompile(pattern)
+		if tagName == "" {
+			return nil
+		}
+		quotedTag := regexp.QuoteMeta(tagName)
+		pattern := fmt.Sprintf("<%s[^>]*>(.*?)</%s>", quotedTag, quotedTag)
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil
+		}
 		matches := re.FindStringSubmatch(he.lastResponseBody)
 		if len(matches) > 1 {
 			return matches[1]
@@ -895,7 +959,7 @@ func (he *HTTPEngine) SetClientCertificate(certFile, keyFile string) error {
 
 // SetCustomCA sets custom CA certificate
 func (he *HTTPEngine) SetCustomCA(caFile string) error {
-	caCert, err := ioutil.ReadFile(caFile)
+	caCert, err := os.ReadFile(caFile)
 	if err != nil {
 		return err
 	}
@@ -954,7 +1018,7 @@ func (he *HTTPEngine) ClearProxy() {
 	he.proxy = ""
 	if transport, ok := he.client.Transport.(*http.Transport); ok {
 		transport.Proxy = nil
-		transport.DialContext = nil
+		transport.DialContext = he.safeDialContext
 	}
 }
 
@@ -1015,7 +1079,10 @@ func (he *HTTPEngine) RequestWithFile(method, urlStr string, files map[string]st
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, he.responseLimit()))
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"status":  resp.StatusCode,
@@ -1451,9 +1518,9 @@ func (he *HTTPEngine) StreamRequest(method, urlStr string, callback func([]byte)
 	return nil
 }
 
-// DownloadFile downloads a file to disk
+// DownloadFile downloads a file to disk using the configured HTTP client and size limit.
 func (he *HTTPEngine) DownloadFile(urlStr, filepath string) error {
-	resp, err := http.Get(urlStr)
+	resp, err := he.client.Get(urlStr)
 	if err != nil {
 		return err
 	}
@@ -1465,6 +1532,6 @@ func (he *HTTPEngine) DownloadFile(urlStr, filepath string) error {
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, resp.Body)
+	_, err = io.Copy(file, io.LimitReader(resp.Body, he.responseLimit()))
 	return err
 }

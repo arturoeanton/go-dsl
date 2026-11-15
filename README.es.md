@@ -21,10 +21,14 @@ Definís tokens, reglas y acciones en runtime y obtenés un lenguaje funcionando
 - 💬 **Errores por Regla** - `RuleWithError(...)` agrega un mensaje del dominio cuando esa alternativa es el farthest failure
 - 🔁 **Recursión Izquierda Indirecta** - Los ciclos leftmost multi-regla (`a → b …`, `b → a …`) parsean con growing generalizado
 - 🌊 **Streaming** - `ParseStream(io.Reader, handler)` procesa scripts orientados a líneas sin cargarlos en memoria
-- 🖨️ **Generación de Código** - `cmd/dslgen` convierte una gramática YAML/JSON en código Go versionable
-- 🧿 **Servidor LSP** - `cmd/lsp` da a cualquier editor LSP diagnósticos en vivo, **autocompletado** (expectativas del parser en el cursor) y **hover** (nodo del AST bajo el cursor)
+- 🖨️ **Generación de Código y Extensión VS Code** - `cmd/dslgen` convierte una gramática YAML/JSON en código Go versionable (`-typed`) o en una extensión completa para VS Code (`-vscode`)
+- 🧿 **Servidor LSP** - `cmd/lsp` da a cualquier editor LSP diagnósticos UTF-16 en vivo, **autocompletado**, **hover**, **formateo** (`textDocument/formatting`) y **semantic tokens** (`textDocument/semanticTokens/full`)
 - ⚡ **Documentos Incrementales** - `NewDocument()` re-parsea solo los statements tocados por el edit, reusando los subárboles intactos (es lo que corre el LSP por tecla)
 - 🧮 **Gramáticas de Atributos** - `NewAttributeGrammar()` evalúa atributos heredados (top-down) y sintetizados (bottom-up) sobre el AST
+- 🧪 **DSL Studio (`cmd/studio`)** - IDE visual local en un único binario (`embed.FS`) con mapa visual de gramáticas v2, inspector interactivo de AST y `EvalTrace`, fuzzer, exportación Go/VS Code `.zip` e integración nativa con **Ollama** (`:11434`) y **LM Studio** (`:1234`) vía `ToGBNF()`
+- 🧬 **Decodificación GBNF y Servidor MCP (`cmd/mcp`)** - `ToGBNF()`, `AIPromptSpec()`, `RepairPrompt()` y servidor stdio Model Context Protocol
+- 🛡️ **Sandbox de Ejecución y Trace** - `ParseWithOptions` y `ParseTrace` aplican `Context`, `MaxSteps`, `MaxDepth` y `Vars` aisladas registrando tiempos por nodo y ramas lazy `[SKIPPED]`
+- ✨ **Comentarios, Formateador y Tests Declarativos** - Trivia con `SkipToken`, `SetSignificantNewlines`, `DSL.Format` idempotente (`cmd/dslfmt`), suites `tests:` embebidas + `FuzzGrammar` (`cmd/dsltest`) y bridge WebAssembly (`pkg/wasm`)
 
 ### Núcleo
 - **Recursión Izquierda Directa** - Algoritmo de semilla creciente (solo directa; para operadores usá `Expression()`)
@@ -254,18 +258,38 @@ go install github.com/arturoeanton/go-dsl/cmd/repl@latest
 repl -dsl calculator.yaml -context data.json
 ```
 
-### Generador de Código
-Convierte una gramática declarativa en código Go versionable (constructor + stubs de acciones):
+### Generador de Código y Extensión VS Code
+Convierte una gramática declarativa en código Go versionable (con interfaz tipada opcional `-typed`) o genera una extensión completa para VS Code (`-vscode`):
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/dslgen@latest
-dslgen -dsl grammar.yaml -package midsl -func NewMiDSL -o midsl_gen.go
+dslgen -dsl grammar.yaml -package midsl -func NewMiDSL -typed -o midsl_gen.go
+dslgen -dsl grammar.yaml -vscode ./vscode-midsl
+```
+
+### Formateador Universal (`dslfmt`) y Tests/Fuzzing (`dsltest`)
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/dslfmt@latest
+dslfmt -dsl grammar.yaml -w programa.dsl
+
+go install github.com/arturoeanton/go-dsl/cmd/dsltest@latest
+dsltest -dsl grammar.yaml -fuzz 250 -samples 5
+```
+
+### Guardrails GBNF y Servidor MCP (`mcp`)
+```bash
+go install github.com/arturoeanton/go-dsl/cmd/mcp@latest
+mcp -dsl grammar.yaml    # servidor stdio MCP (dsl_grammar_info, dsl_validate_code, dsl_complete, dsl_format, dsl_gbnf)
+```
+
+### DSL Studio — Laboratorio Visual + Ollama y LM Studio
+Lanza el IDE visual local para diseñar gramáticas YAML v2, inspeccionar AST y trazas paso a paso, fuzzear reglas, exportar código Go o extensiones VS Code `.zip` y trabajar con modelos locales en **Ollama** (`127.0.0.1:11434`) y **LM Studio** (`127.0.0.1:1234`) usando `ToGBNF()` y `RepairPrompt()`:
+```bash
+go run ./cmd/studio -open
+go run ./cmd/studio -dsl grammar.yaml -port 8420 -open
 ```
 
 ### Servidor LSP
-Diagnósticos en vivo, autocompletado y hover en cualquier editor con LSP.
-Los documentos se re-parsean incrementalmente (solo los statements editados),
-el completado sale de las expectativas del propio parser y el hover muestra
-el nodo del AST (regla, acción, span) bajo el cursor:
+Diagnósticos UTF-16 en vivo, autocompletado, hover, formateo (`textDocument/formatting`) y coloreado semántico (`textDocument/semanticTokens/full`) en cualquier editor con LSP:
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/lsp@latest
 lsp -dsl grammar.yaml    # conectar como language server por stdio
@@ -309,9 +333,8 @@ regresión viven en la suite.
 
 - [Guía Rápida](docs/es/guia_rapida.md)
 - [Referencia de API](docs/es/referencia_api.md) — toda la API pública por área
-- [Tooling de Editor](docs/es/tooling_editor.md) — LSP, documentos incrementales, atributos, dslgen, apiflow
-- [Skill para IAs/agentes](.claude/skills/go-dsl/SKILL.md) — guía lista para que agentes de código (Claude Code, etc.) usen go-dsl correctamente en proyectos Go
-- [Conceptos Avanzados](docs/es/introduccion_dsl_segunda_parte.md)
+- [Tooling de Editor](docs/es/tooling_editor.md) — LSP, documentos incrementales, atributos, dslgen, dslfmt, dsltest, mcp
+- [DSL Studio](docs/es/dsl_studio.md) — IDE visual local e integración con Ollama y LM Studio
 - [Limitaciones](docs/es/limitaciones.md)
 - [Ejemplos](examples/)
 

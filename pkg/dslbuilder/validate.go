@@ -13,28 +13,15 @@ import (
 )
 
 // Validate checks the DSL definition for common problems.
-//
-// Errors (returned as a joined error, grammar should not be used):
-//   - no rules defined / no start rule
-//   - a rule references an unknown symbol (not a token, rule, or expression rule)
-//   - an expression rule references unknown tokens or an unknown inner rule
-//   - errors deferred from fluent builder helpers (e.g. invalid token regex)
-//
-// Warnings (returned as strings, grammar still works):
-//   - an action referenced by a rule is not registered
-//   - a rule is unreachable from the start rule
-//   - indirect left recursion (NOT supported by the parser; restructure the
-//     grammar or use Expression() for operators)
-//   - a rule can never derive a terminal string (non-productive cycle)
-//   - precedence declared on alternatives (informative: RuleWithPrecedence
-//     metadata is not used to reorder parses; use Expression() instead)
 func (d *DSL) Validate() ([]string, error) {
 	var warnings []string
 	var errs []error
 
 	g := d.grammar
 
+	d.mu.RLock()
 	errs = append(errs, d.deferredErrors...)
+	d.mu.RUnlock()
 
 	if len(g.rules) == 0 && len(g.exprRules) == 0 {
 		errs = append(errs, errors.New("grammar has no rules"))
@@ -42,13 +29,19 @@ func (d *DSL) Validate() ([]string, error) {
 	}
 	if g.startRule == "" {
 		errs = append(errs, errors.New("grammar has no start rule"))
+	} else if !g.isSymbolDefined(g.startRule) {
+		errs = append(errs, fmt.Errorf("grammar start rule %s is not defined", g.startRule))
 	}
 
-	// Unknown symbols in rule sequences.
+	// Unknown symbols or skip tokens in rule sequences.
 	for _, name := range sortedRuleNames(g) {
 		rule := g.rules[name]
 		for _, alt := range rule.alternatives {
 			for _, symbol := range alt.sequence {
+				if tok, ok := g.tokens[symbol]; ok && tok.skip {
+					errs = append(errs, fmt.Errorf("rule %s references skipped token %s (SkipToken cannot be matched in grammar rules)", name, symbol))
+					continue
+				}
 				if !g.isSymbolDefined(symbol) {
 					errs = append(errs, fmt.Errorf("rule %s references unknown symbol %s", name, symbol))
 				}
@@ -62,19 +55,27 @@ func (d *DSL) Validate() ([]string, error) {
 		}
 	}
 
-	// Expression rule references.
+	// Expression rule references & unregistered actions.
 	for _, name := range sortedExprRuleNames(g) {
 		spec := g.exprRules[name]
 		checkTok := func(tok string) {
-			if _, ok := g.tokens[tok]; !ok {
+			if t, ok := g.tokens[tok]; ok && t.skip {
+				errs = append(errs, fmt.Errorf("expression rule %s references skipped token %s", name, tok))
+				return
+			}
+			if !g.isToken(tok) {
 				errs = append(errs, fmt.Errorf("expression rule %s references unknown token %s", name, tok))
 			}
 		}
+		checkAction := func(act string) {
+			if act != "" && !d.hasAction(act) {
+				warnings = append(warnings, fmt.Sprintf("expression rule %s references unregistered action %q", name, act))
+			}
+		}
+
 		for _, a := range spec.atoms {
 			checkTok(a.token)
-			if a.action != "" && !d.hasAction(a.action) {
-				warnings = append(warnings, fmt.Sprintf("expression rule %s references unregistered action %q", name, a.action))
-			}
+			checkAction(a.action)
 		}
 		for _, gr := range spec.groups {
 			checkTok(gr.open)
@@ -82,28 +83,57 @@ func (d *DSL) Validate() ([]string, error) {
 			if gr.inner != name && !g.isSymbolDefined(gr.inner) {
 				errs = append(errs, fmt.Errorf("expression rule %s group references unknown symbol %s", name, gr.inner))
 			}
+			checkAction(gr.action)
 		}
-		ops := make([]string, 0, len(spec.prefix)+len(spec.infix))
-		for tok := range spec.prefix {
-			ops = append(ops, tok)
-		}
-		for tok := range spec.infix {
-			ops = append(ops, tok)
-		}
-		sort.Strings(ops)
-		for _, tok := range ops {
+
+		for _, tok := range sortedMapKeys(spec.prefix) {
 			checkTok(tok)
+			checkAction(spec.prefix[tok].action)
 		}
+		for _, tok := range sortedMapKeys(spec.postfix) {
+			checkTok(tok)
+			checkAction(spec.postfix[tok].action)
+		}
+		for _, tok := range sortedMapKeys(spec.infix) {
+			checkTok(tok)
+			checkAction(spec.infix[tok].action)
+		}
+		for _, tok := range sortedCallKeys(spec.calls) {
+			c := spec.calls[tok]
+			checkTok(c.open)
+			checkTok(c.close)
+			if c.sep != "" {
+				checkTok(c.sep)
+			}
+			checkAction(c.action)
+		}
+		for _, tok := range sortedIndexKeys(spec.indices) {
+			idx := spec.indices[tok]
+			checkTok(idx.open)
+			checkTok(idx.close)
+			if idx.inner != "" && idx.inner != name && !g.isSymbolDefined(idx.inner) {
+				errs = append(errs, fmt.Errorf("expression rule %s index references unknown symbol %s", name, idx.inner))
+			}
+			checkAction(idx.action)
+		}
+		for _, tok := range sortedMemberKeys(spec.members) {
+			m := spec.members[tok]
+			checkTok(m.dotToken)
+			checkTok(m.fieldToken)
+			checkAction(m.action)
+		}
+		if spec.ternary != nil {
+			checkTok(spec.ternary.questionToken)
+			checkTok(spec.ternary.colonToken)
+			checkAction(spec.ternary.action)
+		}
+
 		if len(spec.atoms) == 0 && len(spec.groups) == 0 {
 			errs = append(errs, fmt.Errorf("expression rule %s has no atoms or groups; it can never match", name))
 		}
 	}
 
-	// Ordered-choice shadowing: a shorter alternative declared before a
-	// longer one with the same prefix means the longer one can never match
-	// (the classic PEG surprise). Left-recursive longer alternatives are
-	// exempt: the growing-seed algorithm extends the seed past the short
-	// match.
+	// Ordered-choice shadowing.
 	for _, name := range sortedRuleNames(g) {
 		rule := g.rules[name]
 		for i := 0; i < len(rule.alternatives); i++ {
@@ -144,22 +174,61 @@ func (d *DSL) Validate() ([]string, error) {
 		}
 	}
 
-	// Indirect left recursion: supported via generalized growing, but
-	// memoization is disabled while those rules parse, so grammars are
-	// usually clearer and faster restructured or expressed with Expression().
+	// Indirect left recursion.
 	for _, cycle := range indirectLeftRecursionCycles(g) {
 		warnings = append(warnings, fmt.Sprintf("indirect left recursion detected (%s); supported, but consider restructuring the grammar or using Expression() for clarity and performance", cycle))
 	}
 
-	// Non-productive rules.
+	// Non-productive rules (including self-grouped expression rules with no atoms).
 	productive := productiveRules(g)
 	for _, name := range sortedRuleNames(g) {
 		if !productive[name] {
 			warnings = append(warnings, fmt.Sprintf("rule %s can never derive a terminal string (non-productive cycle)", name))
 		}
 	}
+	for _, name := range sortedExprRuleNames(g) {
+		if !productive[name] {
+			warnings = append(warnings, fmt.Sprintf("expression rule %s can never derive a terminal string (non-productive cycle)", name))
+		}
+	}
 
 	return warnings, errors.Join(errs...)
+}
+
+func sortedMapKeys(m map[string]exprOp) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func sortedCallKeys(m map[string]exprCall) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func sortedIndexKeys(m map[string]exprIndex) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func sortedMemberKeys(m map[string]exprMember) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // sequencesEqual reports whether two symbol sequences are identical.
@@ -175,13 +244,18 @@ func sequencesEqual(a, b []string) bool {
 	return true
 }
 
-// hasAction reports whether an action name is registered either as a
-// regular Action or as a lazy NodeAction.
+// hasAction reports whether an action name is registered as Action, NodeAction,
+// or ContextAction.
 func (d *DSL) hasAction(name string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 	if _, ok := d.actions[name]; ok {
 		return true
 	}
-	_, ok := d.nodeActions[name]
+	if _, ok := d.nodeActions[name]; ok {
+		return true
+	}
+	_, ok := d.contextActions[name]
 	return ok
 }
 
@@ -215,7 +289,7 @@ func reachableRules(g *Grammar) map[string]bool {
 			reachable[name] = true
 			for _, alt := range rule.alternatives {
 				for _, symbol := range alt.sequence {
-					if _, isToken := g.tokens[symbol]; !isToken {
+					if !g.isToken(symbol) {
 						visit(symbol)
 					}
 				}
@@ -225,8 +299,13 @@ func reachableRules(g *Grammar) map[string]bool {
 		if spec, ok := g.exprRules[name]; ok {
 			reachable[name] = true
 			for _, gr := range spec.groups {
-				if _, isToken := g.tokens[gr.inner]; !isToken {
+				if !g.isToken(gr.inner) {
 					visit(gr.inner)
+				}
+			}
+			for _, idx := range spec.indices {
+				if idx.inner != "" && !g.isToken(idx.inner) {
+					visit(idx.inner)
 				}
 			}
 		}
@@ -236,10 +315,9 @@ func reachableRules(g *Grammar) map[string]bool {
 }
 
 // indirectLeftRecursionCycles finds cycles of length > 1 in the
-// "leftmost symbol" graph: rule → first symbol of each alternative.
+// "leftmost symbol" graph: rule -> first symbol of each alternative.
 // Direct left recursion (self loops) is supported and excluded.
 func indirectLeftRecursionCycles(g *Grammar) []string {
-	// Build leftmost graph between rules.
 	edges := make(map[string][]string)
 	for name, rule := range g.rules {
 		seen := make(map[string]bool)
@@ -275,7 +353,6 @@ func indirectLeftRecursionCycles(g *Grammar) []string {
 		stack = append(stack, name)
 		for _, next := range edges[name] {
 			if color[next] == gray {
-				// Extract the cycle from the stack.
 				start := -1
 				for i, s := range stack {
 					if s == next {
@@ -285,7 +362,6 @@ func indirectLeftRecursionCycles(g *Grammar) []string {
 				}
 				if start >= 0 {
 					cycle := append(append([]string(nil), stack[start:]...), next)
-					// Canonical key: sorted members, to dedupe rotations.
 					members := append([]string(nil), stack[start:]...)
 					sort.Strings(members)
 					key := fmt.Sprint(members)
@@ -328,19 +404,31 @@ func joinCycle(cycle []string) string {
 }
 
 // productiveRules computes, via fixpoint iteration, which rules can derive
-// at least one terminal string. Expression rules with atoms or groups are
-// considered productive.
+// at least one terminal string. Expression rules require either at least one
+// atom or at least one group whose inner symbol is itself productive.
 func productiveRules(g *Grammar) map[string]bool {
 	productive := make(map[string]bool)
-	for name, spec := range g.exprRules {
-		if len(spec.atoms) > 0 || len(spec.groups) > 0 {
-			productive[name] = true
-		}
-	}
 
 	changed := true
 	for changed {
 		changed = false
+		for name, spec := range g.exprRules {
+			if productive[name] {
+				continue
+			}
+			if len(spec.atoms) > 0 {
+				productive[name] = true
+				changed = true
+				continue
+			}
+			for _, gr := range spec.groups {
+				if g.isToken(gr.inner) || productive[gr.inner] {
+					productive[name] = true
+					changed = true
+					break
+				}
+			}
+		}
 		for name, rule := range g.rules {
 			if productive[name] {
 				continue
@@ -348,7 +436,7 @@ func productiveRules(g *Grammar) map[string]bool {
 			for _, alt := range rule.alternatives {
 				all := true
 				for _, symbol := range alt.sequence {
-					if _, isToken := g.tokens[symbol]; isToken {
+					if g.isToken(symbol) {
 						continue
 					}
 					if !productive[symbol] {

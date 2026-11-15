@@ -1,24 +1,19 @@
-// Command lsp is a minimal Language Server Protocol server for DSLs built
-// with go-dsl. Point it at a declarative grammar and connect it to any
-// LSP-capable editor:
+// Command lsp is a Language Server Protocol server for DSLs built with go-dsl.
+// Point it at a declarative grammar and connect it to any LSP-capable editor:
 //
 //   - Diagnostics: every open document is re-parsed incrementally
 //     (dslbuilder.Document — only edited statements re-parse) and ALL
-//     syntax/lexical errors are published, not just the first.
+//     syntax/lexical errors are published with UTF-16 accurate ranges.
 //   - Completion: textDocument/completion suggests what the parser itself
-//     expects at the cursor (keywords as text, free-form tokens as
-//     placeholder snippets).
-//   - Hover: textDocument/hover shows the AST node under the cursor
-//     (token, or rule + action + source snippet).
+//     expects at the cursor (keywords as text, free-form tokens as snippets).
+//   - Hover: textDocument/hover shows the AST node under the cursor.
+//   - Formatting: textDocument/formatting formats documents via DSL.Format.
+//   - Semantic Tokens: textDocument/semanticTokens/full highlights keywords,
+//     numbers, strings, operators, comments, and identifiers.
 //
 // Usage:
 //
 //	lsp -dsl grammar.yaml
-//
-// Wire it as a stdio language server in your editor. Implemented methods:
-// initialize, shutdown/exit, textDocument/didOpen, didChange, didClose,
-// textDocument/completion, textDocument/hover.
-// No external dependencies — the JSON-RPC framing is implemented inline.
 package main
 
 import (
@@ -26,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/arturoeanton/go-dsl/pkg/dslbuilder"
@@ -35,7 +31,7 @@ func main() {
 	var dslFile string
 	flag.StringVar(&dslFile, "dsl", "", "DSL configuration file (YAML or JSON)")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "lsp - Minimal LSP server for go-dsl grammars\n\n")
+		fmt.Fprintf(os.Stderr, "lsp - LSP server for go-dsl grammars\n\n")
 		fmt.Fprintf(os.Stderr, "Usage: %s -dsl grammar.yaml\n\n", os.Args[0])
 		flag.PrintDefaults()
 	}
@@ -60,18 +56,21 @@ func main() {
 }
 
 func loadDSL(filename string) (*dslbuilder.DSL, error) {
-	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
 	switch ext {
 	case "yaml", "yml":
 		return dslbuilder.LoadFromYAMLFile(filename)
 	case "json":
 		return dslbuilder.LoadFromJSONFile(filename)
 	default:
+		if ext == "" {
+			return nil, fmt.Errorf("missing file extension in %q (expected .yaml, .yml, or .json)", filename)
+		}
 		return nil, fmt.Errorf("unsupported file format: %s", ext)
 	}
 }
 
-// --- LSP wire types (the minimal subset we implement) ---------------------
+// --- LSP wire types --------------------------------------------------------
 
 type rpcRequest struct {
 	JSONRPC string           `json:"jsonrpc"`
@@ -147,4 +146,13 @@ type lspHover struct {
 type lspMarkup struct {
 	Kind  string `json:"kind"` // "markdown"
 	Value string `json:"value"`
+}
+
+type lspTextEdit struct {
+	Range   lspRange `json:"range"`
+	NewText string   `json:"newText"`
+}
+
+type lspSemanticTokens struct {
+	Data []int `json:"data"`
 }

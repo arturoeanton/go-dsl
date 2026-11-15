@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode/utf8"
 )
 
 // maxStreamLine bounds a single statement line (1 MB): protects against
@@ -47,15 +48,25 @@ func (d *DSL) ParseStream(r io.Reader, handler StreamHandler) error {
 	lineNum := 0
 	for scanner.Scan() {
 		lineNum++
-		line := strings.TrimSpace(scanner.Text())
+		rawLine := scanner.Text()
+		line := strings.TrimSpace(rawLine)
 		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
 			continue
 		}
+
+		leadBytes := len(rawLine) - len(strings.TrimLeft(rawLine, " \t\r"))
+		leadCols := utf8.RuneCountInString(rawLine[:leadBytes])
 
 		result, err := d.Parse(line)
 		if err != nil {
 			if parseErr, ok := err.(*ParseError); ok {
 				parseErr.Line = lineNum
+				if parseErr.Column > 0 {
+					parseErr.Column += leadCols
+				} else {
+					parseErr.Column = leadCols + 1
+				}
+				parseErr.Input = rawLine
 				return parseErr
 			}
 			return fmt.Errorf("line %d: %w", lineNum, err)

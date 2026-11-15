@@ -179,3 +179,87 @@ func TestLSPCompletionAndHover(t *testing.T) {
 		t.Errorf("hover should describe IDENT token x, got %q", value)
 	}
 }
+
+func TestBug13UTF16PositionsAndLineClamping(t *testing.T) {
+	// Line 0 has a surrogate-pair emoji ("🚀" = 4 UTF-8 bytes, 2 UTF-16 code units).
+	text := `say "🚀" 42` + "\n" + `say "ok" 7`
+
+	// Clamping: character 999 on line 0 must stay at the end of line 0, never bleeding into line 1.
+	clamped := offsetForPosition(text, lspPosition{Line: 0, Character: 999})
+	line0Len := len(`say "🚀" 42`)
+	if clamped != line0Len {
+		t.Fatalf("expected clamped offset %d at end of line 0, got %d", line0Len, clamped)
+	}
+
+	// Offset of "42" on line 0: `say "` (5 UTF-16) + `🚀` (2 UTF-16) + `" ` (2 UTF-16) = 9 UTF-16 units,
+	// whereas in UTF-8 bytes it is 5 + 4 + 2 = 11 bytes.
+	pos42 := positionForOffset(text, 11)
+	if pos42.Line != 0 || pos42.Character != 9 {
+		t.Fatalf("expected UTF-16 position (0, 9), got (%d, %d)", pos42.Line, pos42.Character)
+	}
+	backOffset := offsetForPosition(text, pos42)
+	if backOffset != 11 {
+		t.Fatalf("expected UTF-16 round-trip byte offset 11, got %d", backOffset)
+	}
+}
+
+func TestLSPFormattingAndSemanticTokens(t *testing.T) {
+	d := dslbuilder.New("fmtlsp")
+	if err := d.SkipToken("COMMENT", `//[^\n]*`); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.KeywordToken("SET", "set"); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.LiteralToken("EQ", "="); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Token("IDENT", `[a-z]+`); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Token("NUMBER", `[0-9]+`); err != nil {
+		t.Fatal(err)
+	}
+	d.Rule("stmt", []string{"SET", "IDENT", "EQ", "NUMBER"}, "")
+
+	var input bytes.Buffer
+	input.WriteString(frame(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`))
+	input.WriteString(frame(`{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///f.dsl","text":"set   x=42 // comment"}}}`))
+	input.WriteString(frame(`{"jsonrpc":"2.0","id":2,"method":"textDocument/formatting","params":{"textDocument":{"uri":"file:///f.dsl"}}}`))
+	input.WriteString(frame(`{"jsonrpc":"2.0","id":3,"method":"textDocument/semanticTokens/full","params":{"textDocument":{"uri":"file:///f.dsl"}}}`))
+	input.WriteString(frame(`{"jsonrpc":"2.0","method":"exit"}`))
+
+	var output bytes.Buffer
+	srv := newServer(d, &input, &output)
+	if err := srv.run(); err != nil {
+		t.Fatalf("server error: %v", err)
+	}
+
+	messages := decodeFrames(t, output.String())
+	if len(messages) != 4 {
+		t.Fatalf("expected 4 messages, got %d", len(messages))
+	}
+
+	caps := messages[0]["result"].(map[string]interface{})["capabilities"].(map[string]interface{})
+	if caps["documentFormattingProvider"] != true {
+		t.Errorf("documentFormattingProvider not advertised")
+	}
+	if _, ok := caps["semanticTokensProvider"]; !ok {
+		t.Errorf("semanticTokensProvider not advertised")
+	}
+
+	edits := messages[2]["result"].([]interface{})
+	if len(edits) != 1 {
+		t.Fatalf("expected 1 formatting TextEdit, got %v", edits)
+	}
+	newText := edits[0].(map[string]interface{})["newText"].(string)
+	if !strings.Contains(newText, "set x = 42 // comment") {
+		t.Errorf("unexpected formatted text: %q", newText)
+	}
+
+	sem := messages[3]["result"].(map[string]interface{})["data"].([]interface{})
+	// 5 tokens ("set", "x", "=", "42", "// comment") * 5 ints each = 25 ints.
+	if len(sem) != 25 {
+		t.Fatalf("expected 25 semantic token ints, got %d: %v", len(sem), sem)
+	}
+}

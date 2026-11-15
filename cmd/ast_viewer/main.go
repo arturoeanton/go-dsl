@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/arturoeanton/go-dsl/pkg/dslbuilder"
 	"gopkg.in/yaml.v3"
@@ -62,34 +64,20 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  %s -dsl calculator.yaml -input \"10 + 20\"\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -dsl query.json -file queries.txt -format tree\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -dsl accounting.yaml -input \"venta de 1000 con iva\" -format yaml -verbose\n", os.Args[0])
 	}
 
 	flag.Parse()
 
-	if dslFile == "" {
+	if dslFile == "" || (input == "" && inputFile == "") {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	if input == "" && inputFile == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	// Load DSL
 	dsl, err := loadDSL(dslFile)
 	if err != nil {
 		log.Fatalf("Error loading DSL: %v", err)
 	}
 
-	// Register dummy actions to prevent parsing errors
-	registerDummyActions(dsl)
-
-	// Get input
 	if inputFile != "" {
 		content, err := os.ReadFile(inputFile)
 		if err != nil {
@@ -105,14 +93,13 @@ func main() {
 		verbose: verbose,
 	}
 
-	// Parse and visualize
 	if err := viewer.visualize(input); err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 }
 
 func loadDSL(filename string) (*dslbuilder.DSL, error) {
-	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
 
 	switch ext {
 	case "yaml", "yml":
@@ -120,46 +107,22 @@ func loadDSL(filename string) (*dslbuilder.DSL, error) {
 	case "json":
 		return dslbuilder.LoadFromJSONFile(filename)
 	default:
+		if ext == "" {
+			return nil, fmt.Errorf("missing file extension in %q (expected .yaml, .yml, or .json)", filename)
+		}
 		return nil, fmt.Errorf("unsupported file format: %s", ext)
 	}
 }
 
-func registerDummyActions(dsl *dslbuilder.DSL) {
-	// Register dummy actions for all rules to prevent parsing errors
-	// This is a simplified approach - in a real implementation,
-	// we would introspect the DSL to find all action names
-	actions := []string{
-		"passthrough", "add", "subtract", "multiply", "divide",
-		"number", "parentheses", "saleWithTax", "simpleSale",
-		"processEntry", "singleMovement", "multipleMovements",
-		"debitMovement", "creditMovement", "greet", "getValue",
-		"findField", "selectField", "whereCondition",
-	}
-
-	for _, action := range actions {
-		dsl.Action(action, func(args []interface{}) (interface{}, error) {
-			return args, nil
-		})
-	}
-}
-
 func (v *ASTViewer) visualize(input string) error {
-	// Parse the input
-	result, err := v.dsl.Parse(input)
+	// ParseAST builds the exact lossless syntax tree without requiring Go semantic actions.
+	node, err := v.dsl.ParseAST(input)
 	if err != nil {
-		return fmt.Errorf("parsing error: %v", err)
+		return fmt.Errorf("parsing error: %v", dslbuilder.GetDetailedError(err))
 	}
 
-	// Build AST representation from the real parse tree when available
-	// (Result.AST is a *dslbuilder.Node since the two-phase engine).
-	var ast ASTNode
-	if node := result.GetAST(); node != nil {
-		ast = v.buildFromNode(node)
-	} else {
-		ast = v.buildAST(result)
-	}
+	ast := v.buildFromNode(node, input)
 
-	// Output based on format
 	switch v.format {
 	case "json":
 		return v.outputJSON(ast)
@@ -172,126 +135,75 @@ func (v *ASTViewer) visualize(input string) error {
 	}
 }
 
-func (v *ASTViewer) buildAST(result interface{}) ASTNode {
-	return v.buildASTRecursive(result, "root", 0)
+func lineAndColAt(source string, byteOffset int) (int, int) {
+	if byteOffset < 0 {
+		byteOffset = 0
+	}
+	if byteOffset > len(source) {
+		byteOffset = len(source)
+	}
+	line := strings.Count(source[:byteOffset], "\n") + 1
+	lineStart := strings.LastIndexByte(source[:byteOffset], '\n') + 1
+	col := utf8.RuneCountInString(source[lineStart:byteOffset]) + 1
+	return line, col
 }
 
 // buildFromNode converts a real parse tree (*dslbuilder.Node) into the
-// viewer's display structure.
-func (v *ASTViewer) buildFromNode(node *dslbuilder.Node) ASTNode {
+// viewer's display structure with full Token, Rule, Action, Line, and Col metadata.
+func (v *ASTViewer) buildFromNode(node *dslbuilder.Node, source string) ASTNode {
+	if node == nil {
+		return ASTNode{Type: "empty"}
+	}
 	if node.IsToken() {
-		return ASTNode{
+		line, col := lineAndColAt(source, node.Token.Start)
+		out := ASTNode{
 			Type:  node.Token.TokenType,
 			Value: node.Token.Value,
 		}
+		if v.verbose {
+			out.Token = &TokenInfo{
+				Type:  node.Token.TokenType,
+				Value: node.Token.Value,
+				Line:  line,
+				Col:   col,
+			}
+		}
+		return out
 	}
 
-	out := ASTNode{Type: node.Rule}
-	if node.Action != "" {
-		out.Type = fmt.Sprintf("%s (%s)", node.Rule, node.Action)
+	out := ASTNode{
+		Type:   node.Rule,
+		Action: node.Action,
 	}
+	var pattern []string
 	for _, child := range node.Children {
-		out.Children = append(out.Children, v.buildFromNode(child))
+		if child.IsToken() {
+			pattern = append(pattern, child.Token.TokenType)
+		} else {
+			pattern = append(pattern, child.Rule)
+		}
+		out.Children = append(out.Children, v.buildFromNode(child, source))
+	}
+	if v.verbose {
+		out.Rule = &RuleInfo{
+			Name:    node.Rule,
+			Pattern: pattern,
+		}
 	}
 	return out
-}
-
-func (av *ASTViewer) buildASTRecursive(data interface{}, nodeType string, depth int) ASTNode {
-	node := ASTNode{
-		Type: nodeType,
-	}
-
-	// Handle different types of data
-	switch v := data.(type) {
-
-	case []interface{}:
-		// Array of values (common in parsing results)
-		node.Type = nodeType
-		if nodeType == "root" {
-			node.Type = "expression"
-		}
-		for i, item := range v {
-			childType := "value"
-			// Try to determine better types based on position
-			if i%2 == 1 && len(v) > 2 {
-				// Likely an operator in expression
-				if str, ok := item.(string); ok && isOperator(str) {
-					childType = "operator"
-				}
-			}
-			child := av.buildASTRecursive(item, childType, depth+1)
-			node.Children = append(node.Children, child)
-		}
-
-	case map[string]interface{}:
-		// Object/map structure
-		node.Type = "object"
-		for key, value := range v {
-			child := av.buildASTRecursive(value, key, depth+1)
-			node.Children = append(node.Children, child)
-		}
-
-	case string:
-		node.Value = v
-		// Detect token types
-		if isNumber(v) {
-			node.Type = "number"
-		} else if isOperator(v) {
-			node.Type = "operator"
-		} else if nodeType == "value" {
-			node.Type = "identifier"
-		}
-
-	case int, int64, float64:
-		node.Type = "number"
-		node.Value = fmt.Sprintf("%v", v)
-
-	case bool:
-		node.Type = "boolean"
-		node.Value = fmt.Sprintf("%v", v)
-
-	default:
-		// Generic handling
-		node.Value = fmt.Sprintf("%v", v)
-		if node.Value == "" {
-			node.Value = fmt.Sprintf("<%T>", v)
-		}
-	}
-
-	return node
-}
-
-func isOperator(s string) bool {
-	operators := []string{"+", "-", "*", "/", "=", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "and", "or", "not"}
-	for _, op := range operators {
-		if s == op {
-			return true
-		}
-	}
-	return false
-}
-
-func isNumber(s string) bool {
-	if _, err := fmt.Sscanf(s, "%f", new(float64)); err == nil {
-		return true
-	}
-	return false
 }
 
 func (v *ASTViewer) outputJSON(ast ASTNode) error {
 	var data []byte
 	var err error
-
 	if v.indent {
 		data, err = json.MarshalIndent(ast, "", "  ")
 	} else {
 		data, err = json.Marshal(ast)
 	}
-
 	if err != nil {
 		return err
 	}
-
 	fmt.Println(string(data))
 	return nil
 }
@@ -301,7 +213,6 @@ func (v *ASTViewer) outputYAML(ast ASTNode) error {
 	if err != nil {
 		return err
 	}
-
 	fmt.Print(string(data))
 	return nil
 }
@@ -312,24 +223,13 @@ func (v *ASTViewer) outputTree(ast ASTNode, depth int) error {
 }
 
 func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
-	// Determine node symbol based on type
 	symbol := "○"
-	switch node.Type {
-	case "expression", "root":
+	if len(node.Children) > 0 {
 		symbol = "◆"
-	case "operator":
+	} else if node.Value != "" {
 		symbol = "●"
-	case "number":
-		symbol = "#"
-	case "identifier":
-		symbol = "□"
-	case "object":
-		symbol = "{}"
-	case "boolean":
-		symbol = "?"
 	}
 
-	// Print current node
 	if isRoot {
 		fmt.Printf("%s %s", symbol, node.Type)
 	} else {
@@ -337,28 +237,16 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 	}
 
 	if node.Value != "" {
-		// Color-code values based on type
-		switch node.Type {
-		case "number":
-			fmt.Printf(" \033[36m%s\033[0m", node.Value) // Cyan for numbers
-		case "operator":
-			fmt.Printf(" \033[33m%s\033[0m", node.Value) // Yellow for operators
-		case "string", "identifier":
-			fmt.Printf(" \033[32m\"%s\"\033[0m", node.Value) // Green for strings
-		default:
-			fmt.Printf(": %s", node.Value)
-		}
+		fmt.Printf(": %q", node.Value)
 	}
-
 	if node.Action != "" {
-		fmt.Printf(" \033[35m→ %s\033[0m", node.Action) // Magenta for actions
+		fmt.Printf(" \033[35m→ %s\033[0m", node.Action)
 	}
 	fmt.Println()
 
-	// Show additional info in verbose mode
 	if av.verbose {
 		if node.Token != nil {
-			fmt.Printf("%s  ├─ token: %s = \"%s\" @ %d:%d\n",
+			fmt.Printf("%s  ├─ token: %s = %q @ %d:%d\n",
 				prefix, node.Token.Type, node.Token.Value, node.Token.Line, node.Token.Col)
 		}
 		if node.Rule != nil {
@@ -367,10 +255,8 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 		}
 	}
 
-	// Print children
 	for i, child := range node.Children {
 		isLast := i == len(node.Children)-1
-
 		var childPrefix string
 		if isRoot {
 			if isLast {
@@ -389,7 +275,6 @@ func (av *ASTViewer) outputTreeNode(node ASTNode, prefix string, isRoot bool) {
 				childPrefix = prefix + "│  "
 			}
 		}
-
 		av.outputTreeNode(child, childPrefix, false)
 	}
 }

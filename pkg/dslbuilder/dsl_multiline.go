@@ -2,7 +2,9 @@
 package dslbuilder
 
 import (
+	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // ParseMultiline parses multiple DSL statements separated by newlines.
@@ -32,18 +34,27 @@ func (d *DSL) ParseMultiline(code string) ([]interface{}, error) {
 			continue
 		}
 
+		leadBytes := len(line) - len(strings.TrimLeft(line, " \t\r"))
+		leadCols := utf8.RuneCountInString(line[:leadBytes])
+
 		// Parse the line
 		result, err := d.Parse(trimmed)
 		if err != nil {
-			// Enhance error with line number
+			// Enhance error with line number, column offset, and full input context
 			if parseErr, ok := err.(*ParseError); ok {
 				parseErr.Line = lineNum + 1
+				if parseErr.Column > 0 {
+					parseErr.Column += leadCols
+				} else {
+					parseErr.Column = leadCols + 1
+				}
+				parseErr.Input = code
 				return results, parseErr
 			}
 			return results, &ParseError{
 				Message: err.Error(),
 				Line:    lineNum + 1,
-				Column:  1,
+				Column:  leadCols + 1,
 				Token:   trimmed,
 				Input:   code,
 			}
@@ -128,7 +139,7 @@ func (d *DSL) ParseStatements(code string) ([]interface{}, error) {
 			if err != nil {
 				// Add position context
 				if parseErr, ok := err.(*ParseError); ok {
-					parseErr.Message = "in statement " + string(rune(i+1)) + ": " + parseErr.Message
+					parseErr.Message = "in statement " + strconv.Itoa(i+1) + ": " + parseErr.Message
 				}
 				return results, err
 			}

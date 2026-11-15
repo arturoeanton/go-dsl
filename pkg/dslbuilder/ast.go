@@ -45,6 +45,11 @@ type Node struct {
 	// ExpressionBuilder.Group without an action: evaluation passes
 	// through the inner expression value.
 	group bool
+
+	// callStep marks call expression nodes created by ExpressionBuilder.Call:
+	// Children = [callee, open, arg0, (sep, arg1)..., close]; evaluation
+	// passes [calleeVal, []interface{}{arg0Val, ...}] to the action.
+	callStep int
 }
 
 // IsToken reports whether the node is a token leaf.
@@ -139,24 +144,33 @@ func (d *DSL) ParseAST(code string) (*Node, error) {
 	return parser.Parse(code)
 }
 
-// EvalContext is passed to node actions (see NodeAction). It gives the
-// action explicit control over child evaluation, enabling lazy semantics
-// such as short-circuiting and conditional branches.
+// EvalContext is passed to node actions (see NodeAction) and context actions
+// (see ContextAction). It gives actions explicit control over child evaluation,
+// cancellation/deadlines, and call-scoped variables.
 type EvalContext struct {
 	dsl   *DSL
 	depth int
+	state *evalState
 }
 
 // Eval evaluates a node on demand. Nil nodes evaluate to nil.
 func (c *EvalContext) Eval(node *Node) (interface{}, error) {
-	return c.dsl.evalNode(node, c.depth)
+	var traceSlot *TraceNode
+	if c.state != nil && c.state.childSlots != nil && node != nil {
+		traceSlot = c.state.childSlots[node]
+	}
+	return c.dsl.evalNodeWithState(node, c.depth, c.state, traceSlot)
 }
 
 // EvalChildren evaluates every child of a node, in order.
 func (c *EvalContext) EvalChildren(node *Node) ([]interface{}, error) {
 	args := make([]interface{}, len(node.Children))
 	for i, child := range node.Children {
-		value, err := c.dsl.evalNode(child, c.depth)
+		var traceSlot *TraceNode
+		if c.state != nil && c.state.childSlots != nil && child != nil {
+			traceSlot = c.state.childSlots[child]
+		}
+		value, err := c.dsl.evalNodeWithState(child, c.depth, c.state, traceSlot)
 		if err != nil {
 			return nil, err
 		}
@@ -215,6 +229,13 @@ func (d *DSL) lookupNodeAction(name string) (NodeActionFunc, bool) {
 	return fn, ok
 }
 
+func (d *DSL) lookupContextAction(name string) (ContextActionFunc, bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	fn, ok := d.contextActions[name]
+	return fn, ok
+}
+
 // Eval evaluates a parse tree produced by ParseAST, executing the
 // registered actions bottom-up. Token leaves evaluate to their text;
 // rule nodes evaluate their children and pass the results to the
@@ -227,49 +248,11 @@ func (d *DSL) lookupNodeAction(name string) (NodeActionFunc, bool) {
 // Evaluation depth is bounded (maxEvalDepth) so pathological trees return
 // an error instead of overflowing the stack.
 func (d *DSL) Eval(node *Node) (interface{}, error) {
-	return d.evalNode(node, 0)
+	return d.evalNodeWithState(node, 0, nil, nil)
 }
 
 func (d *DSL) evalNode(node *Node, depth int) (interface{}, error) {
-	if node == nil {
-		return nil, nil
-	}
-	if depth >= maxEvalDepth {
-		return nil, fmt.Errorf("maximum evaluation depth exceeded (%d): tree is nested too deeply", maxEvalDepth)
-	}
-
-	if node.Token != nil {
-		return node.Token.Value, nil
-	}
-
-	// Lazy node actions decide what to evaluate.
-	if node.Action != "" {
-		if fn, exists := d.lookupNodeAction(node.Action); exists {
-			return fn(&EvalContext{dsl: d, depth: depth + 1}, node)
-		}
-	}
-
-	args := make([]interface{}, len(node.Children))
-	for i, child := range node.Children {
-		value, err := d.evalNode(child, depth+1)
-		if err != nil {
-			return nil, err
-		}
-		args[i] = value
-	}
-
-	if node.Action != "" {
-		if action, exists := d.lookupAction(node.Action); exists {
-			return action(args)
-		}
-	}
-
-	// Parenthesized group without action: pass through the inner value.
-	if node.group && len(args) == 3 {
-		return args[1], nil
-	}
-
-	return args, nil
+	return d.evalNodeWithState(node, depth, nil, nil)
 }
 
 // parseFailure records the farthest point reached by the parser before
@@ -298,13 +281,26 @@ type astParser struct {
 	depth     int // current recursion depth (bounded by maxParseDepth)
 
 	// Indirect left recursion support (generalized growing, see
-	// parseCycleLR): rules involved in multi-rule leftmost cycles, the
-	// active seeds keyed by "rule@pos", and the number of active heads.
-	// While a head is active the memo table is disabled, because entries
-	// computed under a temporary seed would be unsound afterwards.
+	// parseCycleLR): rules involved in multi-rule leftmost cycles, rules
+	// that can reach a cycle rule, the active seeds keyed by "rule@pos",
+	// and the number of active heads.
 	leftCycleRules map[string]bool
+	cycleDependent map[string]bool
 	lrSeeds        map[string]lrSeed
 	lrHeads        int
+
+	// Step budget and lookahead dependency tracking (used by incremental Document).
+	steps       int
+	maxTokenPos int
+	hitEOF      bool
+}
+
+func (p *astParser) touchPos() {
+	if p.pos >= len(p.tokens) {
+		p.hitEOF = true
+	} else if p.pos > p.maxTokenPos {
+		p.maxTokenPos = p.pos
+	}
 }
 
 // lrSeed is the current best parse of a cycle rule at a position while its
@@ -322,14 +318,64 @@ type astMemoEntry struct {
 }
 
 func newASTParser(grammar *Grammar) *astParser {
+	cycles := leftCycleRuleSet(grammar)
 	return &astParser{
 		grammar:        grammar,
 		memo:           make(map[string]map[int]astMemoEntry),
 		growing:        make(map[string]bool),
 		failure:        parseFailure{tokenPos: -1},
-		leftCycleRules: leftCycleRuleSet(grammar),
+		leftCycleRules: cycles,
+		cycleDependent: cycleDependentRuleSet(grammar, cycles),
 		lrSeeds:        make(map[string]lrSeed),
+		maxTokenPos:    -1,
 	}
+}
+
+// cycleDependentRuleSet returns the set of rules that can transitively reach
+// any rule in cycleRules. Rules outside this set can safely retain Packrat
+// memoization even while an indirect-LR head is growing.
+func cycleDependentRuleSet(g *Grammar, cycleRules map[string]bool) map[string]bool {
+	if len(cycleRules) == 0 {
+		return nil
+	}
+	dep := make(map[string]bool, len(cycleRules))
+	for r := range cycleRules {
+		dep[r] = true
+	}
+	changed := true
+	for changed {
+		changed = false
+		for name, rule := range g.rules {
+			if dep[name] {
+				continue
+			}
+			for _, alt := range rule.alternatives {
+				for _, sym := range alt.sequence {
+					if dep[sym] {
+						dep[name] = true
+						changed = true
+						break
+					}
+				}
+				if dep[name] {
+					break
+				}
+			}
+		}
+		for name, spec := range g.exprRules {
+			if dep[name] {
+				continue
+			}
+			for _, gr := range spec.groups {
+				if dep[gr.inner] {
+					dep[name] = true
+					changed = true
+					break
+				}
+			}
+		}
+	}
+	return dep
 }
 
 // leftCycleRuleSet returns the rules that participate in a multi-rule
@@ -396,6 +442,9 @@ func leftCycleRuleSet(g *Grammar) map[string]bool {
 func (p *astParser) Parse(code string) (*Node, error) {
 	p.tokens = nil
 	p.pos = 0
+	p.steps = 0
+	p.maxTokenPos = -1
+	p.hitEOF = false
 	p.memo = make(map[string]map[int]astMemoEntry)
 	p.input = code
 	p.growing = make(map[string]bool)
@@ -527,14 +576,26 @@ var errNoMatch = fmt.Errorf("no match")
 const (
 	maxParseDepth = 10000
 	maxEvalDepth  = 10000
+	maxParseSteps = 1000000
 )
 
-// errParseDepthExceeded aborts parsing immediately: unlike errNoMatch it is
-// not swallowed by alternative backtracking.
-var errParseDepthExceeded = fmt.Errorf("maximum parse depth exceeded (%d): input is nested too deeply", maxParseDepth)
+// errParseDepthExceeded and errParseStepsExceeded abort parsing immediately:
+// unlike errNoMatch they are not swallowed by alternative backtracking.
+var (
+	errParseDepthExceeded = fmt.Errorf("maximum parse depth exceeded (%d): input is nested too deeply", maxParseDepth)
+	errParseStepsExceeded = fmt.Errorf("maximum parse steps exceeded (%d): excessive backtracking", maxParseSteps)
+)
+
+func isFatalParseErr(err error) bool {
+	return err == errParseDepthExceeded || err == errParseStepsExceeded
+}
 
 // parseRule parses a rule (or expression rule) with memoization.
 func (p *astParser) parseRule(ruleName string) (*Node, error) {
+	p.steps++
+	if p.steps > maxParseSteps {
+		return nil, errParseStepsExceeded
+	}
 	if p.depth >= maxParseDepth {
 		return nil, errParseDepthExceeded
 	}
@@ -555,9 +616,9 @@ func (p *astParser) parseRule(ruleName string) (*Node, error) {
 		return node, err
 	}
 
-	// The memo table is disabled while a cycle head is growing: results
-	// computed under a temporary seed would be unsound once it changes.
-	useMemo := p.lrHeads == 0
+	// Memoization stays active for rules that cannot reach an active
+	// indirect-LR cycle head, preventing exponential re-parsing.
+	useMemo := p.lrHeads == 0 || !p.cycleDependent[ruleName]
 
 	if useMemo {
 		if ruleMemo, exists := p.memo[ruleName]; exists {
@@ -622,9 +683,12 @@ func (p *astParser) parseCycleLR(ruleName string) (*Node, error) {
 		return seed.node, nil
 	}
 
-	// This call becomes a head.
+	// This call becomes a head: purge only cycle-dependent memo entries so
+	// independent sub-rules keep their linear-time Packrat cache.
 	if p.lrHeads == 0 {
-		p.memo = make(map[string]map[int]astMemoEntry)
+		for dep := range p.cycleDependent {
+			delete(p.memo, dep)
+		}
 	}
 	p.lrHeads++
 	p.lrSeeds[key] = lrSeed{node: nil, end: startPos}
@@ -632,7 +696,9 @@ func (p *astParser) parseCycleLR(ruleName string) (*Node, error) {
 		delete(p.lrSeeds, key)
 		p.lrHeads--
 		if p.lrHeads == 0 {
-			p.memo = make(map[string]map[int]astMemoEntry)
+			for dep := range p.cycleDependent {
+				delete(p.memo, dep)
+			}
 		}
 	}()
 
@@ -651,6 +717,9 @@ func (p *astParser) parseCycleLR(ruleName string) (*Node, error) {
 		} else {
 			// Growth round: longest alternative wins so the seed extends.
 			node, err = p.parseRuleLongest(ruleName)
+		}
+		if isFatalParseErr(err) {
+			return nil, err
 		}
 		if err != nil {
 			break
@@ -690,7 +759,7 @@ func (p *astParser) parseRuleLongest(ruleName string) (*Node, error) {
 	for _, alt := range rule.alternatives {
 		p.pos = startPos
 		node, err := p.parseAlternative(ruleName, alt)
-		if err == errParseDepthExceeded {
+		if isFatalParseErr(err) {
 			return nil, err
 		}
 		if err == nil && (!found || p.pos > bestPos) {
@@ -739,7 +808,7 @@ func (p *astParser) parseRuleRegular(ruleName string) (*Node, error) {
 		if err == nil {
 			return node, nil
 		}
-		if err == errParseDepthExceeded {
+		if isFatalParseErr(err) {
 			return nil, err // abort: not a normal alternative failure
 		}
 		p.pos = savedPos
@@ -771,7 +840,8 @@ func (p *astParser) parseAlternative(ruleName string, alt *Alternative) (*Node, 
 
 // parseSymbol matches a single symbol: a token or a nested rule.
 func (p *astParser) parseSymbol(symbol string) (*Node, error) {
-	if _, isToken := p.grammar.tokens[symbol]; isToken {
+	if p.grammar.isToken(symbol) {
+		p.touchPos()
 		if p.pos >= len(p.tokens) {
 			p.recordFailure(symbol)
 			return nil, errNoMatch
@@ -822,6 +892,9 @@ func (p *astParser) parseLeftRecursive(ruleName string) (*Node, error) {
 		}
 		p.pos = startPos
 		node, err := p.parseAlternative(ruleName, alt)
+		if isFatalParseErr(err) {
+			return nil, err
+		}
 		if err == nil {
 			seed = node
 			seedPos = p.pos
@@ -853,6 +926,9 @@ func (p *astParser) parseLeftRecursive(ruleName string) (*Node, error) {
 			for i := 1; i < len(alt.sequence); i++ {
 				child, err := p.parseSymbol(alt.sequence[i])
 				if err != nil {
+					if isFatalParseErr(err) {
+						return nil, err
+					}
 					success = false
 					break
 				}

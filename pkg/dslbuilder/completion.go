@@ -57,11 +57,29 @@ func (d *DSL) Completions(text string, offset int) []Completion {
 	sort.Strings(expected)
 	completions := make([]Completion, 0, len(expected))
 	for _, tokName := range expected {
+		if d.grammar.significantNewlines && tokName == "NEWLINE" {
+			if _, explicit := d.grammar.tokens[tokName]; !explicit {
+				completions = append(completions, Completion{
+					Label:     "\n",
+					Token:     "NEWLINE",
+					IsKeyword: true,
+					Detail:    "newline",
+				})
+				continue
+			}
+		}
 		tok, ok := d.grammar.tokens[tokName]
-		if !ok {
+		if !ok || tok.skip {
 			continue
 		}
-		if literal, isLiteral := literalText(tok.pattern); isLiteral {
+		if (tok.kind == tokenKindKeyword || tok.kind == tokenKindLiteral) && tok.rawText != "" {
+			completions = append(completions, Completion{
+				Label:     tok.rawText,
+				Token:     tokName,
+				IsKeyword: true,
+				Detail:    string(tok.kind),
+			})
+		} else if literal, isLiteral := literalText(tok.pattern); isLiteral {
 			completions = append(completions, Completion{
 				Label:     literal,
 				Token:     tokName,
@@ -94,9 +112,11 @@ func (d *DSL) expectedAt(prefix, startRule string) []string {
 	for pos < len(tokens) && rounds < maxDiagnostics {
 		rounds++
 		parser.pos = pos
+		parser.memo = make(map[string]map[int]astMemoEntry)
 		parser.failure = parseFailure{tokenPos: -1}
 		parser.ruleStack = nil
 		parser.hintStack = nil
+		parser.steps = 0
 
 		_, err := parser.parseRule(startRule)
 		if err == nil {

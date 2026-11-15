@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,8 +25,7 @@ type REPL struct {
 	showTime    bool
 	historyFile string
 	historyIdx  int
-	tokens      []string // For autocomplete
-	rules       []string // For autocomplete
+	quit        bool
 }
 
 type HistoryEntry struct {
@@ -44,6 +45,7 @@ func main() {
 		showAST     bool
 		showTime    bool
 		multiline   bool
+		interactive bool
 		commands    []string
 	)
 
@@ -53,6 +55,7 @@ func main() {
 	flag.BoolVar(&showAST, "ast", false, "Show AST representation of parsed input")
 	flag.BoolVar(&showTime, "time", false, "Show execution time for each command")
 	flag.BoolVar(&multiline, "multiline", false, "Enable multiline input mode")
+	flag.BoolVar(&interactive, "i", false, "Stay in interactive mode after -exec commands")
 	flag.Func("exec", "Execute commands (can be used multiple times)", func(s string) error {
 		commands = append(commands, s)
 		return nil
@@ -72,12 +75,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  .set <k> <v> Set context variable\n")
 		fmt.Fprintf(os.Stderr, "  .load <file> Load and execute commands from file\n")
 		fmt.Fprintf(os.Stderr, "  .save <file> Save history to file\n")
+		fmt.Fprintf(os.Stderr, "  .tokens      Show grammar tokens\n")
+		fmt.Fprintf(os.Stderr, "  .rules       Show grammar rules\n")
 		fmt.Fprintf(os.Stderr, "  .ast on/off  Toggle AST display\n")
 		fmt.Fprintf(os.Stderr, "  .time on/off Toggle execution time display\n")
-		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  %s -dsl calculator.yaml\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -dsl query.json -context data.json\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -dsl accounting.yaml -exec \"venta de 1000\" -exec \"venta de 2000\"\n", os.Args[0])
 	}
 
 	flag.Parse()
@@ -87,13 +88,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Load DSL
 	dsl, err := loadDSL(dslFile)
 	if err != nil {
 		log.Fatalf("Error loading DSL: %v", err)
 	}
 
-	// Create REPL instance
 	repl := &REPL{
 		dsl:         dsl,
 		history:     []HistoryEntry{},
@@ -105,37 +104,32 @@ func main() {
 		historyFile: historyFile,
 	}
 
-	// Load context if provided
 	if contextFile != "" {
 		if err := repl.loadContext(contextFile); err != nil {
 			log.Printf("Warning: Failed to load context: %v", err)
 		}
 	}
 
-	// Load history if file specified
 	if historyFile != "" {
 		repl.loadHistory()
 	}
 
-	// Execute commands if provided
 	for _, cmd := range commands {
 		repl.execute(cmd)
 	}
 
-	// Start interactive mode if no commands or after executing commands
-	if len(commands) == 0 || isInteractive() {
+	// Run interactive loop when no -exec commands were passed, or when -i was explicitly requested.
+	if len(commands) == 0 || interactive {
 		repl.run()
 	}
 
-	// Save history on exit
 	if historyFile != "" {
 		repl.saveHistory()
 	}
 }
 
 func loadDSL(filename string) (*dslbuilder.DSL, error) {
-	// First try to load from config file
-	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
 
 	var dsl *dslbuilder.DSL
 	var err error
@@ -146,10 +140,11 @@ func loadDSL(filename string) (*dslbuilder.DSL, error) {
 	case "json":
 		dsl, err = dslbuilder.LoadFromJSONFile(filename)
 	case "go":
-		// For .go files, we would need to compile and load
-		// This is a placeholder for future implementation
 		return nil, fmt.Errorf("loading from Go files not yet implemented")
 	default:
+		if ext == "" {
+			return nil, fmt.Errorf("missing file extension in %q (expected .yaml, .yml, or .json)", filename)
+		}
 		return nil, fmt.Errorf("unsupported file format: %s", ext)
 	}
 
@@ -157,17 +152,26 @@ func loadDSL(filename string) (*dslbuilder.DSL, error) {
 		return nil, err
 	}
 
-	// Register example actions (in real use, these would be provided by the DSL definition)
 	registerExampleActions(dsl)
-
 	return dsl, nil
 }
 
 func registerExampleActions(dsl *dslbuilder.DSL) {
-	// Register common actions to prevent errors
-	// In a real implementation, actions would be defined in the DSL file or separately
+	// Register fallback passthrough actions first for any custom action referenced in the grammar,
+	// then override standard arithmetic actions below.
+	cfg := dsl.ToConfig()
+	for _, r := range cfg.Rules {
+		if r.Action != "" {
+			actName := r.Action
+			dsl.Action(actName, func(args []interface{}) (interface{}, error) {
+				if len(args) == 1 {
+					return args[0], nil
+				}
+				return args, nil
+			})
+		}
+	}
 
-	// Math operations
 	dsl.Action("add", func(args []interface{}) (interface{}, error) {
 		if len(args) >= 3 {
 			left, _ := toNumber(args[0])
@@ -207,7 +211,6 @@ func registerExampleActions(dsl *dslbuilder.DSL) {
 		return nil, fmt.Errorf("invalid arguments for divide")
 	})
 
-	// Generic passthrough
 	dsl.Action("passthrough", func(args []interface{}) (interface{}, error) {
 		if len(args) > 0 {
 			return args[0], nil
@@ -215,7 +218,6 @@ func registerExampleActions(dsl *dslbuilder.DSL) {
 		return args, nil
 	})
 
-	// Number parsing
 	dsl.Action("number", func(args []interface{}) (interface{}, error) {
 		if len(args) > 0 {
 			return toNumber(args[0])
@@ -246,25 +248,25 @@ func (r *REPL) run() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	for {
-		// Show prompt
+	for !r.quit {
 		if r.multiline && len(r.buffer) > 0 {
 			fmt.Printf("... ")
 		} else {
 			fmt.Printf("DSL> ")
 		}
 
-		// Read input
 		if !scanner.Scan() {
 			break
 		}
 
 		input := scanner.Text()
 
-		// Handle multiline mode
 		if r.multiline {
+			if strings.TrimSpace(input) == ".exit" || strings.TrimSpace(input) == ".quit" {
+				r.quit = true
+				break
+			}
 			if input == "" && len(r.buffer) > 0 {
-				// Empty line ends multiline input
 				fullInput := strings.Join(r.buffer, "\n")
 				r.buffer = []string{}
 				r.execute(fullInput)
@@ -274,7 +276,6 @@ func (r *REPL) run() {
 			continue
 		}
 
-		// Process single line input
 		r.processInput(input)
 	}
 
@@ -282,13 +283,10 @@ func (r *REPL) run() {
 }
 
 func (r *REPL) processInput(input string) {
-	// Handle REPL commands
 	if strings.HasPrefix(input, ".") {
 		r.handleCommand(input)
 		return
 	}
-
-	// Execute DSL input
 	r.execute(input)
 }
 
@@ -302,7 +300,7 @@ func (r *REPL) handleCommand(input string) {
 	case ".help":
 		r.showHelp()
 	case ".exit", ".quit":
-		os.Exit(0)
+		r.quit = true
 	case ".history":
 		r.showHistory()
 	case ".clear":
@@ -377,13 +375,9 @@ func (r *REPL) execute(input string) {
 	}
 
 	start := time.Now()
-
-	// Parse with context
 	result, err := r.dsl.Use(input, r.context)
-
 	duration := time.Since(start)
 
-	// Record in history
 	entry := HistoryEntry{
 		Index:     len(r.history) + 1,
 		Input:     input,
@@ -394,9 +388,7 @@ func (r *REPL) execute(input string) {
 	}
 
 	if err != nil {
-		fmt.Printf("\033[31mError: %v\033[0m\n", err) // Red color for errors
-
-		// Try to provide helpful suggestions
+		fmt.Printf("\033[31mError: %v\033[0m\n", err)
 		if strings.Contains(err.Error(), "unexpected token") {
 			r.suggestTokens(input)
 		} else if strings.Contains(err.Error(), "no matching rule") {
@@ -405,17 +397,13 @@ func (r *REPL) execute(input string) {
 	} else {
 		output := result.GetOutput()
 		entry.Output = output
-
-		// Display result with better formatting
 		r.displayOutput(output)
 
-		// Show AST if enabled
 		if r.showAST {
-			r.displayAST(result)
+			r.displayAST(result.GetAST())
 		}
 	}
 
-	// Show execution time if enabled
 	if r.showTime {
 		fmt.Printf("⏱  %v\n", duration)
 	}
@@ -423,11 +411,14 @@ func (r *REPL) execute(input string) {
 	r.history = append(r.history, entry)
 }
 
-func (r *REPL) displayAST(result interface{}) {
+func (r *REPL) displayAST(node *dslbuilder.Node) {
 	fmt.Println("\n--- AST ---")
-	// Simplified AST display
-	data, _ := json.MarshalIndent(result, "", "  ")
-	fmt.Println(string(data))
+	if node == nil {
+		fmt.Println("nil")
+	} else {
+		data, _ := json.MarshalIndent(node, "", "  ")
+		fmt.Println(string(data))
+	}
 	fmt.Println("--- End AST ---")
 	fmt.Println()
 }
@@ -456,18 +447,21 @@ func (r *REPL) showContext() {
 	}
 
 	fmt.Println("Current context:")
-	for k, v := range r.context {
-		fmt.Printf("  %s: %v\n", k, v)
+	keys := make([]string, 0, len(r.context))
+	for k := range r.context {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		fmt.Printf("  %s: %v\n", k, r.context[k])
 	}
 }
 
 func (r *REPL) setContext(key, value string) {
-	// Try to parse value as JSON first
 	var parsed interface{}
 	if err := json.Unmarshal([]byte(value), &parsed); err == nil {
 		r.context[key] = parsed
 	} else {
-		// Otherwise store as string
 		r.context[key] = value
 	}
 	fmt.Printf("Set %s = %v\n", key, r.context[key])
@@ -478,7 +472,6 @@ func (r *REPL) loadContext(filename string) error {
 	if err != nil {
 		return err
 	}
-
 	return json.Unmarshal(data, &r.context)
 }
 
@@ -526,8 +519,43 @@ func (r *REPL) saveHistoryToFile(filename string) {
 }
 
 func (r *REPL) loadHistory() {
-	// Implementation would load history from file
-	// For now, this is a placeholder
+	if r.historyFile == "" {
+		return
+	}
+	file, err := os.Open(r.historyFile)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	var currentTs time.Time
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "# ") {
+			if ts, err := time.Parse(time.RFC3339, strings.TrimPrefix(line, "# ")); err == nil {
+				currentTs = ts
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		ts := currentTs
+		if ts.IsZero() {
+			ts = time.Now()
+		}
+		r.history = append(r.history, HistoryEntry{
+			Index:     len(r.history) + 1,
+			Input:     line,
+			Timestamp: ts,
+		})
+		currentTs = time.Time{}
+	}
+	r.historyIdx = len(r.history)
 }
 
 func (r *REPL) saveHistory() {
@@ -537,7 +565,10 @@ func (r *REPL) saveHistory() {
 }
 
 func isInteractive() bool {
-	fi, _ := os.Stdin.Stat()
+	fi, err := os.Stdin.Stat()
+	if err != nil || fi == nil {
+		return false
+	}
 	return fi.Mode()&os.ModeCharDevice != 0
 }
 
@@ -546,9 +577,9 @@ func (r *REPL) displayOutput(output interface{}) {
 	case string:
 		fmt.Println(v)
 	case int, int64, float64:
-		fmt.Printf("\033[36m%v\033[0m\n", v) // Cyan for numbers
+		fmt.Printf("\033[36m%v\033[0m\n", v)
 	case bool:
-		fmt.Printf("\033[35m%v\033[0m\n", v) // Magenta for booleans
+		fmt.Printf("\033[35m%v\033[0m\n", v)
 	case []interface{}:
 		if len(v) == 0 {
 			fmt.Println("[]")
@@ -563,9 +594,8 @@ func (r *REPL) displayOutput(output interface{}) {
 		data, _ := json.MarshalIndent(v, "", "  ")
 		fmt.Println(string(data))
 	case nil:
-		fmt.Println("\033[90mnil\033[0m") // Gray for nil
+		fmt.Println("\033[90mnil\033[0m")
 	default:
-		// Try JSON for complex types
 		if data, err := json.MarshalIndent(output, "", "  "); err == nil {
 			fmt.Println(string(data))
 		} else {
@@ -575,24 +605,51 @@ func (r *REPL) displayOutput(output interface{}) {
 }
 
 func (r *REPL) suggestTokens(input string) {
-	// This would need access to DSL tokens to provide suggestions
+	comps := r.dsl.Completions(input, len(input))
+	if len(comps) > 0 {
+		labels := make([]string, 0, len(comps))
+		for _, c := range comps {
+			labels = append(labels, c.Label)
+		}
+		fmt.Printf("\033[33mExpected next: %s\033[0m\n", strings.Join(labels, ", "))
+		return
+	}
 	fmt.Println("\033[33mHint: Use .tokens to see available tokens\033[0m")
 }
 
 func (r *REPL) showTokens() {
 	fmt.Println("\033[1mAvailable Tokens:\033[0m")
-	// In a real implementation, we would introspect the DSL
-	// For now, show a message
-	fmt.Println("Token information not available in current implementation")
-	fmt.Println("Check your DSL configuration file for token definitions")
+	cfg := r.dsl.ToConfig()
+	if len(cfg.TokenDefs) == 0 {
+		fmt.Println("  (no tokens defined)")
+		return
+	}
+	for _, td := range cfg.TokenDefs {
+		kind := td.Kind
+		if kind == "" {
+			kind = "regex"
+		}
+		fmt.Printf("  %-16s [%s] %s\n", td.Name, kind, td.Pattern)
+	}
 }
 
 func (r *REPL) showRules() {
 	fmt.Println("\033[1mAvailable Rules:\033[0m")
-	// In a real implementation, we would introspect the DSL
-	// For now, show a message
-	fmt.Println("Rule information not available in current implementation")
-	fmt.Println("Check your DSL configuration file for rule definitions")
+	cfg := r.dsl.ToConfig()
+	if len(cfg.Rules) == 0 && len(cfg.Expressions) == 0 {
+		fmt.Println("  (no rules defined)")
+		return
+	}
+	for _, rule := range cfg.Rules {
+		act := rule.Action
+		if act == "" {
+			act = "(passthrough)"
+		}
+		fmt.Printf("  %s -> %s [%s]\n", rule.Name, strings.Join(rule.Pattern, " "), act)
+	}
+	for _, expr := range cfg.Expressions {
+		fmt.Printf("  %s -> <Pratt Expression>\n", expr.Name)
+	}
 }
 
 func (r *REPL) showHelp() {
@@ -612,9 +669,4 @@ func (r *REPL) showHelp() {
 	fmt.Println("  \033[32m.rules\033[0m        Show available rules")
 	fmt.Println("  \033[32m.reset\033[0m        Reset context and buffer")
 	fmt.Println("  \033[32m.last\033[0m         Show last command and result")
-	fmt.Println()
-	fmt.Println("\033[1mDSL Syntax:\033[0m")
-	fmt.Println("  Enter DSL commands directly")
-	fmt.Println("  Use context variables with .set command")
-	fmt.Println("  Check your DSL configuration for available syntax")
 }

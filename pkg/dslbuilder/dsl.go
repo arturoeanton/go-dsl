@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"unicode/utf8"
 )
 
 // ParseError provides detailed error information with line and column.
@@ -42,10 +43,32 @@ func (pe *ParseError) DetailedError() string {
 	}
 
 	context := pe.getContextLine()
-	pointer := strings.Repeat(" ", pe.Column-1) + "^"
+	col := pe.Column
+	if col < 1 {
+		col = 1
+	}
+
+	var pointer strings.Builder
+	runeIdx := 0
+	for _, r := range context {
+		if runeIdx >= col-1 {
+			break
+		}
+		if r == '\t' {
+			pointer.WriteByte('\t')
+		} else {
+			pointer.WriteByte(' ')
+		}
+		runeIdx++
+	}
+	for runeIdx < col-1 {
+		pointer.WriteByte(' ')
+		runeIdx++
+	}
+	pointer.WriteByte('^')
 
 	return fmt.Sprintf("%s at line %d, column %d:\n%s\n%s",
-		pe.Message, pe.Line, pe.Column, context, pointer)
+		pe.Message, pe.Line, pe.Column, context, pointer.String())
 }
 
 // getContextLine extracts the line containing the error from the input.
@@ -58,6 +81,9 @@ func (pe *ParseError) getContextLine() string {
 	lines := strings.Split(pe.Input, "\n")
 	if pe.Line > 0 && pe.Line <= len(lines) {
 		return lines[pe.Line-1]
+	}
+	if len(lines) == 1 && pe.Line > 1 {
+		return lines[0]
 	}
 
 	return ""
@@ -86,8 +112,8 @@ func GetDetailedError(err error) string {
 	return err.Error()
 }
 
-// calculateLineColumn calculates line and column numbers from a character position.
-// It takes a 0-based character position and returns 1-based line and column numbers.
+// calculateLineColumn calculates line and column numbers from a byte position.
+// It takes a 0-based byte offset and returns 1-based line and UTF-8 rune column numbers.
 // This is used internally to convert absolute positions to human-readable locations.
 func calculateLineColumn(input string, position int) (line int, column int) {
 	if position < 0 || position > len(input) {
@@ -97,13 +123,15 @@ func calculateLineColumn(input string, position int) (line int, column int) {
 	line = 1
 	column = 1
 
-	for i := 0; i < position && i < len(input); i++ {
-		if input[i] == '\n' {
+	for i := 0; i < position && i < len(input); {
+		r, size := utf8.DecodeRuneInString(input[i:])
+		if r == '\n' {
 			line++
 			column = 1
 		} else {
 			column++
 		}
+		i += size
 	}
 
 	return line, column
@@ -145,19 +173,20 @@ func createParseError(message string, position int, token string, input string) 
 // safe for concurrent Use/Parse with context (see Use). For concurrent
 // parsing, freeze it with Build() and share the CompiledDSL.
 type DSL struct {
-	name        string                    // Name of the DSL for identification
-	grammar     *Grammar                  // Grammar rules and tokens
-	actions     map[string]ActionFunc     // Semantic actions for rules
-	nodeActions map[string]NodeActionFunc // Lazy actions receiving raw AST nodes
-	functions   map[string]interface{}    // Go functions available to DSL code
-	context     map[string]interface{}    // Persistent context variables (defaults)
+	name           string                       // Name of the DSL for identification
+	grammar        *Grammar                     // Grammar rules and tokens
+	actions        map[string]ActionFunc        // Semantic actions for rules
+	nodeActions    map[string]NodeActionFunc    // Lazy actions receiving raw AST nodes
+	contextActions map[string]ContextActionFunc // Context-aware actions receiving EvalContext + args
+	functions      map[string]interface{}       // Go functions available to DSL code
+	context        map[string]interface{}       // Persistent context variables (defaults)
 
 	// parseContext holds context values scoped to the current Use() call.
 	// It shadows d.context during that parse and is discarded afterwards,
 	// so Use() no longer mutates the DSL's persistent context.
 	parseContext map[string]interface{}
 
-	// mu protects the context, parseContext, and functions maps so that
+	// mu protects the context, parseContext, deferredErrors, and functions maps so that
 	// Set/Get/SetContext/GetContext are safe under concurrent access.
 	mu sync.RWMutex
 
@@ -170,6 +199,18 @@ type DSL struct {
 	// the DSL are rejected. BuildAllowLateActions leaves it false and
 	// late registration goes through CompiledDSL.Action/NodeAction.
 	actionsFrozen bool
+
+	// tests holds declarative test cases loaded from YAML/JSON configs.
+	tests []DSLTestCase
+}
+
+func (d *DSL) addDeferredError(err error) {
+	if err == nil {
+		return
+	}
+	d.mu.Lock()
+	d.deferredErrors = append(d.deferredErrors, err)
+	d.mu.Unlock()
 }
 
 // ActionFunc is a function that processes parsed tokens and returns a result.
@@ -185,6 +226,11 @@ type DSL struct {
 //	})
 type ActionFunc func(args []interface{}) (interface{}, error)
 
+// ContextActionFunc is an action that receives both an EvalContext (giving
+// access to context.Context, call-scoped Vars, and DSL context) and the
+// pre-evaluated child arguments.
+type ContextActionFunc func(ctx *EvalContext, args []interface{}) (interface{}, error)
+
 // New creates a new DSL instance with the given name.
 // The name is used for identification and debugging purposes.
 //
@@ -195,11 +241,12 @@ type ActionFunc func(args []interface{}) (interface{}, error)
 //	calc.Rule("expr", []string{"NUM"}, "number")
 func New(name string) *DSL {
 	return &DSL{
-		name:      name,
-		grammar:   NewGrammar(),
-		actions:   make(map[string]ActionFunc),
-		functions: make(map[string]interface{}),
-		context:   make(map[string]interface{}),
+		name:           name,
+		grammar:        NewGrammar(),
+		actions:        make(map[string]ActionFunc),
+		contextActions: make(map[string]ContextActionFunc),
+		functions:      make(map[string]interface{}),
+		context:        make(map[string]interface{}),
 	}
 }
 
@@ -240,6 +287,38 @@ func (d *DSL) Token(name, pattern string) error {
 // Keywords have priority 90 (regular tokens have priority 0).
 func (d *DSL) KeywordToken(name, keyword string) error {
 	return d.grammar.AddKeywordToken(name, keyword)
+}
+
+// LiteralToken defines an exact literal token (escaping regex metacharacters).
+func (d *DSL) LiteralToken(name, text string) error {
+	return d.grammar.AddLiteralToken(name, text)
+}
+
+// SkipToken defines a lexical token (such as line or block comments) that is
+// matched at high priority (80), skipped during normal parsing, and preserved
+// as trivia in TokenizeWithTrivia / Format.
+func (d *DSL) SkipToken(name, pattern string) error {
+	return d.grammar.AddSkipToken(name, pattern)
+}
+
+// SetSignificantNewlines controls whether '\n' / '\r\n' are emitted as tokens
+// (default token name "NEWLINE" unless matched by a higher-priority token)
+// instead of being skipped as whitespace.
+func (d *DSL) SetSignificantNewlines(enabled bool) {
+	if d.grammar.frozen {
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot modify significant newlines"))
+		return
+	}
+	d.grammar.significantNewlines = enabled
+}
+
+// SetStartRule explicitly sets the grammar's entry-point rule.
+func (d *DSL) SetStartRule(name string) {
+	if d.grammar.frozen {
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot set start rule %s", name))
+		return
+	}
+	d.grammar.startRule = name
 }
 
 // TokenWithLookaround defines a token with lookahead/lookbehind assertions.
@@ -291,8 +370,7 @@ func (d *DSL) TokenWithLookaround(name, pattern string, lookahead, lookbehind st
 // The first rule defined becomes the start rule if not otherwise specified.
 func (d *DSL) Rule(name string, pattern []string, actionName string) {
 	if d.grammar.frozen {
-		d.deferredErrors = append(d.deferredErrors,
-			fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
 		return
 	}
 	d.grammar.AddRule(name, pattern, actionName)
@@ -310,8 +388,7 @@ func (d *DSL) Rule(name string, pattern []string, actionName string) {
 //	// hint: expected a comparison like '$status == 200'
 func (d *DSL) RuleWithError(name string, pattern []string, actionName string, errorMessage string) {
 	if d.grammar.frozen {
-		d.deferredErrors = append(d.deferredErrors,
-			fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
 		return
 	}
 	d.grammar.AddRule(name, pattern, actionName)
@@ -336,8 +413,7 @@ func (d *DSL) RuleWithError(name string, pattern []string, actionName string, er
 // This method is kept only for backward compatibility.
 func (d *DSL) RuleWithPrecedence(name string, pattern []string, actionName string, precedence int, associativity string) {
 	if d.grammar.frozen {
-		d.deferredErrors = append(d.deferredErrors,
-			fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
 		return
 	}
 	d.grammar.AddRuleWithPrecedence(name, pattern, actionName, precedence, associativity)
@@ -368,6 +444,10 @@ func (d *DSL) RuleWithPrecedence(name string, pattern []string, actionName strin
 //	    return append(list, args[1]), nil
 //	})
 func (d *DSL) RuleWithRepetition(name string, element string, actionName string) {
+	if d.grammar.frozen {
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
+		return
+	}
 	// Create two rules: one for empty, one for one-or-more
 	// name → ε (empty)
 	d.grammar.AddRule(name, []string{}, actionName+"_empty")
@@ -400,6 +480,10 @@ func (d *DSL) RuleWithRepetition(name string, element string, actionName string)
 //	    return append(list, args[1]), nil
 //	})
 func (d *DSL) RuleWithPlusRepetition(name string, element string, actionName string) {
+	if d.grammar.frozen {
+		d.addDeferredError(fmt.Errorf("grammar is frozen (Build() was called); cannot add rule %s", name))
+		return
+	}
 	// name → element
 	d.grammar.AddRule(name, []string{element}, actionName+"_single")
 	// name → name element (left recursive)
@@ -448,13 +532,45 @@ func (d *DSL) Action(name string, fn ActionFunc) {
 
 // WithToken adds a token and returns the DSL for chaining
 func (d *DSL) WithToken(name, pattern string) *DSL {
-	d.Token(name, pattern)
+	if err := d.Token(name, pattern); err != nil {
+		d.addDeferredError(err)
+	}
 	return d
 }
 
 // WithKeywordToken adds a keyword token and returns the DSL for chaining
 func (d *DSL) WithKeywordToken(name, keyword string) *DSL {
-	d.KeywordToken(name, keyword)
+	if err := d.KeywordToken(name, keyword); err != nil {
+		d.addDeferredError(err)
+	}
+	return d
+}
+
+// WithLiteralToken adds a literal token and returns the DSL for chaining
+func (d *DSL) WithLiteralToken(name, text string) *DSL {
+	if err := d.LiteralToken(name, text); err != nil {
+		d.addDeferredError(err)
+	}
+	return d
+}
+
+// WithSkipToken adds a skipped/trivia token and returns the DSL for chaining
+func (d *DSL) WithSkipToken(name, pattern string) *DSL {
+	if err := d.SkipToken(name, pattern); err != nil {
+		d.addDeferredError(err)
+	}
+	return d
+}
+
+// WithSignificantNewlines toggles significant newline tokens and returns the DSL for chaining
+func (d *DSL) WithSignificantNewlines(enabled bool) *DSL {
+	d.SetSignificantNewlines(enabled)
+	return d
+}
+
+// WithStartRule sets the start rule and returns the DSL for chaining
+func (d *DSL) WithStartRule(name string) *DSL {
+	d.SetStartRule(name)
 	return d
 }
 
@@ -677,11 +793,19 @@ func (d *DSL) Debug() map[string]interface{} {
 //	// ]
 func (d *DSL) DebugTokens(code string) ([]TokenMatch, error) {
 	parser := NewParser(d.grammar)
+	parser.input = code
 	err := parser.tokenize(code)
 	if err != nil {
 		return nil, err
 	}
 	return parser.tokens, nil
+}
+
+// TokenizeWithTrivia tokenizes input into regular grammar tokens AND skipped
+// trivia tokens (e.g., line/block comments registered with SkipToken or
+// TokenSet.LineComment / BlockComment).
+func (d *DSL) TokenizeWithTrivia(code string) (tokens []TokenMatch, trivia []TokenMatch, err error) {
+	return tokenizeWithTrivia(d.grammar, code, code)
 }
 
 // Use evaluates DSL code with an optional context override.
@@ -801,14 +925,16 @@ func (d *DSL) Parse(code string) (*Result, error) {
 //   - startRule: The root rule to begin parsing
 //   - actions: Functions that process matched patterns
 type Grammar struct {
-	rules     map[string]*Rule      // Named grammar rules
-	ruleOrder []string              // Rule names in declaration order (deterministic export)
-	tokens    map[string]*Token     // Named token definitions (fast lookup)
-	tokenList []*Token              // Tokens in declaration order (deterministic matching)
-	startRule string                // Entry point for parsing
-	actions   map[string]ActionFunc // Semantic actions
-	exprRules map[string]*exprSpec  // Pratt expression rules (see expression.go)
-	frozen    bool                  // Set by Build(); grammar mutations are rejected
+	rules               map[string]*Rule      // Named grammar rules
+	ruleOrder           []string              // Rule names in declaration order (deterministic export)
+	tokens              map[string]*Token     // Named token definitions (fast lookup)
+	tokenList           []*Token              // Tokens in declaration order (deterministic matching)
+	startRule           string                // Entry point for parsing
+	actions             map[string]ActionFunc // Semantic actions
+	exprRules           map[string]*exprSpec  // Pratt expression rules (see expression.go)
+	layouts             map[string]RuleLayout // Optional formatting layout hints per rule
+	significantNewlines bool                  // Emit NEWLINE tokens instead of skipping '\r'/'\n'
+	frozen              bool                  // Set by Build(); grammar mutations are rejected
 }
 
 // Rule represents a grammar rule (non-terminal symbol).
@@ -849,9 +975,22 @@ type Alternative struct {
 //   - priority: Higher priority tokens match first (keywords=90)
 //   - lookahead: Pattern that must follow (if using lookaround)
 //   - lookbehind: Pattern that must precede (stored but not enforced)
+type tokenKind string
+
+const (
+	tokenKindRegex      tokenKind = "regex"
+	tokenKindKeyword    tokenKind = "keyword"
+	tokenKindLiteral    tokenKind = "literal"
+	tokenKindSkip       tokenKind = "skip"
+	tokenKindLookaround tokenKind = "lookaround"
+)
+
 type Token struct {
 	name       string         // Token identifier
 	pattern    string         // Regex pattern string
+	rawText    string         // Original keyword/literal text (if applicable)
+	kind       tokenKind      // Token classification
+	skip       bool           // True if matched lexemes are skipped as trivia
 	regex      *regexp.Regexp // Compiled pattern
 	priority   int            // Matching priority
 	order      int            // Declaration order (earlier wins ties)
@@ -868,6 +1007,7 @@ func NewGrammar() *Grammar {
 		tokenList: []*Token{},
 		actions:   make(map[string]ActionFunc),
 		exprRules: make(map[string]*exprSpec),
+		layouts:   make(map[string]RuleLayout),
 	}
 }
 
@@ -925,6 +1065,11 @@ func (g *Grammar) registerToken(t *Token) error {
 //
 // Returns the match and true, or a zero TokenMatch and false if nothing matches.
 func (g *Grammar) matchTokenAt(code string, pos int) (TokenMatch, bool) {
+	_, match, ok := g.matchTokenAtWithMeta(code, pos)
+	return match, ok
+}
+
+func (g *Grammar) matchTokenAtWithMeta(code string, pos int) (*Token, TokenMatch, bool) {
 	var best *Token
 	bestLength := 0
 
@@ -946,9 +1091,9 @@ func (g *Grammar) matchTokenAt(code string, pos int) (TokenMatch, bool) {
 	}
 
 	if best == nil {
-		return TokenMatch{}, false
+		return nil, TokenMatch{}, false
 	}
-	return TokenMatch{
+	return best, TokenMatch{
 		TokenType: best.name,
 		Value:     code[pos : pos+bestLength],
 		Start:     pos,
@@ -956,9 +1101,18 @@ func (g *Grammar) matchTokenAt(code string, pos int) (TokenMatch, bool) {
 	}, true
 }
 
-// isSymbolDefined reports whether a symbol names a token, rule, or expression rule.
+// isToken reports whether symbol is a non-skipped terminal token (including
+// the implicit "NEWLINE" token when significantNewlines is enabled).
+func (g *Grammar) isToken(symbol string) bool {
+	if tok, ok := g.tokens[symbol]; ok {
+		return !tok.skip
+	}
+	return g.significantNewlines && symbol == "NEWLINE"
+}
+
+// isSymbolDefined reports whether a symbol names a non-skip token, rule, or expression rule.
 func (g *Grammar) isSymbolDefined(symbol string) bool {
-	if _, ok := g.tokens[symbol]; ok {
+	if g.isToken(symbol) {
 		return true
 	}
 	if _, ok := g.rules[symbol]; ok {
@@ -970,18 +1124,6 @@ func (g *Grammar) isSymbolDefined(symbol string) bool {
 
 // AddToken adds a token to the grammar with the given regex pattern.
 // Regular tokens have priority 0 (keywords have priority 90).
-//
-// Parameters:
-//   - name: Token identifier (e.g., "NUMBER", "IDENTIFIER")
-//   - pattern: Regular expression pattern
-//
-// Returns an error if the regex pattern is invalid.
-//
-// Example:
-//
-//	g.AddToken("NUMBER", "[0-9]+")           // Integers
-//	g.AddToken("FLOAT", "[0-9]+\\.[0-9]+")   // Floats
-//	g.AddToken("STRING", `"([^"\\]|\\.)*"`) // Quoted strings
 func (g *Grammar) AddToken(name, pattern string) error {
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
@@ -991,30 +1133,69 @@ func (g *Grammar) AddToken(name, pattern string) error {
 	return g.registerToken(&Token{
 		name:     name,
 		pattern:  pattern,
+		kind:     tokenKindRegex,
 		regex:    regex,
 		priority: 0,
 	})
 }
 
-// AddKeywordToken adds a keyword token with high priority.
-// Keywords are automatically wrapped with word boundaries and made case-insensitive.
-//
-// The pattern created is: (?i)\b<keyword>\b
-//   - (?i) makes it case-insensitive
-//   - \b ensures word boundaries
-//
-// Parameters:
-//   - name: Token identifier (e.g., "IF", "WHILE")
-//   - keyword: The keyword text (e.g., "if", "while")
-//
-// Keywords have priority 90 to match before identifiers.
-//
-// Example:
-//
-//	g.AddKeywordToken("RETURN", "return") // Matches: return, Return, RETURN
-//	g.AddKeywordToken("CLASS", "class")   // Won't match: subclass, classname
+// AddLiteralToken adds an exact literal token (priority 0, metacharacters escaped).
+func (g *Grammar) AddLiteralToken(name, text string) error {
+	pattern := regexp.QuoteMeta(text)
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid literal pattern: %w", err)
+	}
+
+	return g.registerToken(&Token{
+		name:     name,
+		pattern:  pattern,
+		rawText:  text,
+		kind:     tokenKindLiteral,
+		regex:    regex,
+		priority: 0,
+	})
+}
+
+// AddSkipToken adds a trivia/comment token (priority 80) skipped during parsing
+// and preserved by TokenizeWithTrivia.
+func (g *Grammar) AddSkipToken(name, pattern string) error {
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid skip regex pattern: %w", err)
+	}
+
+	return g.registerToken(&Token{
+		name:     name,
+		pattern:  pattern,
+		kind:     tokenKindSkip,
+		skip:     true,
+		regex:    regex,
+		priority: 80,
+	})
+}
+
+func isWordByte(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
+}
+
+// AddKeywordToken adds a keyword token with high priority (90).
+// Word boundaries (\b) are added only on sides that start/end with an ASCII
+// word character ([a-zA-Z0-9_]), so punctuation-prefixed keywords like
+// "$status" or operator keywords like "==" match reliably.
 func (g *Grammar) AddKeywordToken(name, keyword string) error {
-	pattern := "(?i)\\b" + regexp.QuoteMeta(keyword) + "\\b"
+	if keyword == "" {
+		return fmt.Errorf("token %s can match empty string (keyword %q)", name, keyword)
+	}
+	prefix := "(?i)"
+	if isWordByte(keyword[0]) {
+		prefix += "\\b"
+	}
+	suffix := ""
+	if isWordByte(keyword[len(keyword)-1]) {
+		suffix = "\\b"
+	}
+	pattern := prefix + regexp.QuoteMeta(keyword) + suffix
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("invalid keyword pattern: %w", err)
@@ -1023,37 +1204,15 @@ func (g *Grammar) AddKeywordToken(name, keyword string) error {
 	return g.registerToken(&Token{
 		name:     name,
 		pattern:  pattern,
+		rawText:  keyword,
+		kind:     tokenKindKeyword,
 		regex:    regex,
 		priority: 90, // High priority for keywords
 	})
 }
 
 // AddTokenWithLookaround adds a token with lookahead/lookbehind assertions.
-// This provides context-sensitive tokenization.
-//
-// Note: Go's regexp package has limited lookaround support:
-//   - Positive lookahead is supported: (?=pattern)
-//   - Lookbehind is stored but not enforced by default parser
-//
-// Parameters:
-//   - name: Token identifier
-//   - pattern: Main pattern to match
-//   - lookahead: Pattern that must follow
-//   - lookbehind: Pattern that must precede (stored only)
-//
-// Lookaround tokens have priority 50 (between regular and keywords).
-//
-// Example:
-//
-//	// Match "=" only when not followed by "="
-//	g.AddTokenWithLookaround("ASSIGN", "=", "[^=]", "")
-//	// Match word only when followed by "("
-//	g.AddTokenWithLookaround("FUNC_CALL", "\\w+", "\\(", "")
 func (g *Grammar) AddTokenWithLookaround(name, pattern, lookahead, lookbehind string) error {
-	// Note: Go's regexp package doesn't support lookbehind assertions
-	// We'll implement a custom solution using context checking
-
-	// For now, just add the basic pattern and store lookaround info
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("invalid regex pattern: %w", err)
@@ -1062,6 +1221,7 @@ func (g *Grammar) AddTokenWithLookaround(name, pattern, lookahead, lookbehind st
 	return g.registerToken(&Token{
 		name:       name,
 		pattern:    pattern,
+		kind:       tokenKindLookaround,
 		regex:      regex,
 		priority:   50, // Medium priority for lookaround tokens
 		lookahead:  lookahead,
@@ -1175,6 +1335,7 @@ type Parser struct {
 	pos     int          // Current token position
 	dsl     *DSL         // Reference to parent DSL for function access
 	input   string       // Original input for error reporting
+	depth   int          // Recursion depth guard
 }
 
 // TokenMatch represents a matched token during lexical analysis.
@@ -1237,6 +1398,7 @@ func (p *Parser) Parse(code string) (interface{}, error) {
 	// Reset parser state
 	p.tokens = []TokenMatch{}
 	p.pos = 0
+	p.depth = 0
 	p.input = code // Store input for error reporting
 
 	// Tokenize
@@ -1247,33 +1409,20 @@ func (p *Parser) Parse(code string) (interface{}, error) {
 
 	// Parse from start rule
 	p.pos = 0
-	return p.parseRule(p.grammar.startRule)
+	result, err := p.parseRule(p.grammar.startRule)
+	if err == nil && p.pos < len(p.tokens) {
+		message := fmt.Sprintf("unexpected token: %s", p.tokens[p.pos].Value)
+		return nil, createParseError(message, p.tokens[p.pos].Start, p.tokens[p.pos].Value, p.input)
+	}
+	return result, err
 }
 
-// tokenize converts code into tokens (lexical analysis).
-// This process converts the input string into a sequence of tokens
-// based on the grammar's token definitions.
-//
-// The tokenizer:
-//   - Skips whitespace automatically
-//   - Uses token priority (keywords > regular tokens)
-//   - For same priority, longest match wins
-//   - Returns detailed error with position on failure
-//
-// Token priority levels:
-//   - 90: Keywords (IF, WHILE, etc.)
-//   - 50: Tokens with lookaround
-//   - 0: Regular tokens
-//
-// Ties (same priority, same length) are resolved deterministically in favor
-// of the token declared first.
-//
-// Example tokenization:
-//
-//	Input: "if x > 10"
-//	Output: [IF, ID("x"), GT, NUMBER("10")]
 func (p *Parser) tokenize(code string) error {
-	tokens, err := tokenizeInput(p.grammar, code, p.input)
+	errInput := p.input
+	if errInput == "" {
+		errInput = code
+	}
+	tokens, err := tokenizeInput(p.grammar, code, errInput)
 	if err != nil {
 		return err
 	}
@@ -1282,50 +1431,78 @@ func (p *Parser) tokenize(code string) error {
 }
 
 // tokenizeInput is the shared deterministic tokenizer used by all parsers.
-// It skips whitespace and delegates token selection to Grammar.matchTokenAt.
+// It preserves exact byte offsets in code, skips whitespace (and skip tokens),
+// and delegates token selection to Grammar.matchTokenAtWithMeta.
 func tokenizeInput(grammar *Grammar, code string, errorInput string) ([]TokenMatch, error) {
-	code = strings.TrimSpace(code)
+	tokens, _, err := tokenizeWithTrivia(grammar, code, errorInput)
+	return tokens, err
+}
+
+// tokenizeWithTrivia returns both grammar tokens and skipped trivia tokens.
+func tokenizeWithTrivia(grammar *Grammar, code string, errorInput string) ([]TokenMatch, []TokenMatch, error) {
+	if errorInput == "" {
+		errorInput = code
+	}
 	pos := 0
 	var tokens []TokenMatch
+	var trivia []TokenMatch
 
 	for pos < len(code) {
-		// Skip whitespace
-		if code[pos] == ' ' || code[pos] == '\t' || code[pos] == '\n' || code[pos] == '\r' {
+		c := code[pos]
+		if c == ' ' || c == '\t' {
+			pos++
+			continue
+		}
+		if !grammar.significantNewlines && (c == '\n' || c == '\r') {
 			pos++
 			continue
 		}
 
-		match, ok := grammar.matchTokenAt(code, pos)
+		meta, match, ok := grammar.matchTokenAtWithMeta(code, pos)
 		if !ok {
-			message := fmt.Sprintf("unexpected character: %c", code[pos])
-			return nil, createParseError(message, pos, string(code[pos]), errorInput)
+			if grammar.significantNewlines && (c == '\n' || c == '\r') {
+				nlLen := 1
+				if c == '\r' && pos+1 < len(code) && code[pos+1] == '\n' {
+					nlLen = 2
+				}
+				tokens = append(tokens, TokenMatch{
+					TokenType: "NEWLINE",
+					Value:     code[pos : pos+nlLen],
+					Start:     pos,
+					End:       pos + nlLen,
+				})
+				pos += nlLen
+				continue
+			}
+
+			r, size := utf8.DecodeRuneInString(code[pos:])
+			if r == utf8.RuneError && size == 1 {
+				message := fmt.Sprintf("unexpected byte: 0x%02x", code[pos])
+				return nil, nil, createParseError(message, pos, fmt.Sprintf("0x%02x", code[pos]), errorInput)
+			}
+			tokStr := code[pos : pos+size]
+			message := fmt.Sprintf("unexpected character: %c", r)
+			return nil, nil, createParseError(message, pos, tokStr, errorInput)
 		}
 
-		tokens = append(tokens, match)
+		if meta != nil && meta.skip {
+			trivia = append(trivia, match)
+		} else {
+			tokens = append(tokens, match)
+		}
 		pos = match.End
 	}
 
-	return tokens, nil
+	return tokens, trivia, nil
 }
 
-// parseRule attempts to parse a specific grammar rule.
-// It tries each alternative in order until one succeeds.
-//
-// Parameters:
-//   - ruleName: Name of the rule to parse
-//
-// Returns:
-//   - Result of the successful alternative's action
-//   - ParseError if no alternatives match
-//
-// The parser backtracks on failure, restoring position
-// before trying the next alternative.
-//
-// Example rule with alternatives:
-//
-//	expr → expr '+' term  (first alternative)
-//	expr → term           (second alternative)
 func (p *Parser) parseRule(ruleName string) (interface{}, error) {
+	if p.depth >= maxParseDepth {
+		return nil, errParseDepthExceeded
+	}
+	p.depth++
+	defer func() { p.depth-- }()
+
 	rule, exists := p.grammar.rules[ruleName]
 	if !exists {
 		return nil, fmt.Errorf("rule %s not found", ruleName)
@@ -1337,6 +1514,9 @@ func (p *Parser) parseRule(ruleName string) (interface{}, error) {
 		result, err := p.parseAlternative(alt)
 		if err == nil {
 			return result, nil
+		}
+		if err == errParseDepthExceeded {
+			return nil, err
 		}
 		// Restore position if failed
 		p.pos = savedPos
@@ -1357,39 +1537,17 @@ func (p *Parser) parseRule(ruleName string) (interface{}, error) {
 	return nil, createParseError(message, position, token, p.input)
 }
 
-// parseAlternative attempts to parse a rule alternative.
-// An alternative is a sequence of symbols (tokens or rules) to match.
-//
-// Parameters:
-//   - alt: The alternative to parse
-//
-// Returns:
-//   - Result of the alternative's action (if defined)
-//   - Array of matched values (if no action)
-//   - ParseError on failure
-//
-// Process:
-//  1. Match each symbol in sequence
-//  2. Collect matched values/results
-//  3. Execute action function with collected values
-//
-// Example:
-//
-//	Alternative: ["IF", "expr", "THEN", "stmt"]
-//	Action: "ifStatement"
-//	Results passed to action: ["if", exprResult, "then", stmtResult]
 func (p *Parser) parseAlternative(alt *Alternative) (interface{}, error) {
 	var results []interface{}
 
 	for _, symbol := range alt.sequence {
-		if p.pos >= len(p.tokens) {
-			message := "unexpected end of input"
-			position := len(p.input)
-			return nil, createParseError(message, position, "<end of input>", p.input)
-		}
-
 		// Check if symbol is a token
-		if _, isToken := p.grammar.tokens[symbol]; isToken {
+		if p.grammar.isToken(symbol) {
+			if p.pos >= len(p.tokens) {
+				message := "unexpected end of input"
+				position := len(p.input)
+				return nil, createParseError(message, position, "<end of input>", p.input)
+			}
 			if p.tokens[p.pos].TokenType == symbol {
 				results = append(results, p.tokens[p.pos].Value)
 				p.pos++
@@ -1433,6 +1591,7 @@ type Result struct {
 	AST    interface{} // Abstract syntax tree (*Node)
 	Code   string      // Original input
 	Output interface{} // Final evaluation result
+	Trace  *EvalTrace  // Optional execution trace (populated by ParseTrace / EvalOptions.Trace)
 	DSL    *DSL        // Reference to DSL for function calls
 }
 

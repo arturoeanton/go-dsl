@@ -167,10 +167,24 @@ for _, diag := range d.Diagnostics(script) { // ALL errors, not just the first
 }
 ```
 
+## 9. Sandbox limits, formatting & trace
+
+```go
+// Enforce execution budgets on untrusted inputs and inspect the trace
+res, trace, err := d.ParseTrace(code, dslbuilder.EvalOptions{
+    Context:  ctx,
+    MaxSteps: 5000,
+    MaxDepth: 128,
+})
+
+// Canonical idempotent formatting (preserves SkipToken comments)
+formatted, err := d.Format(code)
+```
+
 ## Where to go next
 
 - [API reference](api-reference.md) — every public API, organized
-- [Editor tooling](editor-tooling.md) — LSP, incremental documents, completion, codegen
+- [Editor tooling](editor-tooling.md) — LSP, incremental documents, completion, codegen, formatter, tests
+- [DSL Studio](dsl-studio.md) — single-binary visual Language Lab (`go run ./cmd/studio -open`)
 - [`examples/calculator_pratt`](../../examples/calculator_pratt/) — the whole engine in one file
 - [`examples/http_dsl`](../../examples/http_dsl/) — a full scripting DSL (own module)
-- [`.claude/skills/go-dsl`](../../.claude/skills/go-dsl/SKILL.md) — drop-in guide for AI coding agents

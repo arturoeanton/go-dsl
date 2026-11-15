@@ -1,10 +1,24 @@
 # Editor Tooling & Developer Experience
 
-go-dsl ships everything needed to give a custom DSL a first-class editor
-experience: a language server, incremental documents, completion from the
-grammar itself, multi-error diagnostics, and code generation.
+go-dsl ships everything needed to give a custom DSL a first-class authoring
+experience: **DSL Studio** (visual IDE), a full **LSP server**, incremental
+documents, parser-driven completion, universal formatting, declarative testing
+and fuzzing, typed Go code generation, 1-click VS Code extension scaffolding,
+MCP server support, and a WebAssembly bridge.
 
-## The LSP server (`cmd/lsp`)
+## Visual Language Lab (`cmd/studio`)
+
+For interactive grammar design, AST/trace inspection, fuzzing, and local
+**Ollama** / **LM Studio** GBNF workflows, launch DSL Studio:
+
+```bash
+go run ./cmd/studio -open
+go run ./cmd/studio -dsl grammar.yaml -open
+```
+
+See the dedicated [DSL Studio Guide](dsl-studio.md) for full details.
+
+## The LSP Server (`cmd/lsp`)
 
 ```bash
 go install github.com/arturoeanton/go-dsl/cmd/lsp@latest
@@ -16,9 +30,11 @@ stdio server for your DSL's file extension. Capabilities:
 
 | Capability | Behavior |
 |---|---|
-| **Diagnostics** | On open/change, every syntax and lexical error in the document is underlined (multi-error recovery, not just the first failure) |
-| **Completion** | Suggestions are the parser's own expectations at the cursor: keywords/literals as insertable text, free-form tokens (NUMBER, STRING, ...) as placeholders with their pattern |
+| **Diagnostics** | UTF-16 accurate multi-error diagnostics on open/change (panic-mode recovery, not just the first failure) |
+| **Completion** | Suggestions are the parser's own expectations at the cursor: keywords/literals as insertable text, free-form tokens (`NUMBER`, `STRING`, ...) as snippet placeholders (`${1:NUMBER}`) |
 | **Hover** | The AST node under the cursor: token type and text, or rule + action + source snippet |
+| **Formatting** | `textDocument/formatting` powered by `DSL.Format` (idempotent, preserves comments) |
+| **Semantic Tokens** | `textDocument/semanticTokens/full` classifying comments, keywords, numbers, strings, operators, and identifiers |
 
 Documents re-parse **incrementally**: only the statements touched by an edit
 are parsed again (see below), so the server stays fast per keystroke.
@@ -33,105 +49,84 @@ Zed example (`settings.json` of your extension/project):
 }
 ```
 
-## The library APIs behind it
+## 1-Click VS Code Extension & Typed Codegen (`cmd/dslgen`)
 
-Everything the LSP does is a public API you can embed in your own tools.
+Turn a YAML/JSON grammar into checked-in Go code (with optional strongly-typed
+action interfaces) or generate a complete VS Code extension directory:
 
-### Incremental documents
+```bash
+# Generate Go parser + typed Actions interface
+dslgen -dsl grammar.yaml -package mydsl -func NewMyDSL -typed -o mydsl_gen.go
+
+# Generate a ready-to-launch VS Code extension (TextMate + LSP client)
+dslgen -dsl grammar.yaml -vscode ./vscode-mydsl
+```
+
+## Universal Formatter (`cmd/dslfmt`) & Declarative Tests (`cmd/dsltest`)
+
+```bash
+# Format DSL files in place or verify formatting in CI
+dslfmt -dsl grammar.yaml -w script.dsl
+dslfmt -dsl grammar.yaml -check script.dsl
+
+# Run embedded YAML tests + synthesize valid samples + fuzz the grammar
+dsltest -dsl grammar.yaml -fuzz 250 -samples 5
+```
+
+## MCP Server (`cmd/mcp`) & WebAssembly Bridge (`cmd/wasm`)
+
+```bash
+# Expose validation, completions, formatting, and GBNF over stdio MCP
+mcp -dsl grammar.yaml
+
+# Compile the browser/playground WebAssembly binary
+GOOS=js GOARCH=wasm go build -o go-dsl.wasm ./cmd/wasm
+```
+
+## The Library APIs Behind It
+
+Everything the CLI tools run is a public Go API you can embed directly:
+
+### Incremental Documents
 
 ```go
 doc := dsl.NewDocument()
 doc.Update(text)                  // full parse the first time
 doc.Update(textAfterEdit)         // ONLY edited statements re-parse
-doc.Stats()                       // {Reused: 4, Reparsed: 1} — verify it
+doc.Stats()                       // {Reused: 4, Reparsed: 1}
 doc.Diagnostics()                 // all current errors
 doc.Statements()                  // parse trees, in order
 node := doc.NodeAt(byteOffset)    // innermost node at a position
 ```
 
-**Granularity — read this**: incrementality is per *top-level parse unit*
-(one match of the grammar's start rule — typically "a statement"). It is
-deliberate, bounded reuse, not arbitrary incremental magic: the unchanged
-prefix keeps its trees as-is, the unchanged suffix keeps its trees with
-spans shifted by the edit delta, and the edited unit is **re-parsed in
-full**. Lexing remains a single linear pass (it is cheap); the savings are
-in parsing and tree building. A grammar whose entire document is one
-start-rule match re-parses that unit on every edit.
+**Granularity**: incrementality is per *top-level parse unit* (one match of the
+grammar's start rule — typically a statement). The unchanged prefix keeps its
+trees as-is, the unchanged suffix keeps its trees with spans shifted by the edit
+delta, and the edited unit (plus any boundary token that could extend into the
+edit) re-parses in full.
 
-### Completion
+### Completion, Formatting & Attribute Grammars
 
 ```go
 comps := dsl.Completions(text, cursorOffset)
-for _, c := range comps {
-    // c.Label     "set" or "NUMBER"
-    // c.IsKeyword true → insertable text; false → placeholder
-    // c.Detail    "keyword" or "pattern: [0-9]+"
-}
-```
+formatted, err := dsl.Format(text)
 
-Mid-statement, candidates come from the farthest-failure expectations at the
-cursor — i.e. exactly what the parser would accept next. At a statement
-boundary, candidates are the tokens that can start a statement (FIRST set).
-
-### Multi-error diagnostics
-
-```go
-for _, diag := range dsl.Diagnostics(script) {
-    fmt.Println(diag.DetailedError()) // line, column, expected, caret
-}
-```
-
-Recovery is panic-mode with FIRST-set resynchronization: after an error the
-parser skips to the next token that can begin a statement, avoiding
-cascading spurious errors. Output is capped at 50 diagnostics.
-
-### Attribute grammars (semantic analysis)
-
-```go
 ag := dslbuilder.NewAttributeGrammar()
-
-// Top-down: propagate an environment/scope.
 ag.Inherited("env", func(parent dslbuilder.Attrs, n *dslbuilder.Node, i int) interface{} {
     return parent["env"]
 })
-
-// Bottom-up: synthesize a type/value per rule.
 ag.Synthesized("type", "expr", func(n *dslbuilder.Node, children []dslbuilder.Attrs) (interface{}, error) {
-    // children[i]["type"] already computed
     return inferType(n, children)
 })
-
-attrs, err := ag.Evaluate(root)         // map[*Node]Attrs
-_ = attrs[root]["type"]
+attrs, err := ag.Evaluate(root)
 ```
 
-One top-down pass (inherited) followed by one bottom-up pass (synthesized) —
-the L-attributed subset, which covers symbol tables, scoping, and type
-synthesis without hand-rolled tree walkers.
+## The Product Pattern: `apiflow`
 
-## Code generation (`cmd/dslgen`)
-
-Turn a prototyped YAML/JSON grammar into reviewable Go code:
-
-```bash
-dslgen -dsl grammar.yaml -package mydsl -func NewMyDSL -o mydsl_gen.go
-```
-
-The generated file rebuilds the DSL programmatically (keywords round-trip
-correctly) and lists the actions you still need to register in its doc
-comment. Zero runtime file loading.
-
-## The product pattern: apiflow
-
-`examples/http_dsl` shows how a DSL graduates into a product: the engine is
-go-dsl, the language lives in a library package, and a small CLI is the
-user-facing entry point:
+`examples/http_dsl` shows how a DSL graduates into a standalone product:
 
 ```bash
 cd examples/http_dsl
 go run ./cmd/apiflow run script.http       # execute
 go run ./cmd/apiflow check script.http     # validate — AST phase only, zero side effects
 ```
-
-`check` can never fire an HTTP request: it uses `ParseAST`, which by design
-runs no actions.

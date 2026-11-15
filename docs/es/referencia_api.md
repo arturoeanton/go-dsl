@@ -1,144 +1,159 @@
 # Referencia de API de go-dsl
 
-Referencia completa de `pkg/dslbuilder`, organizada por área. Todo lo que
-figura acá está verificado por la suite de tests; `go doc` sobre cualquier
-símbolo da el detalle completo.
+Referencia completa de `pkg/dslbuilder`, `pkg/dslgen` y `pkg/wasm`, organizada
+por área. Todo lo documentado acá está verificado por la suite de tests; `go doc`
+sobre cualquier símbolo muestra la firma completa.
 
-## Construcción
+## Construcción y Esquema Declarativo v2
 
 | API | Propósito |
 |---|---|
 | `New(name) *DSL` | Crear una instancia de DSL |
-| `LoadFromYAML(data)` / `LoadFromYAMLFile(path)` | Tokens+reglas desde YAML (las acciones se registran aparte) |
-| `LoadFromJSON(data)` / `LoadFromJSONFile(path)` | Ídem, JSON |
-| `SaveToYAML()` / `SaveToJSON()` (+`...File`) | Exportar la gramática (reglas en orden de declaración) |
+| `LoadFromYAML(data)` / `LoadFromYAMLFile(path)` | Cargar YAML v1/v2 (`token_defs`, `rules`, `expressions`, `layouts`, `tests`, `significant_newlines`, `start_rule`) |
+| `LoadFromJSON(data)` / `LoadFromJSONFile(path)` | Ídem en JSON |
+| `SaveToYAML()` / `SaveToJSON()` (+`...File`) | Exportación v2 sin pérdidas (preserva prioridades, expresiones Pratt, layouts, `start_rule` y `tests`) |
+| `SetStartRule(name)` | Definir explícitamente la regla inicial de la gramática |
 
-## Tokens
+## Tokens, Comentarios y Saltos de Línea
 
 | API | Propósito |
 |---|---|
-| `Token(name, regex) error` | Token libre. Anclado internamente; patrones que matchean vacío se rechazan |
-| `KeywordToken(name, word) error` | Palabra reservada: case-insensitive, word-bounded, prioridad 90 |
-| `Tokens(func(*TokenSet)) *DSL` | Lote fluido: `t.Regex`, `t.Literal` (texto exacto, sin escapar), `t.Keyword` |
+| `Token(name, regex) error` | Token regex libre (prioridad 0). Anclado internamente; patrones vacíos se rechazan |
+| `KeywordToken(name, word) error` | Palabra reservada: case-insensitive, bordes inteligentes, prioridad 90 |
+| `LiteralToken(name, lit) error` | Operador o puntuación literal (`regexp.QuoteMeta`), prioridad 50 |
+| `SkipToken(name, regex) error` | Token de comentario/trivia ignorado en el parseo pero preservado en `TokenizeWithTrivia` y `Format` |
+| `SetSignificantNewlines(enabled)` | Emitir tokens `NEWLINE` en lugar de ignorar `\n` como espacio |
+| `Tokens(func(*TokenSet)) *DSL` | API fluida: `t.Regex`, `t.Literal`, `t.Keyword`, `t.Skip`, `t.LineComment`, `t.BlockComment` |
+| `TokenizeWithTrivia(code)` | Devuelve los `tokens` activos y la `trivia` ignorada (`[]TokenMatch`) |
 | `DebugTokens(code)` | Inspeccionar el stream de tokens |
 
 El matching es determinista: **prioridad → match más largo → orden de declaración**.
 
-Deprecado: `TokenWithLookaround` (el lookaround se almacena pero nunca se aplica — RE2).
+Deprecado: `TokenWithLookaround` (el lookaround se almacena pero nunca se aplica en RE2).
 
 ## Reglas
 
 | API | Propósito |
 |---|---|
-| `Rule(name, secuencia, action)` | Una alternativa. Varias llamadas con el mismo nombre = elección ordenada (gana el primer match — declarar lo específico primero) |
-| `RuleWithError(name, seq, action, hint)` | Ídem + mensaje personalizado en el farthest failure |
+| `Rule(name, secuencia, action)` | Una alternativa. Múltiples llamadas con el mismo nombre = elección ordenada (declarar primero lo más específico) |
+| `RuleWithError(name, seq, action, hint)` | Ídem + pista de error personalizada en el farthest failure |
 | `RuleWithRepetition(name, elem, action)` | Kleene star: `name → ε \| name elem` (acciones `_empty`/`_append`) |
 | `RuleWithPlusRepetition(name, elem, action)` | Kleene plus (acciones `_single`/`_append`) |
 
 Recursión izquierda: la directa (`list → list item`) y la indirecta
-(`a → b…`, `b → a…`) parsean. El validador warnea la indirecta (la
-memoización se deshabilita mientras esas reglas crecen).
+(`a → b…`, `b → a…`) están soportadas. El validador emite warning en la
+indirecta (la memoización se desactiva únicamente en las reglas del ciclo durante su expansión).
 
-Deprecado: `RuleWithPrecedence` — la metadata nunca reordenó parses; usá `Expression()`.
+Deprecado: `RuleWithPrecedence` — usá `Expression()`.
 
-## Expresiones (Pratt)
+## Expresiones (Motor Pratt Completo)
 
 ```go
 d.Expression("expr").
-    Atom(token, action).             // terminal              → action([texto])
-    Group(open, inner, close).       // ( expr )              → pasa el valor interno
-    Prefix(token, power, action).    // unario                → action([op, operando])
-    InfixLeft(token, power, action).   // binario asoc. izq.  → action([izq, op, der])
-    InfixRight(token, power, action)   // binario asoc. der.
+    Atom(token, action).                        // terminal              → action([texto])
+    Group(open, inner, close).                  // ( expr )              → pasa el valor interno
+    GroupWithAction(open, inner, close, act).   // ( expr )              → act([open, val, close])
+    Prefix(token, power, action).               // unario prefijo        → action([op, operando])
+    Postfix(token, power, action).              // unario postfijo (x!)  → action([operando, op])
+    InfixLeft(token, power, action).            // binario asoc. izq.    → action([izq, op, der])
+    InfixRight(token, power, action).           // binario asoc. der.    → action([izq, op, der])
+    InfixNonAssoc(token, power, action).        // no asociativo (==, <) → rechaza a == b == c
+    Call(open, close, sep, power, action).      // fn(a, b)              → action([callee, []args])
+    Index(open, inner, close, power, action).   // arr[i]                → action([target, index])
+    Member(dot, field, power, action).          // obj.prop              → action([target, field])
+    Ternary(qmark, colon, power, action)        // cond ? then : else    → ternario
 ```
 
-Mayor `power` liga más fuerte. Las reglas de expresión se referencian desde
-reglas normales por nombre.
+Mayor `power` liga más fuerte (también disponibles los alias `Left`/`Right`).
+Las reglas de expresión se referencian por nombre desde cualquier regla normal.
 
-## Acciones
+## Acciones y Sandbox de Ejecución
 
 | API | Propósito |
 |---|---|
-| `Action(name, func([]interface{}) (interface{}, error))` | Acción clásica: hijos ya evaluados, en orden de gramática |
-| `NodeAction(name, func(*EvalContext, *Node) (interface{}, error))` | Acción **lazy**: recibe el nodo sin evaluar; evaluás hijos a demanda con `ctx.Eval(n.Child(i))`. Para control de flujo |
-| `Action1/Action2/Action3(fnTipada)` | Adaptadores genéricos — sin casts; strings numéricos convierten |
-| `Args(raw)` | Accesores tipados posicionales: `.Int(i)`, `.Float(i)`, `.String(i)`, `.Get(i)` |
+| `Action(name, func([]interface{}) (interface{}, error))` | Acción clásica: hijos ya evaluados en orden gramatical |
+| `ContextAction(name, func(context.Context, map[string]interface{}, []interface{}) (interface{}, error))` | Acción consciente de cancelación/timeout (`EvalOptions.Context`) y variables aisladas (`Vars`) |
+| `NodeAction(name, func(*EvalContext, *Node) (interface{}, error))` | Acción **lazy**: recibe el nodo sin evaluar; evaluás hijos a demanda con `ctx.Eval(n.Child(i))`. Ideal para `if/else`, `&&`, `\|\|`, loops |
+| `Action1/Action2/Action3(fnTipada)` | Adaptadores genéricos sin casts manuales |
+| `Args(raw)` | Accesores posicionales: `.Int(i)`, `.Float(i)`, `.String(i)`, `.Get(i)` |
 
-Las reglas sin acción evalúan al slice de valores de sus hijos.
-
-## Parsing y evaluación
+## Parsing, Límites de Sandbox y Traza de Evaluación
 
 | API | Propósito |
 |---|---|
 | `Parse(code) (*Result, error)` | Ambas fases. `Result.GetOutput()` = valor, `Result.GetAST()` = árbol |
-| `ParseAST(code) (*Node, error)` | Solo fase 1 — no corre ninguna acción |
-| `Eval(node) (interface{}, error)` | Fase 2 — acciones una sola vez, bottom-up. Repetible |
-| `Use(code, ctx) (*Result, error)` | Parse con contexto scoped a la llamada (nunca persiste). **No es concurrency-safe sobre un *DSL pelado** |
-| `ParseMultiline` / `ParseAuto` / `ParseStatements` | Helpers multi-statement orientados a líneas |
-| `ParseStream(io.Reader, handler) error` | Streaming: statement por línea, sin cargar el input |
+| `ParseWithOptions(code, EvalOptions)` | Parseo + evaluación acotada con `Context`, `MaxSteps`, `MaxDepth` y `Vars` aisladas |
+| `ParseTrace(code, EvalOptions)` | Parseo + evaluación devolviendo `*EvalTrace` (pasos, tiempos por nodo, salidas y ramas lazy `[SKIPPED]`) |
+| `ParseAST(code) (*Node, error)` | Solo fase 1 — ninguna acción se ejecuta |
+| `Eval(node)` / `EvalWithOptions(node, opts)` | Fase 2 — ejecuta acciones una sola vez, bottom-up |
+| `Use(code, ctx) (*Result, error)` | Parse con contexto local a la llamada |
+| `ParseMultiline` / `ParseAuto` / `ParseStatements` / `ParseWithBlocks` | Helpers multi-sentencia y de bloques |
+| `ParseStream(io.Reader, handler) error` | Streaming línea a línea sin cargar todo en memoria |
 
-`*Node` tiene `Rule`, `Action`, `Children`, `Token`, `Span` (rango de bytes),
-más `Child(i)`, `Text()`, `Pretty()`, `IsToken()`.
-
-Límites de profundidad: la recursión de parseo y evaluación está acotada a
-10.000 — input patológico devuelve error limpio en vez de stack overflow.
-
-## Errores y diagnósticos
+## Formateador Universal
 
 | API | Propósito |
 |---|---|
-| `IsParseError(err)` / `GetDetailedError(err)` | Posición, tokens esperados, rule stack, puntero |
-| `Diagnostics(code) []*ParseError` | TODOS los errores en una pasada (recovery panic-mode con resync por FIRST, tope 50) |
-| `RuleWithError(...)` | Agrega `hint: ...` al mensaje del farthest failure |
+| `Format(code) (string, error)` | Parsea código + trivia y devuelve código formateado canónico e idempotente preservando comentarios |
+| `SetRuleLayout(rule, RuleLayout)` | Configura indentación, saltos de línea y espaciado por regla |
 
-Anatomía de un error:
-
-```
-no alternative matched for rule condition: expected IDENT or NUMBER, got THEN "then"
-hint: expected a comparison like 'status == 200'
-rule stack: if_stmt > condition > value at line 1, column 14:
-if status == then
-             ^
-```
-
-## Validación y freeze
+## Testing Declarativo, Síntesis y Fuzzing
 
 | API | Propósito |
 |---|---|
-| `Validate() ([]string, error)` | Errores: símbolos desconocidos, tokens inválidos/vacíos, sin reglas. Warnings: reglas inalcanzables, acciones sin registrar, alternativas ensombrecidas (prefijo corto antes que largo), ciclos no productivos, recursión izquierda indirecta |
-| `Build() (*CompiledDSL, error)` | Validate + freeze de **gramática y acciones**. El resultado es seguro para `Parse`/`Use` concurrente |
-| `BuildAllowLateActions()` | Ídem pero las acciones siguen registrables vía `compiled.Action`/`compiled.NodeAction` (con lock) |
+| `RunConfigTests() (*DSLTestReport, error)` | Ejecuta los casos `tests:` embebidos en el YAML/JSON |
+| `RunTestSuite([]DSLTestCase)` | Ejecuta suites declarativas con aserciones de parseo y `expect_output` |
+| `GenerateSamples(seed, count)` | Sintetiza programas válidos a partir de la gramática |
+| `FuzzGrammar(seed, iterations)` | Fuzzea entradas sintetizadas y mutadas verificando ausencia de panics y cuelgues |
 
-## Contexto
-
-| API | Propósito |
-|---|---|
-| `SetContext(k, v)` / `GetContext(k)` | Valores persistentes, protegidos con mutex |
-| `Use(code, ctx)` | Overlay scoped a la llamada; se descarta al terminar |
-
-## APIs de editor y tooling
+## Decodificación GBNF y Auto-Reparación
 
 | API | Propósito |
 |---|---|
-| `NewDocument() *Document` | Buffer incremental: `Update(text)` re-parsea solo los statements editados; `Diagnostics()`, `Statements()`, `NodeAt(offset)`, `Stats()` |
-| `Completions(text, offset) []Completion` | Qué puede venir después del cursor, según las expectativas del propio parser |
-| `NewAttributeGrammar()` | Atributos `Inherited` (top-down) + `Synthesized` (bottom-up) sobre el AST; `Evaluate(root)` |
+| `ToGBNF() string` | Exporta gramática formal GBNF para decodificación restringida en Ollama, LM Studio y `llama.cpp` |
+| `AIPromptSpec() string` | Especificación compacta en Markdown (tokens, reglas, precedencias Pratt, ejemplos válidos y GBNF) |
+| `RepairPrompt(code) (string, bool)` | Genera un prompt diagnóstico con línea/columna, puntero visual y tokens válidos siguientes (`Completions`) |
 
-## Herramientas CLI (cmd/)
+## Errores, Validación y Freeze
+
+| API | Propósito |
+|---|---|
+| `IsParseError(err)` / `GetDetailedError(err)` | Posición, tokens esperados, rule stack y puntero visual |
+| `Diagnostics(code) []*ParseError` | Todos los errores en una pasada (recovery panic-mode con resync por FIRST, tope 50) |
+| `Validate() ([]string, error)` | Análisis estático: símbolos desconocidos, tokens vacíos, reglas inalcanzables, acciones faltantes, alternativas ensombrecidas, ciclos no productivos |
+| `Build() (*CompiledDSL, error)` | Validate + freeze inmutable, seguro para concurrencia y reentrancia |
+| `BuildAllowLateActions()` | Igual que `Build()` permitiendo registrar acciones tardías con lock |
+
+## Paquetes de Editor, Codegen y WASM
+
+| API / Paquete | Propósito |
+|---|---|
+| `NewDocument() *Document` | Buffer incremental: `Update(text)` re-parsea solo las sentencias tocadas; `Diagnostics()`, `Statements()`, `NodeAt(offset)`, `Stats()` |
+| `Completions(text, offset) []Completion` | Tokens válidos siguientes en `offset` calculados por el parser |
+| `NewAttributeGrammar()` | Atributos `Inherited` (top-down) y `Synthesized` (bottom-up) sobre el AST |
+| `pkg/dslgen` | Generador programático de código Go (`GenerateWithOptions`, `-typed`) y empaquetador `.zip` para VS Code (`GenerateVSCodeExtensionZip`) |
+| `pkg/wasm` | Bridge JSON (`Engine`) para WebAssembly (`GOOS=js GOARCH=wasm`) y herramientas embebidas |
+
+## Herramientas CLI (`cmd/`)
 
 | Herramienta | Propósito |
 |---|---|
-| `validator -dsl g.yaml` | El `Validate()` del core desde la terminal (`-test`, `-strict`, `-format json`) |
-| `ast_viewer -dsl g.yaml -input "..."` | Renderiza el árbol de parseo real |
-| `repl -dsl g.yaml` | Exploración interactiva |
-| `dslgen -dsl g.yaml -o gen.go` | Gramática → código Go versionable |
-| `lsp -dsl g.yaml` | Language server: diagnósticos, completado, hover |
+| `studio [-dsl g.yaml] [-open]` | IDE visual DSL Studio + integración local con Ollama y LM Studio (`http://127.0.0.1:8420`) |
+| `validator -dsl g.yaml` | `Validate()` desde terminal (`-test`, `-strict`, `-format json`) |
+| `dsltest -dsl g.yaml` | Ejecuta `tests:` embebidos, sintetiza ejemplos (`-samples`) y fuzzea (`-fuzz`) |
+| `dslfmt -dsl g.yaml` | Formateador canónico (`-w`, `-check`) |
+| `dslgen -dsl g.yaml` | Genera código Go (`-typed`) o extensión completa para VS Code (`-vscode <dir>`) |
+| `lsp -dsl g.yaml` | Language server: diagnósticos UTF-16, completado, hover, formateo y semantic tokens |
+| `mcp -dsl g.yaml` | Servidor stdio Model Context Protocol (`dsl_grammar_info`, `dsl_validate_code`, `dsl_complete`, `dsl_format`, `dsl_gbnf`) |
+| `ast_viewer -dsl g.yaml -input "..."` | Visualiza el árbol sintáctico real (`tree`, `json`, `compact`) |
+| `repl -dsl g.yaml` | Exploración interactiva (`-exec` para ejecución no interactiva) |
+| `cmd/wasm` | Binario WebAssembly (`GOOS=js GOARCH=wasm go build -o go-dsl.wasm ./cmd/wasm`) |
 
-## Quality gates (scripts/, .github/)
+## Quality Gates (`scripts/`, `.github/`)
 
 | Entrada | Propósito |
 |---|---|
-| `./scripts/check.sh` | Gate local completo: build+vet+test+race, ambos módulos |
-| `./scripts/bench_baseline.sh` / `bench_guard.sh` | Baseline de benchmarks + comparación con benchstat |
-| `ci.yml` | Mismo gate en push/PR; job manual `bench` (HEAD vs main) |
-| `release.yml` | Tag `v*` → gate → GitHub release con notes |
+| `./scripts/check.sh` | Gate local completo: build raíz + `js/wasm`, `vet`, `test`, `-race` y `examples/http_dsl` |
+| `./scripts/bench_baseline.sh` / `bench_guard.sh` | Baseline de benchmarks + comparación con `benchstat` |
+| `ci.yml` | Gate automático en push/PR; job manual `bench` (HEAD vs main) |
+| `release.yml` | Tag `v*` → quality gate completo → GitHub Release |

@@ -6,12 +6,9 @@ Bienvenido a la documentación completa de go-dsl en español. Aquí encontrará
 
 ### 🚀 Comenzar
 - **[Guía Rápida](guia_rapida.md)** - Introducción completa, instalación y ejemplos prácticos
-- **[Referencia de API](referencia_api.md)** - Toda la API pública organizada por área (motor v2: AST, Pratt, Validate/Build, acciones tipadas, diagnósticos)
-- **[Tooling de Editor](tooling_editor.md)** - LSP (diagnósticos/completado/hover), documentos incrementales, gramáticas de atributos, dslgen, apiflow
-  - Instalación y configuración
-  - Conceptos básicos: tokens, reglas y acciones
-  - Características avanzadas: precedencia, asociatividad y repetición
-  - Ejemplos empresariales completos
+- **[Referencia de API](referencia_api.md)** - Toda la API pública organizada por área (motor v2, Pratt completo, sandbox, trace, formateador, GBNF y tests)
+- **[Tooling de Editor](tooling_editor.md)** - LSP, documentos incrementales, gramáticas de atributos, dslgen, dslfmt, dsltest y mcp
+- **[DSL Studio](dsl_studio.md)** - Laboratorio visual de lenguajes e integración local con Ollama y LM Studio
 
 ### 🎓 Conceptos Avanzados
 - **[Introducción a DSL - Segunda Parte](introduccion_dsl_segunda_parte.md)** - Teoría de lenguajes formales

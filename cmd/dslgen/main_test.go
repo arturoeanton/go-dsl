@@ -3,6 +3,8 @@ package main
 import (
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -78,5 +80,100 @@ func TestGeneratedGrammarBehavesLikeSource(t *testing.T) {
 	}
 	if result.GetOutput() != 42 {
 		t.Fatalf("got %v, want 42", result.GetOutput())
+	}
+}
+
+func TestBug12IdentifierValidationAndExtHandling(t *testing.T) {
+	if _, err := Generate(testConfig(), "main; import \"os\"", "NewDSL"); err == nil {
+		t.Fatal("expected invalid package identifier to fail")
+	}
+	if _, err := Generate(testConfig(), "func", "NewDSL"); err == nil {
+		t.Fatal("expected Go keyword package name to fail")
+	}
+	if _, err := Generate(testConfig(), "calcgen", "New() {}\nfunc Evil"); err == nil {
+		t.Fatal("expected invalid function identifier to fail")
+	}
+	if _, err := loadConfig(filepath.Join(t.TempDir(), "extensionless_grammar")); err == nil {
+		t.Fatal("expected extensionless filename to fail cleanly")
+	}
+}
+
+func TestV2ExpressionsTypedAndVSCodeExtension(t *testing.T) {
+	v2 := &dslbuilder.DSLConfig{
+		Name:                "ExprLang\nv2",
+		StartRule:           "expr",
+		SignificantNewlines: true,
+		TokenDefs: []dslbuilder.TokenConfig{
+			{Name: "COMMENT", Kind: "skip", Pattern: `//[^\n]*`},
+			{Name: "IF", Kind: "keyword", Pattern: "if"},
+			{Name: "PLUS", Kind: "literal", Pattern: "+"},
+			{Name: "QMARK", Kind: "literal", Pattern: "?"},
+			{Name: "COLON", Kind: "literal", Pattern: ":"},
+			{Name: "LPAREN", Kind: "literal", Pattern: "("},
+			{Name: "RPAREN", Kind: "literal", Pattern: ")"},
+			{Name: "NUMBER", Kind: "regex", Pattern: `[0-9]+`},
+		},
+		Expressions: []dslbuilder.ExpressionConfig{
+			{
+				Name: "expr",
+				Atoms: []dslbuilder.ExprAtomConfig{
+					{Token: "NUMBER", Action: "num_lit"},
+				},
+				Groups: []dslbuilder.ExprGroupConfig{
+					{Open: "LPAREN", Inner: "expr", Close: "RPAREN"},
+				},
+				Infix: []dslbuilder.ExprOpConfig{
+					{Token: "PLUS", Power: 10, Assoc: "left", Action: "add_op"},
+				},
+				Ternary: &dslbuilder.ExprTernaryConf{
+					QuestionToken: "QMARK",
+					ColonToken:    "COLON",
+					Power:         2,
+					Action:        "cond_op",
+				},
+			},
+		},
+	}
+
+	source, err := GenerateWithOptions(v2, "exprgen", "NewExprLang", GenerateOptions{Typed: true})
+	if err != nil {
+		t.Fatalf("GenerateWithOptions failed: %v", err)
+	}
+
+	fset := token.NewFileSet()
+	if _, err := parser.ParseFile(fset, "expr_gen.go", source, parser.AllErrors); err != nil {
+		t.Fatalf("typed v2 generated code does not parse: %v\n%s", err, source)
+	}
+
+	code := string(source)
+	for _, want := range []string{
+		`dsl.SkipToken("COMMENT"`,
+		`dsl.LiteralToken("PLUS", "+")`,
+		`dsl.Expression("expr")`,
+		`Ternary("QMARK", "COLON", 2, "cond_op")`,
+		`type ExprLangActions interface`,
+		`OnAddOp(args []interface{}) (interface{}, error)`,
+		`OnCondOp(args []interface{}) (interface{}, error)`,
+		`func NewExprLangWithActions(handler ExprLangActions)`,
+	} {
+		if !strings.Contains(code, want) {
+			t.Errorf("typed v2 generated code missing %q:\n%s", want, code)
+		}
+	}
+
+	outDir := filepath.Join(t.TempDir(), "vscode-exprlang")
+	if err := GenerateVSCodeExtension(v2, outDir); err != nil {
+		t.Fatalf("GenerateVSCodeExtension failed: %v", err)
+	}
+	for _, rel := range []string{
+		"package.json",
+		"language-configuration.json",
+		"extension.js",
+		"grammar.yaml",
+		filepath.Join("syntaxes", "exprlang-v2.tmLanguage.json"),
+	} {
+		if _, err := os.Stat(filepath.Join(outDir, rel)); err != nil {
+			t.Errorf("missing generated VS Code extension file %s: %v", rel, err)
+		}
 	}
 }
